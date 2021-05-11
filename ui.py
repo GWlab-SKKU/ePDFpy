@@ -1,7 +1,6 @@
 from PyQt5 import QtCore, QtWidgets, QtGui
 import os, sys
 import pyqtgraph as pg
-import sip
 import file
 import numpy as np
 import image_process
@@ -25,6 +24,7 @@ class DataViewer(QtWidgets.QMainWindow):
         self.main_window.setWindowTitle("pdf_tools")
 
         self.controlPanel = ControlPanel()
+        self.controlPanel.setMaximumWidth(300)
         self.imgPanel = ImgPanel()
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self.controlPanel)
@@ -68,6 +68,7 @@ class DataViewer(QtWidgets.QMainWindow):
 
         self.read_img(0)
 
+        self.controlPanel.openFilePanel.lbl_path.setText(str(self.current_files))
         self.controlPanel.openFilePanel.lbl_file_count_num.setText(str(len(self.current_files)))
 
     def btn_right_clicked(self):
@@ -99,6 +100,7 @@ class ControlPanel(QtWidgets.QWidget):
         layout.addWidget(self.openFilePanel)
         layout.addWidget(self.settingPanel)
         layout.addWidget(self.operationPanel)
+        layout.addStretch(1)
         self.setLayout(layout)
 
     class OpenFilePanel(QtWidgets.QWidget):
@@ -124,12 +126,13 @@ class ControlPanel(QtWidgets.QWidget):
             grp_2_layout.addWidget(self.lbl_file_count_num)
             grp_2.setLayout(grp_2_layout)
 
-            self.text_path = QtWidgets.QTextEdit("Path")
+            self.lbl_path = QtWidgets.QLabel("file_path")
             self.btn_path = QtWidgets.QPushButton("open")
-            self.text_path.setFixedHeight(ControlPanel.text_fixed_height)
+            self.lbl_path.setFixedHeight(ControlPanel.text_fixed_height)
+            self.lbl_path.setMaximumWidth(300)
             grp_3 = QtWidgets.QGroupBox()
             grp_3_layout = QtWidgets.QBoxLayout(QtWidgets.QBoxLayout.LeftToRight)
-            grp_3_layout.addWidget(self.text_path)
+            grp_3_layout.addWidget(self.lbl_path)
             grp_3_layout.addWidget(self.btn_path)
             grp_3.setLayout(grp_3_layout)
 
@@ -202,8 +205,8 @@ class ImgPanel(QtWidgets.QWidget):
         layout.addWidget(self.btn_left,1,0,1,4)
         layout.addWidget(self.btn_right,1,5,1,4)
         layout.addWidget(self.lbl_current_num, 1, 4)
-        self.setFixedHeight(1000)
-        self.setFixedWidth(1000)
+        self.setMinimumWidth(500)
+        self.setMinimumHeight(500)
         self.setLayout(layout)
         self._current_data = None
     def update_img(self,img):
