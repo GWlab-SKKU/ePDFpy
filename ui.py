@@ -16,39 +16,96 @@ class DataViewer(QtWidgets.QMainWindow):
 
         # Make settings collection
 
-        self.strain_window = None
-        self.current_files = []
-        self.current_files_num = 0
-
-        self.main_window = QtWidgets.QWidget()
+        self.main_window = MainWindow()
         self.main_window.setWindowTitle("pdf_tools")
+        self.main_window.show()
 
+
+class MainWindow(QtWidgets.QWidget):
+    def __init__(self):
+
+        self.plotWindow = None
+        self.current_files = []
+        self.current_page = 0
+
+        QtWidgets.QWidget.__init__(self)
         self.controlPanel = ControlPanel()
         self.controlPanel.setMaximumWidth(300)
         self.imgPanel = ImgPanel()
-        layout = QtWidgets.QHBoxLayout()
-        layout.addWidget(self.controlPanel)
-        layout.addWidget(self.imgPanel)
-        self.main_window.setLayout(layout)
+        self.layout = QtWidgets.QHBoxLayout()
+        self.layout.addWidget(self.controlPanel)
+        self.layout.addWidget(self.imgPanel)
+        self.setLayout(self.layout)
         self.btn_binding()
 
-        self.main_window.show()
+
+    def keyPressEvent(self, e: QtGui.QKeyEvent) -> None:
+        if e.key() == QtCore.Qt.Key.Key_Right:
+            self.shift_center(1, 0)
+        if e.key() == QtCore.Qt.Key.Key_Left:
+            self.shift_center(-1, 0)
+        if e.key() == QtCore.Qt.Key.Key_Up:
+            self.shift_center(0, 1)
+        if e.key() == QtCore.Qt.Key.Key_Down:
+            self.shift_center(0, -1)
+        if e.key() == QtCore.Qt.Key.Key_PageUp:
+            self.read_img(self.current_page + 1)
+        if e.key() == QtCore.Qt.Key.Key_PageDown:
+            self.read_img(self.current_page - 1)
+
 
     def btn_binding(self):
         self.controlPanel.openFilePanel.btn_path.clicked.connect(self.open_file_path)
         self.controlPanel.operationPanel.btn_find_center.clicked.connect(self.find_center)
         self.imgPanel.btn_left.clicked.connect(self.btn_left_clicked)
         self.imgPanel.btn_right.clicked.connect(self.btn_right_clicked)
+        self.controlPanel.operationPanel.btn_get_azimuthal_avg.clicked.connect(self.get_azimuthal_value)
+        self.controlPanel.settingPanel.spinBox_center_x.valueChanged.connect()
+
+
+    def get_azimuthal_value(self):
+        azavg, azvar = image_process.get_azimuthal_average(self.raw, self.center[self.current_page])
+        if self.plotWindow is None:
+            self.plotWindow = QtWidgets.QWidget()
+            self.plotWindow.layout = QtWidgets.QHBoxLayout()
+            self.plotWindow.layout.setSpacing(0)
+            self.plotWindow.layout.setContentsMargins(0,0,0,0)
+            self.plotWidget1 = pg.PlotWidget(title='average')
+            self.plotWidget2 = pg.PlotWidget(title='variance')
+            self.plotWindow.layout.addWidget(self.plotWidget1)
+            self.plotWindow.layout.addWidget(self.plotWidget2)
+            self.plotWindow.setLayout(self.plotWindow.layout)
+            self.plotWidget1.plot(azavg,pen=(255,0,0))
+            self.plotWidget2.plot(azvar,pen=(0,255,0))
+            self.plotWindow.resize(700,350)
+            self.plotWindow.show()
+        else:
+            self.plotWidget1.plot(azavg,pen=(255,0,0))
+            self.plotWidget2.plot(azvar,pen=(0,255,0))
+
+    def shift_center(self, x, y):
+        if not hasattr(self,'center'):
+            return
+        self.center[self.current_page][0] += x
+        self.center[self.current_page][1] += y
+        print("center moved! ", self.center[self.current_page])
+        self.draw_center()
 
     def find_center(self):
-        i1 = int(self.controlPanel.settingPanel.text_intensity_range_num1.toPlainText())
-        i2 = int(self.controlPanel.settingPanel.text_intensity_range_num2.toPlainText())
+        i1 = int(self.controlPanel.settingPanel.spinBox_irange1.toPlainText())
+        i2 = int(self.controlPanel.settingPanel.spinBox_irange2.toPlainText())
         intensity_range = (i1,i2)
-        slice_num = int(self.controlPanel.settingPanel.text_slice_num.toPlainText())
+        slice_num = int(self.controlPanel.settingPanel.spinBox_slice_num.toPlainText())
+        self.center[self.current_page] = image_process.get_center(self.img,intensity_range,slice_num)
+        self.draw_center()
 
-        center = image_process.get_center(self.img,intensity_range,slice_num)
-        image_process.draw_center_line(self.img, center)
-        self.imgPanel.update_img(self.img)
+    def draw_center(self):
+        if not hasattr(self, 'center'):
+            return
+        lined_img = self.img.copy()
+        image_process.draw_center_line(lined_img, self.center[self.current_page])
+        self.imgPanel.update_img(lined_img)
+
 
     def open_file_path(self):
         self.current_files.clear()
@@ -68,22 +125,24 @@ class DataViewer(QtWidgets.QMainWindow):
 
         self.read_img(0)
 
+        self.center = np.zeros((len(self.current_files), 2))
+
         self.controlPanel.openFilePanel.lbl_path.setText(str(self.current_files))
-        self.controlPanel.openFilePanel.lbl_file_count_num.setText(str(len(self.current_files)))
 
     def btn_right_clicked(self):
-        if not self.current_files_num==len(self.current_files)-1:
-            self.read_img(self.current_files_num+1)
+        if not self.current_page == len(self.current_files) - 1:
+            self.read_img(self.current_page + 1)
 
     def btn_left_clicked(self):
-        if not self.current_files_num == 0:
-            self.read_img(self.current_files_num-1)
+        if not self.current_page == 0:
+            self.read_img(self.current_page - 1)
 
     def read_img(self,i):
-        self.current_files_num = i
-        self.raw, self.img = file.load_mrc_img(self.current_files[self.current_files_num])
+        self.current_page = i
+        self.raw, self.img = file.load_mrc_img(self.current_files[self.current_page])
         self.imgPanel.update_img(self.img)
         self.imgPanel.lbl_current_num.setText(str(i+1)+"/"+str(len(self.current_files)))
+
 
 
 class ControlPanel(QtWidgets.QWidget):
@@ -92,9 +151,9 @@ class ControlPanel(QtWidgets.QWidget):
 
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
-        self.openFilePanel = self.OpenFilePanel()
-        self.settingPanel = self.SettingPanel()
-        self.operationPanel = self.OperationPanel()
+        self.openFilePanel = self.OpenFilePanel("OpenFile")
+        self.settingPanel = self.SettingPanel("Settings")
+        self.operationPanel = self.OperationPanel("Operation")
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.openFilePanel)
@@ -103,60 +162,63 @@ class ControlPanel(QtWidgets.QWidget):
         layout.addStretch(1)
         self.setLayout(layout)
 
-    class OpenFilePanel(QtWidgets.QWidget):
-        def __init__(self):
-            QtWidgets.QWidget.__init__(self)
+    class OpenFilePanel(QtWidgets.QGroupBox):
+        def __init__(self,arg):
+            QtWidgets.QGroupBox.__init__(self,arg)
             layout = QtWidgets.QGridLayout()
 
-            grp_1 = QtWidgets.QGroupBox()
+            radio_grp = QtWidgets.QGroupBox()
             self.radio_folder = QtWidgets.QRadioButton("Folder")
             self.radio_file = QtWidgets.QRadioButton("File")
-            grp_1_layout = QtWidgets.QBoxLayout(QtWidgets.QBoxLayout.LeftToRight)
-            grp_1.setLayout(grp_1_layout)
-            grp_1_layout.addWidget(self.radio_folder)
-            grp_1_layout.addWidget(self.radio_file)
+            radio_grp_layout = QtWidgets.QBoxLayout(QtWidgets.QBoxLayout.LeftToRight)
+            radio_grp.setLayout(radio_grp_layout)
+            radio_grp_layout.addWidget(self.radio_folder)
+            radio_grp_layout.addWidget(self.radio_file)
             self.radio_file.setChecked(True)
 
-            grp_2 = QtWidgets.QGroupBox()
-            grp_2_layout = QtWidgets.QBoxLayout(QtWidgets.QBoxLayout.LeftToRight)
-
-            lbl_file_count = QtWidgets.QLabel("filecount:")
-            self.lbl_file_count_num = QtWidgets.QLabel("0")
-            grp_2_layout.addWidget(lbl_file_count)
-            grp_2_layout.addWidget(self.lbl_file_count_num)
-            grp_2.setLayout(grp_2_layout)
-
-            self.lbl_path = QtWidgets.QLabel("file_path")
+            self.lbl_path = QtWidgets.QLabel("/")
             self.btn_path = QtWidgets.QPushButton("open")
             self.lbl_path.setFixedHeight(ControlPanel.text_fixed_height)
             self.lbl_path.setMaximumWidth(300)
-            grp_3 = QtWidgets.QGroupBox()
-            grp_3_layout = QtWidgets.QBoxLayout(QtWidgets.QBoxLayout.LeftToRight)
-            grp_3_layout.addWidget(self.lbl_path)
-            grp_3_layout.addWidget(self.btn_path)
-            grp_3.setLayout(grp_3_layout)
 
-            layout.addWidget(grp_1, 0, 0)
-            layout.addWidget(grp_2, 0, 1)
-            layout.addWidget(grp_3, 1, 0, 1, 2)
+
+            layout.addWidget(radio_grp, 0, 0)
+            layout.addWidget(self.btn_path, 0, 1)
+            layout.addWidget(self.lbl_path, 1, 0, 1, 2)
             self.setLayout(layout)
 
-    class SettingPanel(QtWidgets.QWidget):
-        def __init__(self):
-            QtWidgets.QWidget.__init__(self)
+    class SettingPanel(QtWidgets.QGroupBox):
+        def __init__(self,arg):
+            QtWidgets.QGroupBox.__init__(self,arg)
             layout = QtWidgets.QGridLayout()
 
             lbl_intensity_range = QtWidgets.QLabel("intensity range(255)")
             lbl_slice_num = QtWidgets.QLabel("slice number")
-            self.text_intensity_range_num1 = QtWidgets.QTextEdit('130')
-            self.text_intensity_range_num2 = QtWidgets.QTextEdit('135')
-            self.text_slice_num = QtWidgets.QTextEdit('1')
-            self.text_intensity_range_num1.setFixedHeight(ControlPanel.text_fixed_height)
-            self.text_intensity_range_num2.setFixedHeight(ControlPanel.text_fixed_height)
-            self.text_slice_num.setFixedHeight(ControlPanel.text_fixed_height)
-            self.text_intensity_range_num1.setFixedWidth(ControlPanel.text_fixed_width)
-            self.text_intensity_range_num2.setFixedWidth(ControlPanel.text_fixed_width)
-            self.text_slice_num.setFixedWidth(ControlPanel.text_fixed_width)
+            lbl_center = QtWidgets.QLabel("center")
+            self.spinBox_irange1 = QtWidgets.QSpinBox()
+            self.spinBox_irange2 = QtWidgets.QSpinBox()
+            self.spinBox_slice_num = QtWidgets.QSpinBox()
+            self.spinBox_center_x = QtWidgets.QSpinBox()
+            self.spinBox_center_y = QtWidgets.QSpinBox()
+            self.spinBox_irange1.setMinimum(1)
+            self.spinBox_irange2.setMinimum(1)
+            self.spinBox_slice_num.setMinimum(1)
+            self.spinBox_center_x.setMinimum(1)
+            self.spinBox_center_y.setMinimum(1)
+            self.spinBox_irange1.setMaximum(255)
+            self.spinBox_irange2.setMaximum(255)
+            self.spinBox_slice_num.setMaximum(255)
+            self.spinBox_center_x.setMaximum(255)
+            self.spinBox_center_y.setMaximum(255)
+            self.spinBox_irange1.setValue(130)
+            self.spinBox_irange2.setValue(135)
+            self.spinBox_slice_num.setValue(1)
+            self.spinBox_irange1.setFixedHeight(ControlPanel.text_fixed_height)
+            self.spinBox_irange2.setFixedHeight(ControlPanel.text_fixed_height)
+            self.spinBox_slice_num.setFixedHeight(ControlPanel.text_fixed_height)
+            self.spinBox_irange1.setFixedWidth(ControlPanel.text_fixed_width)
+            self.spinBox_irange2.setFixedWidth(ControlPanel.text_fixed_width)
+            self.spinBox_slice_num.setFixedWidth(ControlPanel.text_fixed_width)
 
             grp_1 = QtWidgets.QGroupBox("View Mode")
             self.radio_viewmode_raw = QtWidgets.QRadioButton("raw")
@@ -167,28 +229,35 @@ class ControlPanel(QtWidgets.QWidget):
             grp_1_layout.addWidget(self.radio_viewmode_log)
             grp_1_layout.addWidget(self.radio_viewmode_colorcube)
             grp_1.setLayout(grp_1_layout)
+
             self.radio_viewmode_log.setChecked(True)
 
             layout.addWidget(grp_1,0,0,1,4)
             layout.addWidget(lbl_intensity_range, 1, 0, 1, 2)
             layout.addWidget(lbl_slice_num, 2, 0, 1, 2)
-            layout.addWidget(self.text_intensity_range_num1, 1, 2)
-            layout.addWidget(self.text_intensity_range_num2, 1, 3)
-            layout.addWidget(self.text_slice_num, 2, 2)
+            layout.addWidget(self.spinBox_irange1, 1, 2)
+            layout.addWidget(self.spinBox_irange2, 1, 3)
+            layout.addWidget(self.spinBox_slice_num, 2, 2)
+            layout.addWidget(lbl_center,3,0,1,2)
+            layout.addWidget(self.spinBox_center_x,3,2)
+            layout.addWidget(self.spinBox_center_y, 3,3)
 
             self.setLayout(layout)
 
-    class OperationPanel(QtWidgets.QWidget):
-        def __init__(self):
-            QtWidgets.QWidget.__init__(self)
+    class OperationPanel(QtWidgets.QGroupBox):
+        def __init__(self,arg):
+            QtWidgets.QGroupBox.__init__(self,arg)
             layout = QtWidgets.QGridLayout()
             self.btn_find_center = QtWidgets.QPushButton("find center")
             self.btn_get_azimuthal_avg = QtWidgets.QPushButton("get azimuthal data")
             self.btn_autostart = QtWidgets.QPushButton("auto start & save")
+            # self.progress_bar = QtWidgets.QProgressBar()
+            # self.progress_bar.setValue(0)
 
-            layout.addWidget(self.btn_find_center,0,0)
+            layout.addWidget(self.btn_find_center, 0, 0)
             layout.addWidget(self.btn_get_azimuthal_avg, 0, 1)
             layout.addWidget(self.btn_autostart, 1, 0,1,2)
+            # layout.addWidget(self.progress_bar,2,0,1,2)
 
             self.setLayout(layout)
 
@@ -204,7 +273,7 @@ class ImgPanel(QtWidgets.QWidget):
         layout.addWidget(self.imageView,0,0,1,9)
         layout.addWidget(self.btn_left,1,0,1,4)
         layout.addWidget(self.btn_right,1,5,1,4)
-        layout.addWidget(self.lbl_current_num, 1, 4)
+        layout.addWidget(self.lbl_current_num,1,4)
         self.setMinimumWidth(500)
         self.setMinimumHeight(500)
         self.setLayout(layout)

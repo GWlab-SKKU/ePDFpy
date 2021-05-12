@@ -6,7 +6,7 @@ def get_sample_img():
     return file.load_mrc_img("./assets/Camera 230 mm Ceta 20210312 1333_50s_20f_area01.mrc")
 
 def get_mask_data():
-    return np.loadtxt('./assets/mask_data.txt',delimiter=',')
+    return np.loadtxt('./assets/mask_data.txt',delimiter=',').astype(np.uint8)
 
 def create_estimated_mask(center=None,radius=None):
     raw, img = get_sample_img()

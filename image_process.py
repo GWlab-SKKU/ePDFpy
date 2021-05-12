@@ -3,19 +3,24 @@ import cv2
 import time
 import util
 from matplotlib import pyplot as plt
+
+
 try:
-   import cupy as cp
+    import cupy as cp
+    use_cupy = True
 except ImportError:
-   use_cupy = True
+    use_cupy = False
 
 mask = util.get_mask_data()
-colorcube = (np.loadtxt("./assets/colorcube256.csv",delimiter=",",dtype=np.float32)*255).astype('int')
-
+colorcube = (np.loadtxt("./assets/colorcube256.csv", delimiter=",", dtype=np.float32) * 255).astype('int')
 
 
 def draw_center_line(img, center):
-    cv2.line(img, (center[0], 0), (center[0], img.shape[0]), 255, 5)
-    cv2.line(img, (0, center[1]), (img.shape[1], center[1]), 255, 5)
+    c_x, c_y = center
+    c_x = int(c_x)
+    c_y = int(c_y)
+    cv2.line(img, (c_x, 0), (c_x, img.shape[0]), 255, 5)
+    cv2.line(img, (0, c_y), (img.shape[1], c_y), 255, 5)
     return img
 
 
@@ -28,15 +33,15 @@ def get_center(img, intensity_range, step_size):
     evaluated_center = np.zeros((find_range * 2, find_range * 2))
     for x in range(-find_range, find_range):
         for y in range(-find_range, find_range):
-            center_xy = (initial_center[0]+x,initial_center[1]+y)
-            evaluated_center[x + find_range, y + find_range] = _evaluate_center_slice_range(img, center_xy, rect, intensity_range, step_size)
-
+            center_xy = (initial_center[0] + x, initial_center[1] + y)
+            evaluated_center[x + find_range, y + find_range] = _evaluate_center_slice_range(img, center_xy, rect,
+                                                                                            intensity_range, step_size)
 
     min_index = np.unravel_index(evaluated_center.argmin(), evaluated_center.shape)
     real_index = np.zeros(2)
     real_index[0] = min_index[0] - find_range
     real_index[1] = min_index[1] - find_range
-    center = np.add(initial_center,real_index).astype('int')
+    center = np.add(initial_center, real_index).astype('int')
 
     plt.imshow(evaluated_center)
     plt.show()
@@ -44,6 +49,7 @@ def get_center(img, intensity_range, step_size):
     print("calculated center is ", center)
 
     return center
+
 
 def _get_initial_center(img):
     thresh = cv2.threshold(img, 0, 255, cv2.THRESH_OTSU + cv2.THRESH_BINARY)[1]
@@ -67,11 +73,11 @@ def _get_rectangle_from_intensity(image, intensity_range):
     kernel1 = np.ones((kernel_size, kernel_size), np.uint8)
     msk = cv2.erode(msk, kernel1)
     nonzero = np.nonzero(msk)
-    p1_y = nonzero[0].min()-2
-    p1_x = nonzero[1].min()-2
-    p2_y = nonzero[0].max()+2
-    p2_x = nonzero[1].max()+2
-    return (p1_y,p1_x,p2_y,p2_x)
+    p1_y = nonzero[0].min() - 2
+    p1_x = nonzero[1].min() - 2
+    p2_y = nonzero[0].max() + 2
+    p2_x = nonzero[1].max() + 2
+    return (p1_y, p1_x, p2_y, p2_x)
 
 
 def _evaluate_center_slice_range(image, center, rect, value_range, step_size):
@@ -131,9 +137,9 @@ def _evaluate_center_slice_range(image, center, rect, value_range, step_size):
     return std_sum
 
 
-def get_azimuthal_average(raw_image,center):
+def get_azimuthal_average(raw_image, center):
     if use_cupy:
-        return get_azimuthal_average_cuda(raw_image, center)
+        return _get_azimuthal_average_cuda(raw_image, center)
     center_x, center_y = center
     mesh = np.meshgrid(range(raw_image.shape[1]), range(raw_image.shape[0]))
     mesh_x = mesh[0] - center_x
@@ -155,7 +161,7 @@ def get_azimuthal_average(raw_image,center):
     return mean, var
 
 
-def get_azimuthal_average_cuda(raw_image, center):
+def _get_azimuthal_average_cuda(raw_image, center):
     img = cp.array(raw_image)
     beam = cp.array(mask)
     center_x, center_y = center
@@ -170,7 +176,6 @@ def get_azimuthal_average_cuda(raw_image, center):
     azav = cp.zeros((n_rr + 1))
     azvar = cp.zeros((n_rr + 1))
     for n in range(1, n_rr):
-
         rig_mask = (rr >= n - 0.5) & (rr < n + 0.5)
         rig = img[rig_mask]
         azav[n] = rig.mean()
@@ -185,5 +190,5 @@ def get_azimuthal_average_cuda(raw_image, center):
         # azvar[n] = cp.var(ring_non_zero)
 
     azav = np.nan_to_num(azav.get(), 0)
-    azvar = np.nan_to_num(azvar.get(),0)
-    return azav,azvar
+    azvar = np.nan_to_num(azvar.get(), 0)
+    return azav, azvar
