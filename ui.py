@@ -29,7 +29,7 @@ class MainWindow(QtWidgets.QWidget):
 
         QtWidgets.QWidget.__init__(self)
         self.controlPanel = ControlPanel()
-        self.controlPanel.setMaximumWidth(300)
+        self.controlPanel.setMaximumWidth(350)
         self.imgPanel = ImgPanel()
         self.layout = QtWidgets.QHBoxLayout()
         self.layout.addWidget(self.controlPanel)
@@ -37,6 +37,7 @@ class MainWindow(QtWidgets.QWidget):
         self.setLayout(self.layout)
         self.btn_binding()
         self.isShowCenter=True
+        self.resize(1080,600)
 
 
     def keyPressEvent(self, e: QtGui.QKeyEvent) -> None:
@@ -97,6 +98,10 @@ class MainWindow(QtWidgets.QWidget):
             self.get_azimuthal_value()
         file.save_current_azimuthal(self.azavg, self.current_files[self.current_page], True)
         file.save_current_azimuthal(self.azvar, self.current_files[self.current_page], False)
+        folder_path, file_full_name = os.path.split(self.current_files[self.current_page])
+        file_name, ext = os.path.splitext(file_full_name)
+        img_file_path = os.path.join(folder_path, file.analysis_folder_name, file_name+"_img.tiff")
+        self.imgPanel.imageView.export(img_file_path)
 
     def save_all_azimuthal(self):
         for i in range(len(self.current_files)):
@@ -149,7 +154,6 @@ class MainWindow(QtWidgets.QWidget):
     def draw_center(self):
         if not hasattr(self, 'center') or not self.controlPanel.settingPanel.chkBox_show_centerLine.isChecked():
             return
-        print(self.controlPanel.settingPanel.chkBox_show_centerLine.isChecked())
         self.center[self.current_page][0] = self.controlPanel.settingPanel.spinBox_center_x.value()
         self.center[self.current_page][1] = self.controlPanel.settingPanel.spinBox_center_y.value()
         lined_img = self.img.copy()
@@ -279,7 +283,7 @@ class ControlPanel(QtWidgets.QWidget):
             self.spinBox_irange1.setValue(130)
             self.spinBox_irange2.setValue(135)
             self.spinBox_slice_num.setValue(1)
-            self.chkBox_show_centerLine = QtWidgets.QCheckBox("Show CenterLine")
+            self.chkBox_show_centerLine = QtWidgets.QCheckBox("Show center line")
             self.chkBox_show_centerLine.setChecked(True)
             # self.spinBox_irange1.setFixedHeight(ControlPanel.text_fixed_height)
             # self.spinBox_irange2.setFixedHeight(ControlPanel.text_fixed_height)

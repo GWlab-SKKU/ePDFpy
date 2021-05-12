@@ -2,6 +2,7 @@ import mrcfile
 import os
 import numpy as np
 
+analysis_folder_name = "Analysis pdf_tools"
 
 def load_mrc_img(fp):
     with mrcfile.open(fp) as mrc:
@@ -30,7 +31,7 @@ def save_current_azimuthal(data:np.ndarray,current_file_path,azavg):
     assert type(data) is np.ndarray
     current_folder, current_file_full_name = os.path.split(current_file_path)
     current_file_name,current_ext = os.path.splitext(current_file_full_name)
-    analysis_folder = os.path.join(current_folder,"Analysis pdf_tools")
+    analysis_folder = os.path.join(current_folder,analysis_folder_name)
     if not os.path.isdir(analysis_folder):
         try :
             os.makedirs(analysis_folder)
