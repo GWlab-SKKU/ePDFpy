@@ -4,6 +4,7 @@ import pyqtgraph as pg
 import file
 import numpy as np
 import image_process
+import util
 
 
 class DataViewer(QtWidgets.QMainWindow):
@@ -29,7 +30,7 @@ class MainWindow(QtWidgets.QWidget):
 
         QtWidgets.QWidget.__init__(self)
         self.controlPanel = ControlPanel()
-        self.controlPanel.setMaximumWidth(350)
+        self.controlPanel.setMaximumWidth(330)
         self.imgPanel = ImgPanel()
         self.layout = QtWidgets.QHBoxLayout()
         self.layout.addWidget(self.controlPanel)
@@ -39,6 +40,12 @@ class MainWindow(QtWidgets.QWidget):
         self.isShowCenter=True
         self.resize(1080,600)
 
+    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
+        util.settings["intensity_range_1"] = self.controlPanel.settingPanel.spinBox_irange1.value()
+        util.settings["intensity_range_2"] = self.controlPanel.settingPanel.spinBox_irange2.value()
+        util.settings["slice_number"] = self.controlPanel.settingPanel.spinBox_slice_num.value()
+        util.settings["show_center_line"] = self.controlPanel.settingPanel.chkBox_show_centerLine.isChecked()
+        util.save_settings(util.settings)
 
     def keyPressEvent(self, e: QtGui.QKeyEvent) -> None:
         if e.key() == QtCore.Qt.Key.Key_Right:
@@ -272,6 +279,7 @@ class ControlPanel(QtWidgets.QWidget):
             self.spinBox_slice_num = QtWidgets.QSpinBox()
             self.spinBox_center_x = QtWidgets.QSpinBox()
             self.spinBox_center_y = QtWidgets.QSpinBox()
+            self.chkBox_show_centerLine = QtWidgets.QCheckBox("Show center line")
             self.spinBox_irange1.setMinimum(1)
             self.spinBox_irange2.setMinimum(1)
             self.spinBox_slice_num.setMinimum(1)
@@ -280,11 +288,10 @@ class ControlPanel(QtWidgets.QWidget):
             self.spinBox_irange1.setMaximum(255)
             self.spinBox_irange2.setMaximum(255)
             self.spinBox_slice_num.setMaximum(255)
-            self.spinBox_irange1.setValue(130)
-            self.spinBox_irange2.setValue(135)
-            self.spinBox_slice_num.setValue(1)
-            self.chkBox_show_centerLine = QtWidgets.QCheckBox("Show center line")
-            self.chkBox_show_centerLine.setChecked(True)
+            self.spinBox_irange1.setValue(util.settings["intensity_range_1"])
+            self.spinBox_irange2.setValue(util.settings["intensity_range_2"])
+            self.spinBox_slice_num.setValue(util.settings["slice_number"])
+            self.chkBox_show_centerLine.setChecked(util.settings["show_center_line"])
             # self.spinBox_irange1.setFixedHeight(ControlPanel.text_fixed_height)
             # self.spinBox_irange2.setFixedHeight(ControlPanel.text_fixed_height)
             # self.spinBox_slice_num.setFixedHeight(ControlPanel.text_fixed_height)
@@ -313,7 +320,7 @@ class ControlPanel(QtWidgets.QWidget):
             layout.addWidget(lbl_center,3,0,1,2)
             layout.addWidget(self.spinBox_center_x,3,2)
             layout.addWidget(self.spinBox_center_y, 3,3)
-            layout.addWidget(self.chkBox_show_centerLine,4,1)
+            layout.addWidget(self.chkBox_show_centerLine,4,0)
 
             self.setLayout(layout)
 

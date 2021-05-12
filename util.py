@@ -1,6 +1,9 @@
 import file
 import numpy as np
 import cv2
+import json
+
+settings = json.load(open("settings.json"))
 
 def get_sample_img():
     return file.load_mrc_img("./assets/Camera 230 mm Ceta 20210312 1333_50s_20f_area01.mrc")
@@ -37,6 +40,14 @@ def create_estimated_mask(center=None,radius=None):
     mask = np.uint8(mask)
     return mask
 
+
+def save_settings(settings_to_save):
+    json.dump(settings_to_save, open("settings.json", 'w'), indent=2)
+
+
 if __name__ == '__main__':
-    mask = create_estimated_mask()
-    np.savetxt('./assets/mask_data.txt',mask,fmt='%i',delimiter=',')
+    # mask = create_estimated_mask()
+    # np.savetxt('./assets/mask_data.txt',mask,fmt='%i',delimiter=',')
+    print(settings['show_center_line']==True)
+
+
