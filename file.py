@@ -25,7 +25,31 @@ def get_file_list_from_path(fp, extension=None):
                     file_list.append(os.path.join(path, filename))
     return file_list
 
+
+def save_current_azimuthal(data:np.ndarray,current_file_path,azavg):
+    assert type(data) is np.ndarray
+    current_folder, current_file_full_name = os.path.split(current_file_path)
+    current_file_name,current_ext = os.path.splitext(current_file_full_name)
+    analysis_folder = os.path.join(current_folder,"Analysis pdf_tools")
+    if not os.path.isdir(analysis_folder):
+        try :
+            os.makedirs(analysis_folder)
+        except:
+            print('Failed to make directory:',analysis_folder)
+            return
+    if azavg:
+        path_save = os.path.join(analysis_folder,current_file_name+"_azav.txt")
+    else:
+        path_save = os.path.join(analysis_folder, current_file_name + "_azvar.txt")
+    np.savetxt(path_save,data)
+    print("save to",path_save)
+
+
 if __name__ == '__main__':
-    file_list = get_file_list_from_path('/mnt/experiment/TEM diffraction/210312','.mrc')
-    print(os.path.split(file_list[0]))
+    # file_list = get_file_list_from_path('/mnt/experiment/TEM diffraction/210312','.mrc')
+    # print(os.path.split(file_list[0]))
     # print(get_file_list_from_path('/mnt/experiment/TEM diffraction/210312','.mrc'))
+    # pth="/mnt/experiment/TEM diffraction/210215/sample47_TiGe44_bot_AD/Camera 230 mm Ceta 20210215 1438_2s_1f_area01.mrc"
+    # print(os.path.split(pth))
+    # save_current_azimuthal(np.array([1,2,3]),pth,True)
+    pass

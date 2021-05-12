@@ -36,6 +36,7 @@ class MainWindow(QtWidgets.QWidget):
         self.layout.addWidget(self.imgPanel)
         self.setLayout(self.layout)
         self.btn_binding()
+        self.isShowCenter=True
 
 
     def keyPressEvent(self, e: QtGui.QKeyEvent) -> None:
@@ -63,16 +64,43 @@ class MainWindow(QtWidgets.QWidget):
 
     def btn_binding(self):
         self.controlPanel.openFilePanel.btn_path.clicked.connect(self.open_file_path)
-        self.controlPanel.operationPanel.btn_find_center.clicked.connect(self.find_center)
+        self.controlPanel.operationPanel.btn_find_center.clicked.connect(lambda: (self.find_center(),self.draw_center()))
         self.imgPanel.btn_left.clicked.connect(self.btn_left_clicked)
         self.imgPanel.btn_right.clicked.connect(self.btn_right_clicked)
         self.controlPanel.operationPanel.btn_get_azimuthal_avg.clicked.connect(self.get_azimuthal_value)
         self.controlPanel.settingPanel.spinBox_center_x.valueChanged.connect(self.draw_center)
         self.controlPanel.settingPanel.spinBox_center_y.valueChanged.connect(self.draw_center)
+        self.controlPanel.operationPanel.btn_save_current_azimuthal.clicked.connect(self.save_current_azimuthal)
+        self.controlPanel.operationPanel.btn_save_all_azimuthal.clicked.connect(self.save_all_azimuthal)
+
+    def is_center_ready(self, i=None):
+        if not hasattr(self,'center'):
+            return False
+        if i is not None:
+            page_num = i
+        else:
+            page_num = self.current_page
+        return self.center[page_num].sum() != 0 and self.center[page_num].sum() != 2
+
+    def save_current_azimuthal(self):
+        if not self.is_center_ready():
+            self.find_center()
+            self.draw_center()
+        if self.azavg is None:
+            self.get_azimuthal_value()
+        file.save_current_azimuthal(self.azavg, self.current_files[self.current_page], True)
+        file.save_current_azimuthal(self.azvar, self.current_files[self.current_page], False)
+
+    def save_all_azimuthal(self):
+        for i in range(len(self.current_files)):
+            print("processing auto_save azimuthal values", self.current_files)
+            self.read_img(i)
+            self.save_current_azimuthal()
+
 
 
     def get_azimuthal_value(self):
-        azavg, azvar = image_process.get_azimuthal_average(self.raw, self.center[self.current_page])
+        self.azavg, self.azvar = image_process.get_azimuthal_average(self.raw, self.center[self.current_page])
         if self.plotWindow is None:
             self.plotWindow = QtWidgets.QWidget()
             self.plotWindow.layout = QtWidgets.QHBoxLayout()
@@ -83,23 +111,23 @@ class MainWindow(QtWidgets.QWidget):
             self.plotWindow.layout.addWidget(self.plotWidget1)
             self.plotWindow.layout.addWidget(self.plotWidget2)
             self.plotWindow.setLayout(self.plotWindow.layout)
-            self.plotWidget1.plot(azavg,pen=(255,0,0))
-            self.plotWidget2.plot(azvar,pen=(0,255,0))
+            self.plotWidget1.plot(self.azavg,pen=(255,0,0))
+            self.plotWidget2.plot(self.azvar,pen=(0,255,0))
             self.plotWindow.resize(700,350)
             self.plotWindow.show()
         else:
             self.plotWidget1.clear()
-            self.plotWidget1.plot(azavg,pen=(255,0,0))
+            self.plotWidget1.plot(self.azavg,pen=(255,0,0))
             self.plotWidget2.clear()
-            self.plotWidget2.plot(azvar,pen=(0,255,0))
+            self.plotWidget2.plot(self.azvar,pen=(0,255,0))
 
-    def shift_center(self, x, y):
-        if not hasattr(self,'center'):
-            return
-        self.center[self.current_page][0] += x
-        self.center[self.current_page][1] += y
-        print("center moved! ", self.center[self.current_page])
-        self.draw_center()
+    # def shift_center(self, x, y):
+    #     if not hasattr(self,'center'):
+    #         return
+    #     self.center[self.current_page][0] += x
+    #     self.center[self.current_page][1] += y
+    #     print("center moved! ", self.center[self.current_page])
+    #     self.draw_center()
 
     def find_center(self):
         i1 = self.controlPanel.settingPanel.spinBox_irange1.value()
@@ -107,12 +135,9 @@ class MainWindow(QtWidgets.QWidget):
         intensity_range = (i1,i2)
         slice_num = int(self.controlPanel.settingPanel.spinBox_slice_num.value())
         self.center[self.current_page] = image_process.get_center(self.img,intensity_range,slice_num)
-        self.controlPanel.settingPanel.spinBox_center_x.valueChanged.disconnect()
-        self.controlPanel.settingPanel.spinBox_center_x.setValue(self.center[self.current_page][0])
-        self.controlPanel.settingPanel.spinBox_center_y.setValue(self.center[self.current_page][1])
-        self.controlPanel.settingPanel.spinBox_center_x.valueChanged.connect(self.draw_center)
-        self.controlPanel.settingPanel.spinBox_center_y.valueChanged.connect(self.draw_center)
-        # self.draw_center()
+        self.put_center_to_spinBoxes()
+        # you must use self.draw_center() after find_center
+        return self.center[self.current_page]
 
     def draw_center(self):
         if not hasattr(self, 'center'):
@@ -133,8 +158,9 @@ class MainWindow(QtWidgets.QWidget):
 
         elif self.controlPanel.openFilePanel.radio_folder.isChecked():
             path = QtWidgets.QFileDialog.getExistingDirectory(self,'open')
+            if len(path)==0:
+                return
             self.current_files.extend(file.get_file_list_from_path(path,'.mrc'))
-
         else:
             print("ERROR with open File")
             return
@@ -155,10 +181,28 @@ class MainWindow(QtWidgets.QWidget):
 
     def read_img(self,i):
         self.current_page = i
+        self.azavg = None
+        self.azvar = None
+        self.put_center_to_spinBoxes()
         self.raw, self.img = file.load_mrc_img(self.current_files[self.current_page])
-        self.imgPanel.update_img(self.img)
+        if self.is_center_ready() & self.isShowCenter:
+            self.draw_center()
+        else:
+            self.imgPanel.update_img(self.img)
         self.imgPanel.lbl_current_num.setText(str(i+1)+"/"+str(len(self.current_files)))
         self.setWindowTitle(self.current_files[self.current_page])
+
+    def put_center_to_spinBoxes(self, center=None):
+        if not hasattr(self, 'center'):
+            return
+        self.controlPanel.settingPanel.spinBox_center_x.valueChanged.disconnect()
+        self.controlPanel.settingPanel.spinBox_center_y.valueChanged.disconnect()
+        if center is not None:
+            self.center[self.current_page] = center
+        self.controlPanel.settingPanel.spinBox_center_x.setValue(self.center[self.current_page][0])
+        self.controlPanel.settingPanel.spinBox_center_y.setValue(self.center[self.current_page][1])
+        self.controlPanel.settingPanel.spinBox_center_x.valueChanged.connect(self.draw_center)
+        self.controlPanel.settingPanel.spinBox_center_y.valueChanged.connect(self.draw_center)
 
 
 class ControlPanel(QtWidgets.QWidget):
@@ -264,14 +308,15 @@ class ControlPanel(QtWidgets.QWidget):
             layout = QtWidgets.QGridLayout()
             self.btn_find_center = QtWidgets.QPushButton("find center")
             self.btn_get_azimuthal_avg = QtWidgets.QPushButton("get azimuthal data")
-            self.btn_autostart = QtWidgets.QPushButton("save current azimuthal values")
-            self.btn_autostart = QtWidgets.QPushButton("save every azimuthal values")
+            self.btn_save_current_azimuthal = QtWidgets.QPushButton("save current azimuthal data")
+            self.btn_save_all_azimuthal = QtWidgets.QPushButton("save every azimuthal data")
             # self.progress_bar = QtWidgets.QProgressBar()
             # self.progress_bar.setValue(0)
 
             layout.addWidget(self.btn_find_center, 0, 0)
             layout.addWidget(self.btn_get_azimuthal_avg, 0, 1)
-            layout.addWidget(self.btn_autostart, 1, 0,1,2)
+            layout.addWidget(self.btn_save_current_azimuthal, 1, 0,1,2)
+            layout.addWidget(self.btn_save_all_azimuthal, 2, 0,1,2)
             # layout.addWidget(self.progress_bar,2,0,1,2)
 
             self.setLayout(layout)
