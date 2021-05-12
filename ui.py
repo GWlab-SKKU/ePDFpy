@@ -17,7 +17,6 @@ class DataViewer(QtWidgets.QMainWindow):
         # Make settings collection
 
         self.main_window = MainWindow()
-        self.main_window.setWindowTitle("pdf_tools")
         self.main_window.show()
 
 
@@ -41,17 +40,25 @@ class MainWindow(QtWidgets.QWidget):
 
     def keyPressEvent(self, e: QtGui.QKeyEvent) -> None:
         if e.key() == QtCore.Qt.Key.Key_Right:
-            self.shift_center(1, 0)
+            self.controlPanel.settingPanel.spinBox_center_x.setValue(
+                self.controlPanel.settingPanel.spinBox_center_x.value()+1
+            )
         if e.key() == QtCore.Qt.Key.Key_Left:
-            self.shift_center(-1, 0)
+            self.controlPanel.settingPanel.spinBox_center_x.setValue(
+                self.controlPanel.settingPanel.spinBox_center_x.value()-1
+            )
         if e.key() == QtCore.Qt.Key.Key_Up:
-            self.shift_center(0, 1)
+            self.controlPanel.settingPanel.spinBox_center_y.setValue(
+                self.controlPanel.settingPanel.spinBox_center_y.value()-1
+            )
         if e.key() == QtCore.Qt.Key.Key_Down:
-            self.shift_center(0, -1)
+            self.controlPanel.settingPanel.spinBox_center_y.setValue(
+                self.controlPanel.settingPanel.spinBox_center_y.value()+1
+            )
         if e.key() == QtCore.Qt.Key.Key_PageUp:
-            self.read_img(self.current_page + 1)
+            self.btn_left_clicked()
         if e.key() == QtCore.Qt.Key.Key_PageDown:
-            self.read_img(self.current_page - 1)
+            self.btn_right_clicked()
 
 
     def btn_binding(self):
@@ -60,7 +67,8 @@ class MainWindow(QtWidgets.QWidget):
         self.imgPanel.btn_left.clicked.connect(self.btn_left_clicked)
         self.imgPanel.btn_right.clicked.connect(self.btn_right_clicked)
         self.controlPanel.operationPanel.btn_get_azimuthal_avg.clicked.connect(self.get_azimuthal_value)
-        # self.controlPanel.settingPanel.spinBox_center_x.valueChanged.connect
+        self.controlPanel.settingPanel.spinBox_center_x.valueChanged.connect(self.draw_center)
+        self.controlPanel.settingPanel.spinBox_center_y.valueChanged.connect(self.draw_center)
 
 
     def get_azimuthal_value(self):
@@ -80,7 +88,9 @@ class MainWindow(QtWidgets.QWidget):
             self.plotWindow.resize(700,350)
             self.plotWindow.show()
         else:
+            self.plotWidget1.clear()
             self.plotWidget1.plot(azavg,pen=(255,0,0))
+            self.plotWidget2.clear()
             self.plotWidget2.plot(azvar,pen=(0,255,0))
 
     def shift_center(self, x, y):
@@ -97,15 +107,21 @@ class MainWindow(QtWidgets.QWidget):
         intensity_range = (i1,i2)
         slice_num = int(self.controlPanel.settingPanel.spinBox_slice_num.value())
         self.center[self.current_page] = image_process.get_center(self.img,intensity_range,slice_num)
-        self.draw_center()
+        self.controlPanel.settingPanel.spinBox_center_x.valueChanged.disconnect()
+        self.controlPanel.settingPanel.spinBox_center_x.setValue(self.center[self.current_page][0])
+        self.controlPanel.settingPanel.spinBox_center_y.setValue(self.center[self.current_page][1])
+        self.controlPanel.settingPanel.spinBox_center_x.valueChanged.connect(self.draw_center)
+        self.controlPanel.settingPanel.spinBox_center_y.valueChanged.connect(self.draw_center)
+        # self.draw_center()
 
     def draw_center(self):
         if not hasattr(self, 'center'):
             return
+        self.center[self.current_page][0] = self.controlPanel.settingPanel.spinBox_center_x.value()
+        self.center[self.current_page][1] = self.controlPanel.settingPanel.spinBox_center_y.value()
         lined_img = self.img.copy()
         image_process.draw_center_line(lined_img, self.center[self.current_page])
         self.imgPanel.update_img(lined_img)
-
 
     def open_file_path(self):
         self.current_files.clear()
@@ -124,10 +140,10 @@ class MainWindow(QtWidgets.QWidget):
             return
 
         self.read_img(0)
-
         self.center = np.zeros((len(self.current_files), 2))
-
         self.controlPanel.openFilePanel.lbl_path.setText(str(self.current_files))
+        self.controlPanel.settingPanel.spinBox_center_x.setMaximum(self.imgPanel.imageView.image.shape[1])
+        self.controlPanel.settingPanel.spinBox_center_y.setMaximum(self.imgPanel.imageView.image.shape[0])
 
     def btn_right_clicked(self):
         if not self.current_page == len(self.current_files) - 1:
@@ -142,7 +158,7 @@ class MainWindow(QtWidgets.QWidget):
         self.raw, self.img = file.load_mrc_img(self.current_files[self.current_page])
         self.imgPanel.update_img(self.img)
         self.imgPanel.lbl_current_num.setText(str(i+1)+"/"+str(len(self.current_files)))
-
+        self.setWindowTitle(self.current_files[self.current_page])
 
 
 class ControlPanel(QtWidgets.QWidget):
@@ -208,8 +224,6 @@ class ControlPanel(QtWidgets.QWidget):
             self.spinBox_irange1.setMaximum(255)
             self.spinBox_irange2.setMaximum(255)
             self.spinBox_slice_num.setMaximum(255)
-            self.spinBox_center_x.setMaximum(255)
-            self.spinBox_center_y.setMaximum(255)
             self.spinBox_irange1.setValue(130)
             self.spinBox_irange2.setValue(135)
             self.spinBox_slice_num.setValue(1)
