@@ -60,7 +60,7 @@ class MainWindow(QtWidgets.QWidget):
         self.imgPanel.btn_left.clicked.connect(self.btn_left_clicked)
         self.imgPanel.btn_right.clicked.connect(self.btn_right_clicked)
         self.controlPanel.operationPanel.btn_get_azimuthal_avg.clicked.connect(self.get_azimuthal_value)
-        self.controlPanel.settingPanel.spinBox_center_x.valueChanged.connect()
+        # self.controlPanel.settingPanel.spinBox_center_x.valueChanged.connect
 
 
     def get_azimuthal_value(self):
@@ -92,10 +92,10 @@ class MainWindow(QtWidgets.QWidget):
         self.draw_center()
 
     def find_center(self):
-        i1 = int(self.controlPanel.settingPanel.spinBox_irange1.toPlainText())
-        i2 = int(self.controlPanel.settingPanel.spinBox_irange2.toPlainText())
+        i1 = self.controlPanel.settingPanel.spinBox_irange1.value()
+        i2 = self.controlPanel.settingPanel.spinBox_irange2.value()
         intensity_range = (i1,i2)
-        slice_num = int(self.controlPanel.settingPanel.spinBox_slice_num.toPlainText())
+        slice_num = int(self.controlPanel.settingPanel.spinBox_slice_num.value())
         self.center[self.current_page] = image_process.get_center(self.img,intensity_range,slice_num)
         self.draw_center()
 

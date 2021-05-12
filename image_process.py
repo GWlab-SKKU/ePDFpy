@@ -43,8 +43,8 @@ def get_center(img, intensity_range, step_size):
     real_index[1] = min_index[1] - find_range
     center = np.add(initial_center, real_index).astype('int')
 
-    plt.imshow(evaluated_center)
-    plt.show()
+    # plt.imshow(evaluated_center)
+    # plt.show()
 
     print("calculated center is ", center)
 
