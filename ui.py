@@ -72,6 +72,13 @@ class MainWindow(QtWidgets.QWidget):
         self.controlPanel.settingPanel.spinBox_center_y.valueChanged.connect(self.draw_center)
         self.controlPanel.operationPanel.btn_save_current_azimuthal.clicked.connect(self.save_current_azimuthal)
         self.controlPanel.operationPanel.btn_save_all_azimuthal.clicked.connect(self.save_all_azimuthal)
+        self.controlPanel.settingPanel.chkBox_show_centerLine.stateChanged.connect(self.show_centerLine)
+
+    def show_centerLine(self):
+        if self.controlPanel.settingPanel.chkBox_show_centerLine.isChecked():
+            self.draw_center()
+        else:
+            self.imgPanel.update_img(self.img)
 
     def is_center_ready(self, i=None):
         if not hasattr(self,'center'):
@@ -140,8 +147,9 @@ class MainWindow(QtWidgets.QWidget):
         return self.center[self.current_page]
 
     def draw_center(self):
-        if not hasattr(self, 'center'):
+        if not hasattr(self, 'center') or not self.controlPanel.settingPanel.chkBox_show_centerLine.isChecked():
             return
+        print(self.controlPanel.settingPanel.chkBox_show_centerLine.isChecked())
         self.center[self.current_page][0] = self.controlPanel.settingPanel.spinBox_center_x.value()
         self.center[self.current_page][1] = self.controlPanel.settingPanel.spinBox_center_y.value()
         lined_img = self.img.copy()
@@ -185,7 +193,7 @@ class MainWindow(QtWidgets.QWidget):
         self.azvar = None
         self.put_center_to_spinBoxes()
         self.raw, self.img = file.load_mrc_img(self.current_files[self.current_page])
-        if self.is_center_ready() & self.isShowCenter:
+        if self.is_center_ready():
             self.draw_center()
         else:
             self.imgPanel.update_img(self.img)
@@ -271,6 +279,8 @@ class ControlPanel(QtWidgets.QWidget):
             self.spinBox_irange1.setValue(130)
             self.spinBox_irange2.setValue(135)
             self.spinBox_slice_num.setValue(1)
+            self.chkBox_show_centerLine = QtWidgets.QCheckBox("Show CenterLine")
+            self.chkBox_show_centerLine.setChecked(True)
             # self.spinBox_irange1.setFixedHeight(ControlPanel.text_fixed_height)
             # self.spinBox_irange2.setFixedHeight(ControlPanel.text_fixed_height)
             # self.spinBox_slice_num.setFixedHeight(ControlPanel.text_fixed_height)
@@ -299,6 +309,7 @@ class ControlPanel(QtWidgets.QWidget):
             layout.addWidget(lbl_center,3,0,1,2)
             layout.addWidget(self.spinBox_center_x,3,2)
             layout.addWidget(self.spinBox_center_y, 3,3)
+            layout.addWidget(self.chkBox_show_centerLine,4,1)
 
             self.setLayout(layout)
 
@@ -344,10 +355,8 @@ class ImgPanel(QtWidgets.QWidget):
         self._current_data=img
         if len(img.shape) == 2:
             self.imageView.setImage(self._current_data.transpose(1,0))
-            self.imageView.updateImage()
         if len(img.shape) == 3:
             self.imageView.setImage(self._current_data.transpose(1,0,2))
-            self.imageView.updateImage()
     def get_img(self):
         return self._current_data
 
