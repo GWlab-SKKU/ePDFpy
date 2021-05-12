@@ -162,8 +162,8 @@ class MainWindow(QtWidgets.QWidget):
 
 
 class ControlPanel(QtWidgets.QWidget):
-    text_fixed_height = 25
-    text_fixed_width = 70
+    # text_fixed_height = 25
+    # text_fixed_width = 70
 
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
@@ -194,7 +194,7 @@ class ControlPanel(QtWidgets.QWidget):
 
             self.lbl_path = QtWidgets.QLabel("/")
             self.btn_path = QtWidgets.QPushButton("open")
-            self.lbl_path.setFixedHeight(ControlPanel.text_fixed_height)
+            # self.lbl_path.setFixedHeight(ControlPanel.text_fixed_height)
             self.lbl_path.setMaximumWidth(300)
 
 
@@ -227,26 +227,26 @@ class ControlPanel(QtWidgets.QWidget):
             self.spinBox_irange1.setValue(130)
             self.spinBox_irange2.setValue(135)
             self.spinBox_slice_num.setValue(1)
-            self.spinBox_irange1.setFixedHeight(ControlPanel.text_fixed_height)
-            self.spinBox_irange2.setFixedHeight(ControlPanel.text_fixed_height)
-            self.spinBox_slice_num.setFixedHeight(ControlPanel.text_fixed_height)
-            self.spinBox_irange1.setFixedWidth(ControlPanel.text_fixed_width)
-            self.spinBox_irange2.setFixedWidth(ControlPanel.text_fixed_width)
-            self.spinBox_slice_num.setFixedWidth(ControlPanel.text_fixed_width)
+            # self.spinBox_irange1.setFixedHeight(ControlPanel.text_fixed_height)
+            # self.spinBox_irange2.setFixedHeight(ControlPanel.text_fixed_height)
+            # self.spinBox_slice_num.setFixedHeight(ControlPanel.text_fixed_height)
+            # self.spinBox_irange1.setFixedWidth(ControlPanel.text_fixed_width)
+            # self.spinBox_irange2.setFixedWidth(ControlPanel.text_fixed_width)
+            # self.spinBox_slice_num.setFixedWidth(ControlPanel.text_fixed_width)
 
-            grp_1 = QtWidgets.QGroupBox("View Mode")
-            self.radio_viewmode_raw = QtWidgets.QRadioButton("raw")
-            self.radio_viewmode_log = QtWidgets.QRadioButton("log")
-            self.radio_viewmode_colorcube = QtWidgets.QRadioButton("colorcube")
-            grp_1_layout = QtWidgets.QBoxLayout(QtWidgets.QBoxLayout.LeftToRight)
-            grp_1_layout.addWidget(self.radio_viewmode_raw)
-            grp_1_layout.addWidget(self.radio_viewmode_log)
-            grp_1_layout.addWidget(self.radio_viewmode_colorcube)
-            grp_1.setLayout(grp_1_layout)
+            # grp_1 = QtWidgets.QGroupBox("View Mode")
+            # self.radio_viewmode_raw = QtWidgets.QRadioButton("raw")
+            # self.radio_viewmode_log = QtWidgets.QRadioButton("log")
+            # self.radio_viewmode_colorcube = QtWidgets.QRadioButton("colorcube")
+            # grp_1_layout = QtWidgets.QBoxLayout(QtWidgets.QBoxLayout.LeftToRight)
+            # grp_1_layout.addWidget(self.radio_viewmode_raw)
+            # grp_1_layout.addWidget(self.radio_viewmode_log)
+            # grp_1_layout.addWidget(self.radio_viewmode_colorcube)
+            # grp_1.setLayout(grp_1_layout)
 
-            self.radio_viewmode_log.setChecked(True)
+            # self.radio_viewmode_log.setChecked(True)
 
-            layout.addWidget(grp_1,0,0,1,4)
+            # layout.addWidget(grp_1,0,0,1,4)
             layout.addWidget(lbl_intensity_range, 1, 0, 1, 2)
             layout.addWidget(lbl_slice_num, 2, 0, 1, 2)
             layout.addWidget(self.spinBox_irange1, 1, 2)
@@ -264,7 +264,8 @@ class ControlPanel(QtWidgets.QWidget):
             layout = QtWidgets.QGridLayout()
             self.btn_find_center = QtWidgets.QPushButton("find center")
             self.btn_get_azimuthal_avg = QtWidgets.QPushButton("get azimuthal data")
-            self.btn_autostart = QtWidgets.QPushButton("auto start & save")
+            self.btn_autostart = QtWidgets.QPushButton("save current azimuthal values")
+            self.btn_autostart = QtWidgets.QPushButton("save every azimuthal values")
             # self.progress_bar = QtWidgets.QProgressBar()
             # self.progress_bar.setValue(0)
 
