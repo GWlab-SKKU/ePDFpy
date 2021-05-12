@@ -96,8 +96,8 @@ class MainWindow(QtWidgets.QWidget):
             print("processing auto_save azimuthal values", self.current_files)
             self.read_img(i)
             self.save_current_azimuthal()
-
-
+            self.controlPanel.operationPanel.progress_bar.setValue(i+1/len(self.current_files))
+        self.controlPanel.operationPanel.progress_bar.setValue(0)
 
     def get_azimuthal_value(self):
         self.azavg, self.azvar = image_process.get_azimuthal_average(self.raw, self.center[self.current_page])
@@ -310,14 +310,14 @@ class ControlPanel(QtWidgets.QWidget):
             self.btn_get_azimuthal_avg = QtWidgets.QPushButton("get azimuthal data")
             self.btn_save_current_azimuthal = QtWidgets.QPushButton("save current azimuthal data")
             self.btn_save_all_azimuthal = QtWidgets.QPushButton("save every azimuthal data")
-            # self.progress_bar = QtWidgets.QProgressBar()
-            # self.progress_bar.setValue(0)
+            self.progress_bar = QtWidgets.QProgressBar()
+            self.progress_bar.setValue(0)
 
             layout.addWidget(self.btn_find_center, 0, 0)
             layout.addWidget(self.btn_get_azimuthal_avg, 0, 1)
             layout.addWidget(self.btn_save_current_azimuthal, 1, 0,1,2)
             layout.addWidget(self.btn_save_all_azimuthal, 2, 0,1,2)
-            # layout.addWidget(self.progress_bar,2,0,1,2)
+            layout.addWidget(self.progress_bar,3,0,1,2)
 
             self.setLayout(layout)
 
@@ -344,8 +344,10 @@ class ImgPanel(QtWidgets.QWidget):
         self._current_data=img
         if len(img.shape) == 2:
             self.imageView.setImage(self._current_data.transpose(1,0))
+            self.imageView.updateImage()
         if len(img.shape) == 3:
             self.imageView.setImage(self._current_data.transpose(1,0,2))
+            self.imageView.updateImage()
     def get_img(self):
         return self._current_data
 
@@ -353,3 +355,5 @@ class ImgPanel(QtWidgets.QWidget):
 if __name__ == '__main__':
     app = DataViewer(sys.argv)
     sys.exit(app.qtapp.exec_())
+
+
