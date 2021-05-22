@@ -72,21 +72,16 @@ class MainWindow(QtWidgets.QWidget):
 
     def btn_binding(self):
         self.controlPanel.openFilePanel.btn_path.clicked.connect(self.open_file_path)
-        self.controlPanel.operationPanel.btn_find_center.clicked.connect(lambda: (self.find_center(),self.draw_center()))
+        self.controlPanel.operationPanel.btn_find_center.clicked.connect(lambda: (self.find_center(),self.update_img()))
         self.imgPanel.btn_left.clicked.connect(self.btn_left_clicked)
         self.imgPanel.btn_right.clicked.connect(self.btn_right_clicked)
         self.controlPanel.operationPanel.btn_get_azimuthal_avg.clicked.connect(self.get_azimuthal_value)
-        self.controlPanel.settingPanel.spinBox_center_x.valueChanged.connect(self.draw_center)
-        self.controlPanel.settingPanel.spinBox_center_y.valueChanged.connect(self.draw_center)
+        self.controlPanel.settingPanel.spinBox_center_x.valueChanged.connect(self.update_img)
+        self.controlPanel.settingPanel.spinBox_center_y.valueChanged.connect(self.update_img)
         self.controlPanel.operationPanel.btn_save_current_azimuthal.clicked.connect(self.save_current_azimuthal)
         self.controlPanel.operationPanel.btn_save_all_azimuthal.clicked.connect(self.save_all_azimuthal)
-        self.controlPanel.settingPanel.chkBox_show_centerLine.stateChanged.connect(self.show_centerLine)
-
-    def show_centerLine(self):
-        if self.controlPanel.settingPanel.chkBox_show_centerLine.isChecked():
-            self.draw_center()
-        else:
-            self.imgPanel.update_img(self.img)
+        self.controlPanel.settingPanel.chkBox_show_centerLine.stateChanged.connect(self.update_img)
+        self.controlPanel.settingPanel.chkBox_show_beam_stopper_mask.stateChanged.connect(self.update_img)
 
     def is_center_ready(self, i=None):
         if not hasattr(self,'center'):
@@ -100,7 +95,7 @@ class MainWindow(QtWidgets.QWidget):
     def save_current_azimuthal(self):
         if not self.is_center_ready():
             self.find_center()
-            self.draw_center()
+            self.update_img()
         if self.azavg is None:
             self.get_azimuthal_value()
         file.save_current_azimuthal(self.azavg, self.current_files[self.current_page], True)
@@ -158,16 +153,15 @@ class MainWindow(QtWidgets.QWidget):
         # you must use self.draw_center() after find_center
         return self.center[self.current_page]
 
-    def draw_center(self):
-        if not hasattr(self, 'center') or not self.controlPanel.settingPanel.chkBox_show_centerLine.isChecked():
-            return
+    def draw_center(self, img):
         self.center[self.current_page][0] = self.controlPanel.settingPanel.spinBox_center_x.value()
         self.center[self.current_page][1] = self.controlPanel.settingPanel.spinBox_center_y.value()
-        lined_img = self.img.copy()
+        lined_img = img.copy()
         image_process.draw_center_line(lined_img, self.center[self.current_page])
-        self.imgPanel.update_img(lined_img)
+        return lined_img
 
     def open_file_path(self):
+        # todo : check all file have same dimension, size
         self.current_files.clear()
         if self.controlPanel.openFilePanel.radio_file.isChecked():
             path,_ = QtWidgets.QFileDialog.getOpenFileNames(self,'open')
@@ -187,8 +181,8 @@ class MainWindow(QtWidgets.QWidget):
         self.read_img(0)
         self.center = np.zeros((len(self.current_files), 2))
         self.controlPanel.openFilePanel.lbl_path.setText(str(self.current_files))
-        self.controlPanel.settingPanel.spinBox_center_x.setMaximum(self.imgPanel.imageView.image.shape[1])
-        self.controlPanel.settingPanel.spinBox_center_y.setMaximum(self.imgPanel.imageView.image.shape[0])
+        self.controlPanel.settingPanel.spinBox_center_x.setMaximum(self.img.shape[1])
+        self.controlPanel.settingPanel.spinBox_center_y.setMaximum(self.img.shape[0]) # todo : confusing x,y
 
     def btn_right_clicked(self):
         if not self.current_page == len(self.current_files) - 1:
@@ -204,10 +198,7 @@ class MainWindow(QtWidgets.QWidget):
         self.azvar = None
         self.put_center_to_spinBoxes()
         self.raw, self.img = file.load_mrc_img(self.current_files[self.current_page])
-        if self.is_center_ready():
-            self.draw_center()
-        else:
-            self.imgPanel.update_img(self.img)
+        self.update_img()
         self.imgPanel.lbl_current_num.setText(str(i+1)+"/"+str(len(self.current_files)))
         self.setWindowTitle(self.current_files[self.current_page])
 
@@ -220,8 +211,18 @@ class MainWindow(QtWidgets.QWidget):
             self.center[self.current_page] = center
         self.controlPanel.settingPanel.spinBox_center_x.setValue(self.center[self.current_page][0])
         self.controlPanel.settingPanel.spinBox_center_y.setValue(self.center[self.current_page][1])
-        self.controlPanel.settingPanel.spinBox_center_x.valueChanged.connect(self.draw_center)
-        self.controlPanel.settingPanel.spinBox_center_y.valueChanged.connect(self.draw_center)
+        self.controlPanel.settingPanel.spinBox_center_x.valueChanged.connect(self.update_img)
+        self.controlPanel.settingPanel.spinBox_center_y.valueChanged.connect(self.update_img)
+
+    def update_img(self):
+        if not hasattr(self,'img'):
+            return
+        img = self.img
+        if self.is_center_ready() and self.controlPanel.settingPanel.chkBox_show_centerLine.isChecked():
+            img = self.draw_center(img)
+        if self.controlPanel.settingPanel.chkBox_show_beam_stopper_mask.isChecked():
+            img = cv2.bitwise_and(img, img, mask=np.bitwise_not(image_process.mask))
+        self.imgPanel.update_img(img)
 
 
 class ControlPanel(QtWidgets.QWidget):
@@ -280,6 +281,7 @@ class ControlPanel(QtWidgets.QWidget):
             self.spinBox_center_x = QtWidgets.QSpinBox()
             self.spinBox_center_y = QtWidgets.QSpinBox()
             self.chkBox_show_centerLine = QtWidgets.QCheckBox("Show center line")
+            self.chkBox_show_beam_stopper_mask = QtWidgets.QCheckBox("Show beam stopper mask")
             self.spinBox_irange1.setMinimum(1)
             self.spinBox_irange2.setMinimum(1)
             self.spinBox_slice_count.setMinimum(1)
@@ -292,6 +294,7 @@ class ControlPanel(QtWidgets.QWidget):
             self.spinBox_irange2.setValue(util.settings["intensity_range_2"])
             self.spinBox_slice_count.setValue(util.settings["slice_count"])
             self.chkBox_show_centerLine.setChecked(util.settings["show_center_line"])
+            self.chkBox_show_beam_stopper_mask.setChecked(util.settings["show_beam_stopper_mask"])
             # self.spinBox_irange1.setFixedHeight(ControlPanel.text_fixed_height)
             # self.spinBox_irange2.setFixedHeight(ControlPanel.text_fixed_height)
             # self.spinBox_slice_count.setFixedHeight(ControlPanel.text_fixed_height)
@@ -320,7 +323,8 @@ class ControlPanel(QtWidgets.QWidget):
             layout.addWidget(lbl_center,3,0,1,2)
             layout.addWidget(self.spinBox_center_x,3,2)
             layout.addWidget(self.spinBox_center_y, 3,3)
-            layout.addWidget(self.chkBox_show_centerLine,4,0)
+            layout.addWidget(self.chkBox_show_centerLine,4,0,1,4)
+            layout.addWidget(self.chkBox_show_beam_stopper_mask,5,0,1,4)
 
             self.setLayout(layout)
 
@@ -365,11 +369,10 @@ class ImgPanel(QtWidgets.QWidget):
     def update_img(self,img):
         cmap = pg.ColorMap(np.linspace(0,1,len(image_process.colorcube)),color=image_process.colorcube)
         self.imageView.setColorMap(cmap)
+        self._current_data = img
         if len(img.shape) == 2:
-            self._current_data = cv2.bitwise_and(img, img, mask=np.bitwise_not(image_process.mask))
             self.imageView.setImage(self._current_data.transpose(1,0))
         if len(img.shape) == 3:
-            self._current_data = img  # todo
             self.imageView.setImage(self._current_data.transpose(1,0,2))
     def get_img(self):
         return self._current_data
