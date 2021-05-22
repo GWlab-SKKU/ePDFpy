@@ -1,6 +1,6 @@
 {
-  "intensity_range_1": 135,
-  "intensity_range_2": 140,
-  "slice_number": 1,
+  "intensity_range_1": 170,
+  "intensity_range_2": 180,
+  "slice_count": 1,
   "show_center_line": true
 }

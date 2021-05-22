@@ -43,7 +43,7 @@ class MainWindow(QtWidgets.QWidget):
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         util.settings["intensity_range_1"] = self.controlPanel.settingPanel.spinBox_irange1.value()
         util.settings["intensity_range_2"] = self.controlPanel.settingPanel.spinBox_irange2.value()
-        util.settings["slice_number"] = self.controlPanel.settingPanel.spinBox_slice_num.value()
+        util.settings["slice_count"] = self.controlPanel.settingPanel.spinBox_slice_count.value()
         util.settings["show_center_line"] = self.controlPanel.settingPanel.chkBox_show_centerLine.isChecked()
         util.save_settings(util.settings)
 
@@ -152,8 +152,8 @@ class MainWindow(QtWidgets.QWidget):
         i1 = self.controlPanel.settingPanel.spinBox_irange1.value()
         i2 = self.controlPanel.settingPanel.spinBox_irange2.value()
         intensity_range = (i1,i2)
-        slice_num = int(self.controlPanel.settingPanel.spinBox_slice_num.value())
-        self.center[self.current_page] = image_process.get_center(self.img,intensity_range,slice_num)
+        slice_count = int(self.controlPanel.settingPanel.spinBox_slice_count.value())
+        self.center[self.current_page] = image_process.get_center(self.img,intensity_range,slice_count)
         self.put_center_to_spinBoxes()
         # you must use self.draw_center() after find_center
         return self.center[self.current_page]
@@ -272,32 +272,32 @@ class ControlPanel(QtWidgets.QWidget):
             layout = QtWidgets.QGridLayout()
 
             lbl_intensity_range = QtWidgets.QLabel("intensity range(255)")
-            lbl_slice_num = QtWidgets.QLabel("slice number")
+            lbl_slice_count = QtWidgets.QLabel("slice count")
             lbl_center = QtWidgets.QLabel("center")
             self.spinBox_irange1 = QtWidgets.QSpinBox()
             self.spinBox_irange2 = QtWidgets.QSpinBox()
-            self.spinBox_slice_num = QtWidgets.QSpinBox()
+            self.spinBox_slice_count = QtWidgets.QSpinBox()
             self.spinBox_center_x = QtWidgets.QSpinBox()
             self.spinBox_center_y = QtWidgets.QSpinBox()
             self.chkBox_show_centerLine = QtWidgets.QCheckBox("Show center line")
             self.spinBox_irange1.setMinimum(1)
             self.spinBox_irange2.setMinimum(1)
-            self.spinBox_slice_num.setMinimum(1)
+            self.spinBox_slice_count.setMinimum(1)
             self.spinBox_center_x.setMinimum(1)
             self.spinBox_center_y.setMinimum(1)
             self.spinBox_irange1.setMaximum(255)
             self.spinBox_irange2.setMaximum(255)
-            self.spinBox_slice_num.setMaximum(255)
+            self.spinBox_slice_count.setMaximum(255)
             self.spinBox_irange1.setValue(util.settings["intensity_range_1"])
             self.spinBox_irange2.setValue(util.settings["intensity_range_2"])
-            self.spinBox_slice_num.setValue(util.settings["slice_number"])
+            self.spinBox_slice_count.setValue(util.settings["slice_count"])
             self.chkBox_show_centerLine.setChecked(util.settings["show_center_line"])
             # self.spinBox_irange1.setFixedHeight(ControlPanel.text_fixed_height)
             # self.spinBox_irange2.setFixedHeight(ControlPanel.text_fixed_height)
-            # self.spinBox_slice_num.setFixedHeight(ControlPanel.text_fixed_height)
+            # self.spinBox_slice_count.setFixedHeight(ControlPanel.text_fixed_height)
             # self.spinBox_irange1.setFixedWidth(ControlPanel.text_fixed_width)
             # self.spinBox_irange2.setFixedWidth(ControlPanel.text_fixed_width)
-            # self.spinBox_slice_num.setFixedWidth(ControlPanel.text_fixed_width)
+            # self.spinBox_slice_count.setFixedWidth(ControlPanel.text_fixed_width)
 
             # grp_1 = QtWidgets.QGroupBox("View Mode")
             # self.radio_viewmode_raw = QtWidgets.QRadioButton("raw")
@@ -313,10 +313,10 @@ class ControlPanel(QtWidgets.QWidget):
 
             # layout.addWidget(grp_1,0,0,1,4)
             layout.addWidget(lbl_intensity_range, 1, 0, 1, 2)
-            layout.addWidget(lbl_slice_num, 2, 0, 1, 2)
+            layout.addWidget(lbl_slice_count, 2, 0, 1, 2)
             layout.addWidget(self.spinBox_irange1, 1, 2)
             layout.addWidget(self.spinBox_irange2, 1, 3)
-            layout.addWidget(self.spinBox_slice_num, 2, 2)
+            layout.addWidget(self.spinBox_slice_count, 2, 2)
             layout.addWidget(lbl_center,3,0,1,2)
             layout.addWidget(self.spinBox_center_x,3,2)
             layout.addWidget(self.spinBox_center_y, 3,3)
@@ -343,6 +343,8 @@ class ControlPanel(QtWidgets.QWidget):
 
             self.setLayout(layout)
 
+import cv2
+
 class ImgPanel(QtWidgets.QWidget):
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
@@ -363,10 +365,11 @@ class ImgPanel(QtWidgets.QWidget):
     def update_img(self,img):
         cmap = pg.ColorMap(np.linspace(0,1,len(image_process.colorcube)),color=image_process.colorcube)
         self.imageView.setColorMap(cmap)
-        self._current_data=img
         if len(img.shape) == 2:
+            self._current_data = cv2.bitwise_and(img, img, mask=np.bitwise_not(image_process.mask))
             self.imageView.setImage(self._current_data.transpose(1,0))
         if len(img.shape) == 3:
+            self._current_data = img  # todo
             self.imageView.setImage(self._current_data.transpose(1,0,2))
     def get_img(self):
         return self._current_data
