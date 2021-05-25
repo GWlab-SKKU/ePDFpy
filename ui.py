@@ -110,7 +110,7 @@ class MainWindow(QtWidgets.QWidget):
             print("processing auto_save azimuthal values", self.current_files)
             self.read_img(i)
             self.save_current_azimuthal()
-            self.controlPanel.operationPanel.progress_bar.setValue(i+1/len(self.current_files))
+            self.controlPanel.operationPanel.progress_bar.setValue((i+1)/len(self.current_files))
         self.controlPanel.operationPanel.progress_bar.setValue(0)
 
     def get_azimuthal_value(self):
