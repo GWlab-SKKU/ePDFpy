@@ -29,7 +29,9 @@ def get_center(img, intensity_range, step_size):
     print("initial center is ", initial_center)
     rect = _get_rectangle_from_intensity(img, intensity_range)
 
-    find_range = 5
+    #################
+    find_range = 10
+    #################
     evaluated_center = np.zeros((find_range * 2, find_range * 2))
     for x in range(-find_range, find_range):
         for y in range(-find_range, find_range):

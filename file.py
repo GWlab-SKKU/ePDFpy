@@ -27,7 +27,7 @@ def get_file_list_from_path(fp, extension=None):
     return file_list
 
 
-def save_current_azimuthal(data:np.ndarray,current_file_path,azavg):
+def save_current_azimuthal(data:np.ndarray,current_file_path,azavg,i_slice=None):
     assert type(data) is np.ndarray
     current_folder, current_file_full_name = os.path.split(current_file_path)
     current_file_name,current_ext = os.path.splitext(current_file_full_name)
@@ -39,9 +39,15 @@ def save_current_azimuthal(data:np.ndarray,current_file_path,azavg):
             print('Failed to make directory:',analysis_folder)
             return
     if azavg:
-        path_save = os.path.join(analysis_folder,current_file_name+"_azav.txt")
+        path_save = os.path.join(analysis_folder,current_file_name+"_azav")
     else:
-        path_save = os.path.join(analysis_folder, current_file_name + "_azvar.txt")
+        path_save = os.path.join(analysis_folder, current_file_name + "_azvar")
+    if i_slice:
+        path_save = path_save+str(i_slice[0])+"to"+str(i_slice[1])+"_"+str(i_slice[2])
+
+    # add extension
+    path_save = path_save+".txt"
+
     np.savetxt(path_save,data)
     print("save to",path_save)
 

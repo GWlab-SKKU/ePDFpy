@@ -98,8 +98,12 @@ class MainWindow(QtWidgets.QWidget):
             self.update_img()
         if self.azavg is None:
             self.get_azimuthal_value()
-        file.save_current_azimuthal(self.azavg, self.current_files[self.current_page], True)
-        file.save_current_azimuthal(self.azvar, self.current_files[self.current_page], False)
+        i_start_num = self.controlPanel.settingPanel.spinBox_irange1.value()
+        i_end_num = self.controlPanel.settingPanel.spinBox_irange2.value()
+        i_slice_num = self.controlPanel.settingPanel.spinBox_slice_count.value()
+        i_list = [i_start_num,i_end_num,i_slice_num]
+        file.save_current_azimuthal(self.azavg, self.current_files[self.current_page], True, i_slice=i_list)
+        file.save_current_azimuthal(self.azvar, self.current_files[self.current_page], False, i_slice=i_list)
         folder_path, file_full_name = os.path.split(self.current_files[self.current_page])
         file_name, ext = os.path.splitext(file_full_name)
         img_file_path = os.path.join(folder_path, file.analysis_folder_name, file_name+"_img.tiff")
@@ -114,7 +118,8 @@ class MainWindow(QtWidgets.QWidget):
         self.controlPanel.operationPanel.progress_bar.setValue(0)
 
     def get_azimuthal_value(self):
-        self.azavg, self.azvar = image_process.get_azimuthal_average(self.raw, self.center[self.current_page])
+        # self.azavg, self.azvar = image_process.get_azimuthal_average(self.raw, self.center[self.current_page])
+        self.azavg, self.azvar = image_process.get_azimuthal_average(self.img, self.center[self.current_page])
         if self.plotWindow is None:
             self.plotWindow = QtWidgets.QWidget()
             self.plotWindow.layout = QtWidgets.QHBoxLayout()

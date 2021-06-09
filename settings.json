@@ -1,6 +1,6 @@
 {
-  "intensity_range_1": 170,
-  "intensity_range_2": 180,
+  "intensity_range_1": 130,
+  "intensity_range_2": 140,
   "slice_count": 1,
   "show_center_line": true,
   "show_beam_stopper_mask": true
