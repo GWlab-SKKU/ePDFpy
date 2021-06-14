@@ -23,22 +23,38 @@ class DataViewer(QtWidgets.QMainWindow):
 
 class MainWindow(QtWidgets.QWidget):
     def __init__(self):
-
+        QtWidgets.QWidget.__init__(self)
         self.plotWindow = None
         self.current_files = []
         self.current_page = 0
-
-        QtWidgets.QWidget.__init__(self)
+        self.upper = QtWidgets.QFrame(self)
+        self.lower = QtWidgets.QFrame(self)
+        self.splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         self.controlPanel = ControlPanel()
         self.controlPanel.setMaximumWidth(330)
         self.imgPanel = ImgPanel()
+        self.graphPanel = GraphPanel()
+        self.upper_layout = QtWidgets.QHBoxLayout()
+        self.upper_layout.addWidget(self.controlPanel)
+        self.upper_layout.addWidget(self.imgPanel)
+        self.upper.setLayout(self.upper_layout)
+        self.lower_layout = QtWidgets.QHBoxLayout()
+        self.lower_layout.addWidget(self.graphPanel)
+        self.lower.setLayout(self.lower_layout)
+        self.splitter.addWidget(self.upper)
+        self.splitter.addWidget(self.lower)
+        self.splitter.setStretchFactor(1,1)
         self.layout = QtWidgets.QHBoxLayout()
-        self.layout.addWidget(self.controlPanel)
-        self.layout.addWidget(self.imgPanel)
+        self.layout.addWidget(self.splitter)
+        self.lower_layout.setSpacing(0)
+        self.lower_layout.setContentsMargins(0,0,0,0)
+        self.upper_layout.setSpacing(0)
+        self.upper_layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self.layout)
         self.btn_binding()
         self.isShowCenter=True
         self.resize(1080,600)
+        self.flag_range_update = False
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         util.settings["intensity_range_1"] = self.controlPanel.settingPanel.spinBox_irange1.value()
@@ -82,6 +98,44 @@ class MainWindow(QtWidgets.QWidget):
         self.controlPanel.operationPanel.btn_save_all_azimuthal.clicked.connect(self.save_all_azimuthal)
         self.controlPanel.settingPanel.chkBox_show_centerLine.stateChanged.connect(self.update_img)
         self.controlPanel.settingPanel.chkBox_show_beam_stopper_mask.stateChanged.connect(self.update_img)
+        self.controlPanel.settingPanel.spinBox_pixel_range_left.valueChanged.connect(self.dialog_to_range)
+        self.controlPanel.settingPanel.spinBox_pixel_range_right.valueChanged.connect(self.dialog_to_range)
+        self.graphPanel.region.sigRegionChangeFinished.connect(self.range_to_dialog)
+        self.graphPanel.button_start.clicked.connect(self.range_start_clicked)
+        self.graphPanel.button_all.clicked.connect(self.range_all_clicked)
+        self.graphPanel.button_end.clicked.connect(self.range_end_clicked)
+
+    def range_start_clicked(self):
+        left = self.controlPanel.settingPanel.spinBox_pixel_range_left.value()
+        right = self.controlPanel.settingPanel.spinBox_pixel_range_right.value()
+        l = left
+        r = left+int((right-left)/4)
+        print("left {}, right {}".format(l, r))
+        mx = np.max(self.azavg[l:r])
+        mn = np.min(self.azavg[l:r])
+        self.graphPanel.plot_azav.setXRange(l, r, padding=0.1)
+        self.graphPanel.plot_azav.setYRange(mn, mx, padding=0.1)
+        print(self.graphPanel.plot_azav.viewRange())
+
+    def range_all_clicked(self):
+        l = self.controlPanel.settingPanel.spinBox_pixel_range_left.value()
+        r = self.controlPanel.settingPanel.spinBox_pixel_range_right.value()
+        mx = np.max(self.azavg[l:r])
+        mn = np.min(self.azavg[l:r])
+        self.graphPanel.plot_azav.setXRange(l, r, padding=0.1)
+        self.graphPanel.plot_azav.setYRange(mn, mx, padding=0.1)
+
+    def range_end_clicked(self):
+        left = self.controlPanel.settingPanel.spinBox_pixel_range_left.value()
+        right = self.controlPanel.settingPanel.spinBox_pixel_range_right.value()
+        l = right-int((right - left) / 4)
+        r = right
+        mx = np.max(self.azavg[l:r])
+        mn = np.min(self.azavg[l:r])
+        self.graphPanel.plot_azav.setXRange(l, r, padding=0.1)
+        self.graphPanel.plot_azav.setYRange(mn, mx, padding=0.1)
+
+
 
     def is_center_ready(self, i=None):
         if not hasattr(self,'center'):
@@ -120,25 +174,36 @@ class MainWindow(QtWidgets.QWidget):
     def get_azimuthal_value(self):
         # self.azavg, self.azvar = image_process.get_azimuthal_average(self.raw, self.center[self.current_page])
         self.azavg, self.azvar = image_process.get_azimuthal_average(self.img, self.center[self.current_page])
-        if self.plotWindow is None:
-            self.plotWindow = QtWidgets.QWidget()
-            self.plotWindow.layout = QtWidgets.QHBoxLayout()
-            self.plotWindow.layout.setSpacing(0)
-            self.plotWindow.layout.setContentsMargins(0,0,0,0)
-            self.plotWidget1 = pg.PlotWidget(title='average')
-            self.plotWidget2 = pg.PlotWidget(title='variance')
-            self.plotWindow.layout.addWidget(self.plotWidget1)
-            self.plotWindow.layout.addWidget(self.plotWidget2)
-            self.plotWindow.setLayout(self.plotWindow.layout)
-            self.plotWidget1.plot(self.azavg,pen=(255,0,0))
-            self.plotWidget2.plot(self.azvar,pen=(0,255,0))
-            self.plotWindow.resize(700,350)
-            self.plotWindow.show()
-        else:
-            self.plotWidget1.clear()
-            self.plotWidget1.plot(self.azavg,pen=(255,0,0))
-            self.plotWidget2.clear()
-            self.plotWidget2.plot(self.azvar,pen=(0,255,0))
+        self.graphPanel.update_graph(self.azavg)
+        self.controlPanel.settingPanel.spinBox_pixel_range_right.setMaximum(len(self.azavg))
+        self.controlPanel.settingPanel.spinBox_pixel_range_left.setMaximum(len(self.azavg))
+
+        left = 0
+        for i in range(len(self.azavg)):
+            if int(self.azavg[i]) != 0 :
+                left = i
+                break
+        self.graphPanel.region.setRegion([left, len(self.azavg)-1])
+        # if self.plotWindow is None:
+        #     self.plotWindow = QtWidgets.QWidget()
+        #     self.plotWindow.layout = QtWidgets.QHBoxLayout()
+        #     self.plotWindow.layout.setSpacing(0)
+        #     self.plotWindow.layout.setContentsMargins(0,0,0,0)
+        #     self.plot_azav = pg.PlotWidget(title='average')
+        #     self.plot_azvar = pg.PlotWidget(title='variance')
+        #     self.plotWindow.layout.addWidget(self.plot_azav)
+        #     self.plotWindow.layout.addWidget(self.plot_azvar)
+        #     self.plotWindow.setLayout(self.plotWindow.layout)
+        #     self.plot_azav.plot(self.azavg, pen=(255, 0, 0))
+        #     self.plot_azav.addItem(pg.LinearRegionItem([400, 700]))
+        #     self.plot_azvar.plot(self.azvar, pen=(0, 255, 0))
+        #     self.plotWindow.resize(1000,350)
+        #     self.plotWindow.show()
+        # else:
+        #     self.plot_azav.clear()
+        #     self.plot_azav.plot(self.azavg, pen=(255, 0, 0))
+        #     self.plot_azvar.clear()
+        #     self.plot_azvar.plot(self.azvar, pen=(0, 255, 0))
 
     # def shift_center(self, x, y):
     #     if not hasattr(self,'center'):
@@ -228,6 +293,26 @@ class MainWindow(QtWidgets.QWidget):
         if self.controlPanel.settingPanel.chkBox_show_beam_stopper_mask.isChecked():
             img = cv2.bitwise_and(img, img, mask=np.bitwise_not(image_process.mask))
         self.imgPanel.update_img(img)
+
+    def dialog_to_range(self):
+        self.flag_range_update = True
+        left = self.controlPanel.settingPanel.spinBox_pixel_range_left.value()
+        right = self.controlPanel.settingPanel.spinBox_pixel_range_right.value()
+        self.graphPanel.region.setRegion([left,right])
+        self.flag_range_update = False
+
+    def range_to_dialog(self):
+        if self.flag_range_update:
+            return
+        left, right = self.graphPanel.region.getRegion()
+        left = np.round(left)
+        right = np.round(right)
+        print("range left",left,"rane right",right)
+        self.graphPanel.region.disconnect()
+        self.graphPanel.region.setRegion([left, right])
+        self.graphPanel.region.sigRegionChangeFinished.connect(self.range_to_dialog)
+        self.controlPanel.settingPanel.spinBox_pixel_range_left.setValue(left)
+        self.controlPanel.settingPanel.spinBox_pixel_range_right.setValue(right)
 
 
 class ControlPanel(QtWidgets.QWidget):
@@ -331,6 +416,15 @@ class ControlPanel(QtWidgets.QWidget):
             layout.addWidget(self.chkBox_show_centerLine,4,0,1,4)
             layout.addWidget(self.chkBox_show_beam_stopper_mask,5,0,1,4)
 
+
+            lbl_pixel_range = QtWidgets.QLabel("pixel Range")
+            self.spinBox_pixel_range_left = QtWidgets.QSpinBox()
+            self.spinBox_pixel_range_right = QtWidgets.QSpinBox()
+
+            layout.addWidget(lbl_pixel_range, 6, 0, 1, 2)
+            layout.addWidget(self.spinBox_pixel_range_left, 6, 2)
+            layout.addWidget(self.spinBox_pixel_range_right, 6, 3)
+
             self.setLayout(layout)
 
     class OperationPanel(QtWidgets.QGroupBox):
@@ -351,6 +445,41 @@ class ControlPanel(QtWidgets.QWidget):
             layout.addWidget(self.progress_bar,3,0,1,2)
 
             self.setLayout(layout)
+
+class GraphPanel(QtWidgets.QWidget):
+    def __init__(self):
+        QtWidgets.QWidget.__init__(self)
+        self.imageView = pg.ImageView()
+        self.plot_azav = pg.PlotWidget(title='azimuthal average')
+        self.layout = QtWidgets.QHBoxLayout()
+        self.layout.addWidget(self.plot_azav)
+        self.setLayout(self.layout)
+        self.setMinimumHeight(200)
+        self.region = pg.LinearRegionItem([0, 100])
+        self.plot_azav.addItem(self.region)
+
+        self.button_grp_widget = QtWidgets.QWidget()
+        self.button_grp_widget.layout = QtWidgets.QVBoxLayout()
+        self.button_grp_widget.setLayout(self.button_grp_widget.layout)
+        self.button_start = QtWidgets.QPushButton("start")
+        self.button_all = QtWidgets.QPushButton("all")
+        self.button_end = QtWidgets.QPushButton("end")
+        self.button_grp_widget.layout.addWidget(self.button_start)
+        self.button_grp_widget.layout.addWidget(self.button_all)
+        self.button_grp_widget.layout.addWidget(self.button_end)
+
+        self.layout.addWidget(self.button_grp_widget)
+        # self.setMaximumHeight(300)
+
+    def update_graph(self, dat):
+        # self.plotWindow.layout.setSpacing(0)
+        # self.plotWindow.layout.setContentsMargins(0,0,0,0)
+        # self.plot_azav = pg.PlotWidget(title='azimuthal average')
+        # self.plotWindow.layout.addWidget(self.plot_azav)
+        # self.plotWindow.setLayout(self.plotWindow.layout)
+        self.plot_azav.plot(dat, pen=(255, 0, 0))
+        # self.plotWindow.resize(1000,350)
+
 
 import cv2
 
@@ -386,5 +515,3 @@ class ImgPanel(QtWidgets.QWidget):
 if __name__ == '__main__':
     app = DataViewer(sys.argv)
     sys.exit(app.qtapp.exec_())
-
-
