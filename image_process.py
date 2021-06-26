@@ -47,14 +47,44 @@ def get_center(img, intensity_range, step_size):
 
     # plt.imshow(evaluated_center)
     # plt.show()
-
     print("calculated center is ", center)
-
     return center
+
+def get_center_gradient(img, intensity_range, step_size):
+    cost_img = np.empty(img.shape)
+    cost_img[:] = np.NaN
+    cursor = _get_initial_center(img)
+    cursor = (int(cursor[0]),int(cursor[1]))
+    print("initial center is ", cursor)
+    rect = _get_rectangle_from_intensity(img, intensity_range)
+    cnt = 0
+
+    while(cnt < 15):
+        for x in range(cursor[0]-1,cursor[0]+2):
+            for y in range(cursor[1] - 1, cursor[1] + 2):
+                if not np.isnan(cost_img[x, y]):
+                    continue
+                cost_img[x, y] = _evaluate_center_slice_range(img, (x, y), rect, intensity_range, step_size)
+        if cost_img[cursor] != np.nanmin(cost_img):
+            cursor = np.unravel_index(np.nanargmin(cost_img), cost_img.shape)
+            cnt = cnt + 1
+        else:
+            return cursor
+
+    return get_center(img, intensity_range, step_size)
+
+
 
 
 def _get_initial_center(img):
-    thresh = cv2.threshold(img, 0, 255, cv2.THRESH_OTSU + cv2.THRESH_BINARY)[1]
+    if not len(img.shape) == 2:
+        raise ValueError()
+    if np.array(img).min() < 0 or np.array(img).max() > 255:
+        img = cv2.normalize(img,img,0,255,cv2.NORM_MINMAX)
+    if img[0][0].dtype != np.uint8:
+        img = img.astype(np.uint8)
+
+    thresh = cv2.threshold(img, 0, 255, cv2.THRESH_OTSU + cv2.THRESH_BINARY)[1]  # it need uint8 as input
     kernel = np.ones((20, 20), np.uint8)
     # thresh = cv2.erode(thresh,kernel, iterations=3)
     thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
@@ -194,3 +224,30 @@ def _get_azimuthal_average_cuda(raw_image, center):
     azav = np.nan_to_num(azav.get(), 0)
     azvar = np.nan_to_num(azvar.get(), 0)
     return azav, azvar
+
+
+
+import mrcfile
+import file
+from pathlib import Path
+import glob
+import numpy as np
+import image_process
+import matplotlib.pyplot as plt
+import cv2
+
+if __name__ == '__main__':
+    mrc_search_path = '/mnt/experiment/TEM diffraction/'
+    mrc_file_paths = [str(i) for i in Path(mrc_search_path).rglob("*.mrc")]
+    random_mrc_files = np.random.choice(mrc_file_paths, 10)
+
+    # %%
+
+    mrc_img = mrcfile.open(random_mrc_files[0])
+    raw_img = mrc_img.data
+    img = np.array(raw_img)
+    center = image_process.get_center(img, (120, 130), 10)
+
+    # %%
+    center2 = image_process.get_center_gradient(img, (120, 130), 10)
+    print("result:",center2)
