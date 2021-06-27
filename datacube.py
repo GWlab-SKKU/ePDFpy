@@ -30,15 +30,17 @@ class DataCube:
 
     def calculate_azimuthal_average(self):
         if self.center is None:
-            self.calculate_center()
+            raise Exception("You need to calculate center first")
 
         if DataCube._use_cupy:
-            self.azavg, self.azvar = image_process.calculate_azimuthal_average_cuda()
+            self.azavg, self.azvar = image_process.calculate_azimuthal_average_cuda(self.raw_img, self.center)
         else:
             self.azavg, self.azvar = image_process.calculate_azimuthal_average(self.raw_img, self.center)
         return self.azavg, self.azvar
 
     def save_azimuthal_data(self, intensity_start, intensity_end, intensity_slice, imageView=None):
+        if self.center is None:
+            self.calculate_center((intensity_start, intensity_end), intensity_slice)
         if self.azavg is None:
             self.calculate_azimuthal_average()
 
@@ -46,7 +48,7 @@ class DataCube:
         file.save_current_azimuthal(self.azavg, self.file_path, True,  i_slice=i_list) # todo: seperate method
         file.save_current_azimuthal(self.azvar, self.file_path, False, i_slice=i_list)
 
-        folder_path, file_full_name = os.path.split(self.datacubes[self.current_page].file_path)
+        folder_path, file_full_name = os.path.split(self.file_path)
         file_name, ext = os.path.splitext(file_full_name)
 
         if imageView is not None:
