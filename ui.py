@@ -218,7 +218,7 @@ class MainWindow(QtWidgets.QWidget):
         i2 = self.controlPanel.settingPanel.spinBox_irange2.value()
         intensity_range = (i1,i2)
         slice_count = int(self.controlPanel.settingPanel.spinBox_slice_count.value())
-        self.center[self.current_page] = image_process.get_center(self.img,intensity_range,slice_count)
+        self.center[self.current_page] = image_process.get_center_gradient(self.img,intensity_range,slice_count)
         self.put_center_to_spinBoxes()
         # you must use self.draw_center() after find_center
         return self.center[self.current_page]
@@ -446,40 +446,6 @@ class ControlPanel(QtWidgets.QWidget):
 
             self.setLayout(layout)
 
-class GraphPanel(QtWidgets.QWidget):
-    def __init__(self):
-        QtWidgets.QWidget.__init__(self)
-        self.imageView = pg.ImageView()
-        self.plot_azav = pg.PlotWidget(title='azimuthal average')
-        self.layout = QtWidgets.QHBoxLayout()
-        self.layout.addWidget(self.plot_azav)
-        self.setLayout(self.layout)
-        self.setMinimumHeight(200)
-        self.region = pg.LinearRegionItem([0, 100])
-        self.plot_azav.addItem(self.region)
-
-        self.button_grp_widget = QtWidgets.QWidget()
-        self.button_grp_widget.layout = QtWidgets.QVBoxLayout()
-        self.button_grp_widget.setLayout(self.button_grp_widget.layout)
-        self.button_start = QtWidgets.QPushButton("start")
-        self.button_all = QtWidgets.QPushButton("all")
-        self.button_end = QtWidgets.QPushButton("end")
-        self.button_grp_widget.layout.addWidget(self.button_start)
-        self.button_grp_widget.layout.addWidget(self.button_all)
-        self.button_grp_widget.layout.addWidget(self.button_end)
-
-        self.layout.addWidget(self.button_grp_widget)
-        # self.setMaximumHeight(300)
-
-    def update_graph(self, dat):
-        # self.plotWindow.layout.setSpacing(0)
-        # self.plotWindow.layout.setContentsMargins(0,0,0,0)
-        # self.plot_azav = pg.PlotWidget(title='azimuthal average')
-        # self.plotWindow.layout.addWidget(self.plot_azav)
-        # self.plotWindow.setLayout(self.plotWindow.layout)
-        self.plot_azav.plot(dat, pen=(255, 0, 0))
-        # self.plotWindow.resize(1000,350)
-
 
 import cv2
 
@@ -510,6 +476,61 @@ class ImgPanel(QtWidgets.QWidget):
             self.imageView.setImage(self._current_data.transpose(1,0,2))
     def get_img(self):
         return self._current_data
+
+
+class GraphPanel(QtWidgets.QWidget):
+    def __init__(self):
+        QtWidgets.QWidget.__init__(self)
+        self.imageView = pg.ImageView()
+        self.plot_azav = pg.PlotWidget(title='azimuthal average')
+        self.layout = QtWidgets.QHBoxLayout()
+        self.layout.addWidget(self.plot_azav)
+        self.setLayout(self.layout)
+        self.setMinimumHeight(200)
+        self.region = pg.LinearRegionItem([0, 100])
+        self.plot_azav.addItem(self.region)
+
+        self.legend = self.plot_azav.addLegend(offset=(-30,30))
+
+        self.button_grp_widget = QtWidgets.QWidget()
+        self.button_grp_widget.layout = QtWidgets.QVBoxLayout()
+        self.button_grp_widget.setLayout(self.button_grp_widget.layout)
+        self.button_start = QtWidgets.QPushButton("start")
+        self.button_all = QtWidgets.QPushButton("all")
+        self.button_end = QtWidgets.QPushButton("end")
+        self.button_grp_widget.layout.addWidget(self.button_start)
+        self.button_grp_widget.layout.addWidget(self.button_all)
+        self.button_grp_widget.layout.addWidget(self.button_end)
+
+        self.layout.addWidget(self.button_grp_widget)
+
+        self.azav_curr_dat = None
+        self.azav_prev_dat = None
+        self.plot_azav_curr = self.plot_azav.plot( pen=pg.mkPen(255, 0, 0, width=2), name='current')
+        self.plot_azav_prev = self.plot_azav.plot( pen=pg.mkPen(0, 255, 0, width=2), name='previous')
+
+
+        # self.setMaximumHeight(300)
+
+    def update_graph(self, dat):
+        # self.plotWindow.layout.setSpacing(0)
+        # self.plotWindow.layout.setContentsMargins(0,0,0,0)
+        # self.plot_azav = pg.PlotWidget(title='azimuthal average')
+        # self.plotWindow.layout.addWidget(self.plot_azav)
+        # self.plotWindow.setLayout(self.plotWindow.layout)
+
+        if self.azav_curr_dat is None:
+            self.azav_curr_dat = dat
+            self.plot_azav_curr.setData(self.azav_curr_dat)
+        else :
+            self.azav_prev_dat = self.azav_curr_dat
+            self.azav_curr_dat = dat
+            self.plot_azav_curr.setData(self.azav_curr_dat)
+            self.plot_azav_prev.setData(self.azav_prev_dat)
+
+        # self.plotWindow.resize(1000,350)
+
+
 
 
 if __name__ == '__main__':

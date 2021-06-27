@@ -3,5 +3,10 @@
   "intensity_range_2": 140,
   "slice_count": 1,
   "show_center_line": true,
-  "show_beam_stopper_mask": true
+  "show_beam_stopper_mask": true,
+  "recent_file1": "",
+  "recent_file2": "",
+  "recent_file3": "",
+  "recent_file4": "",
+  "recent_file5": ""
 }

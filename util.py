@@ -2,8 +2,12 @@ import file
 import numpy as np
 import cv2
 import json
+import inspect
+import os
+from pathlib import Path
 
 settings = json.load(open("settings.json"))
+
 
 def get_sample_img():
     return file.load_mrc_img("./assets/Camera 230 mm Ceta 20210312 1333_50s_20f_area01.mrc")
@@ -48,6 +52,5 @@ def save_settings(settings_to_save):
 if __name__ == '__main__':
     # mask = create_estimated_mask()
     # np.savetxt('./assets/mask_data.txt',mask,fmt='%i',delimiter=',')
+
     print(settings['show_center_line']==True)
-
-
