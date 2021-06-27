@@ -24,8 +24,8 @@ def draw_center_line(img, center):
     return img
 
 
-def get_center(img, intensity_range, step_size):
-    initial_center = _get_initial_center(img)
+def calculate_center(img, intensity_range, step_size):
+    initial_center = _calculate_initial_center(img)
     print("initial center is ", initial_center)
     rect = _get_rectangle_from_intensity(img, intensity_range)
 
@@ -50,10 +50,10 @@ def get_center(img, intensity_range, step_size):
     print("calculated center is ", center)
     return center
 
-def get_center_gradient(img, intensity_range, step_size):
+def calculate_center_gradient(img, intensity_range, step_size):
     cost_img = np.empty(img.shape)
     cost_img[:] = np.NaN
-    cursor = _get_initial_center(img)
+    cursor = _calculate_initial_center(img)
     cursor = (int(cursor[0]),int(cursor[1]))
     print("initial center is ", cursor)
     rect = _get_rectangle_from_intensity(img, intensity_range)
@@ -71,12 +71,12 @@ def get_center_gradient(img, intensity_range, step_size):
         else:
             return cursor
 
-    return get_center(img, intensity_range, step_size)
+    return calculate_center(img, intensity_range, step_size)
 
 
 
 
-def _get_initial_center(img):
+def _calculate_initial_center(img):
     if not len(img.shape) == 2:
         raise ValueError()
     if np.array(img).min() < 0 or np.array(img).max() > 255:
@@ -169,9 +169,9 @@ def _evaluate_center_slice_range(image, center, rect, value_range, step_size):
     return std_sum
 
 
-def get_azimuthal_average(raw_image, center):
+def calculate_azimuthal_average(raw_image, center):
     if use_cupy:
-        return _get_azimuthal_average_cuda(raw_image, center)
+        return calculate_azimuthal_average_cuda(raw_image, center)
     center_x, center_y = center
     mesh = np.meshgrid(range(raw_image.shape[1]), range(raw_image.shape[0]))
     mesh_x = mesh[0] - center_x
@@ -193,7 +193,7 @@ def get_azimuthal_average(raw_image, center):
     return mean, var
 
 
-def _get_azimuthal_average_cuda(raw_image, center):
+def calculate_azimuthal_average_cuda(raw_image, center):
     img = cp.array(raw_image)
     beam = cp.array(mask)
     center_x, center_y = center
@@ -227,16 +227,19 @@ def _get_azimuthal_average_cuda(raw_image, center):
 
 
 
-import mrcfile
-import file
-from pathlib import Path
-import glob
-import numpy as np
-import image_process
-import matplotlib.pyplot as plt
-import cv2
+
 
 if __name__ == '__main__':
+
+    import mrcfile
+    import file
+    from pathlib import Path
+    import glob
+    import numpy as np
+    import image_process
+    import matplotlib.pyplot as plt
+    import cv2
+
     mrc_search_path = '/mnt/experiment/TEM diffraction/'
     mrc_file_paths = [str(i) for i in Path(mrc_search_path).rglob("*.mrc")]
     random_mrc_files = np.random.choice(mrc_file_paths, 10)
@@ -246,8 +249,8 @@ if __name__ == '__main__':
     mrc_img = mrcfile.open(random_mrc_files[0])
     raw_img = mrc_img.data
     img = np.array(raw_img)
-    center = image_process.get_center(img, (120, 130), 10)
+    center = image_process.calculate_center(img, (120, 130), 10)
 
     # %%
-    center2 = image_process.get_center_gradient(img, (120, 130), 10)
+    center2 = image_process.calculate_center_gradient(img, (120, 130), 10)
     print("result:",center2)

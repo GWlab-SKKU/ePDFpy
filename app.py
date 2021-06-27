@@ -23,8 +23,8 @@ random_mrc_files = np.random.choice(mrc_file_paths,10)
 mrc_img = mrcfile.open(random_mrc_files[0])
 raw_data = mrc_img.data
 img = np.array(raw_data)
-center = image_process.get_center(img, (120,130),10)
-azavg = image_process.get_azimuthal_average(mrc_img.data,center)[0]
+center = image_process.calculate_center(img, (120, 130), 10)
+azavg = image_process.calculate_azimuthal_average(mrc_img.data, center)[0]
 new_azavg = azavg * np.arange(0,len(azavg))
 new_two = azavg * np.power(np.arange(0,len(azavg)),2)
 

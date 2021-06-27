@@ -5,7 +5,8 @@ import file
 import numpy as np
 import image_process
 import util
-
+from datacube import DataCube
+from typing import List, Set, Dict, Tuple
 
 class DataViewer(QtWidgets.QMainWindow):
     def __init__(self, argv):
@@ -25,7 +26,6 @@ class MainWindow(QtWidgets.QWidget):
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
         self.plotWindow = None
-        self.current_files = []
         self.current_page = 0
         self.upper = QtWidgets.QFrame(self)
         self.lower = QtWidgets.QFrame(self)
@@ -55,6 +55,7 @@ class MainWindow(QtWidgets.QWidget):
         self.isShowCenter=True
         self.resize(1080,600)
         self.flag_range_update = False
+        self.datacubes: List[DataCube] = []
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         util.settings["intensity_range_1"] = self.controlPanel.settingPanel.spinBox_irange1.value()
@@ -135,45 +136,24 @@ class MainWindow(QtWidgets.QWidget):
         self.graphPanel.plot_azav.setXRange(l, r, padding=0.1)
         self.graphPanel.plot_azav.setYRange(mn, mx, padding=0.1)
 
-
-
-    def is_center_ready(self, i=None):
-        if not hasattr(self,'center'):
-            return False
-        if i is not None:
-            page_num = i
-        else:
-            page_num = self.current_page
-        return self.center[page_num].sum() != 0 and self.center[page_num].sum() != 2
-
     def save_current_azimuthal(self):
-        if not self.is_center_ready():
-            self.find_center()
-            self.update_img()
-        if self.azavg is None:
-            self.get_azimuthal_value()
-        i_start_num = self.controlPanel.settingPanel.spinBox_irange1.value()
-        i_end_num = self.controlPanel.settingPanel.spinBox_irange2.value()
-        i_slice_num = self.controlPanel.settingPanel.spinBox_slice_count.value()
-        i_list = [i_start_num,i_end_num,i_slice_num]
-        file.save_current_azimuthal(self.azavg, self.current_files[self.current_page], True, i_slice=i_list)
-        file.save_current_azimuthal(self.azvar, self.current_files[self.current_page], False, i_slice=i_list)
-        folder_path, file_full_name = os.path.split(self.current_files[self.current_page])
-        file_name, ext = os.path.splitext(file_full_name)
-        img_file_path = os.path.join(folder_path, file.analysis_folder_name, file_name+"_img.tiff")
-        self.imgPanel.imageView.export(img_file_path)
+        self.datacubes[self.current_page]\
+            .save_azimuthal_data(intensity_start=self.controlPanel.settingPanel.spinBox_irange1.value(),
+                                 intensity_end=self.controlPanel.settingPanel.spinBox_irange2.value(),
+                                 intensity_slice=self.controlPanel.settingPanel.spinBox_slice_count.value(),
+                                 imageView=self.imgPanel.imageView)
 
     def save_all_azimuthal(self):
-        for i in range(len(self.current_files)):
-            print("processing auto_save azimuthal values", self.current_files)
+        for i in range(len(self.datacubes[self.current_page])):
+            print("processing auto_save azimuthal values", self.datacubes[self.current_page].file_path)
             self.read_img(i)
+            self.datacubes[i].save_azimuthal_data()
             self.save_current_azimuthal()
             self.controlPanel.operationPanel.progress_bar.setValue((i+1)/len(self.current_files))
         self.controlPanel.operationPanel.progress_bar.setValue(0)
 
     def get_azimuthal_value(self):
-        # self.azavg, self.azvar = image_process.get_azimuthal_average(self.raw, self.center[self.current_page])
-        self.azavg, self.azvar = image_process.get_azimuthal_average(self.img, self.center[self.current_page])
+        self.azavg, self.azvar = self.datacubes[self.current_page].calculate_azimuthal_average()
         self.graphPanel.update_graph(self.azavg)
         self.controlPanel.settingPanel.spinBox_pixel_range_right.setMaximum(len(self.azavg))
         self.controlPanel.settingPanel.spinBox_pixel_range_left.setMaximum(len(self.azavg))
@@ -184,78 +164,51 @@ class MainWindow(QtWidgets.QWidget):
                 left = i
                 break
         self.graphPanel.region.setRegion([left, len(self.azavg)-1])
-        # if self.plotWindow is None:
-        #     self.plotWindow = QtWidgets.QWidget()
-        #     self.plotWindow.layout = QtWidgets.QHBoxLayout()
-        #     self.plotWindow.layout.setSpacing(0)
-        #     self.plotWindow.layout.setContentsMargins(0,0,0,0)
-        #     self.plot_azav = pg.PlotWidget(title='average')
-        #     self.plot_azvar = pg.PlotWidget(title='variance')
-        #     self.plotWindow.layout.addWidget(self.plot_azav)
-        #     self.plotWindow.layout.addWidget(self.plot_azvar)
-        #     self.plotWindow.setLayout(self.plotWindow.layout)
-        #     self.plot_azav.plot(self.azavg, pen=(255, 0, 0))
-        #     self.plot_azav.addItem(pg.LinearRegionItem([400, 700]))
-        #     self.plot_azvar.plot(self.azvar, pen=(0, 255, 0))
-        #     self.plotWindow.resize(1000,350)
-        #     self.plotWindow.show()
-        # else:
-        #     self.plot_azav.clear()
-        #     self.plot_azav.plot(self.azavg, pen=(255, 0, 0))
-        #     self.plot_azvar.clear()
-        #     self.plot_azvar.plot(self.azvar, pen=(0, 255, 0))
-
-    # def shift_center(self, x, y):
-    #     if not hasattr(self,'center'):
-    #         return
-    #     self.center[self.current_page][0] += x
-    #     self.center[self.current_page][1] += y
-    #     print("center moved! ", self.center[self.current_page])
-    #     self.draw_center()
 
     def find_center(self):
         i1 = self.controlPanel.settingPanel.spinBox_irange1.value()
         i2 = self.controlPanel.settingPanel.spinBox_irange2.value()
         intensity_range = (i1,i2)
         slice_count = int(self.controlPanel.settingPanel.spinBox_slice_count.value())
-        self.center[self.current_page] = image_process.get_center_gradient(self.img,intensity_range,slice_count)
-        self.put_center_to_spinBoxes()
+        center = self.datacubes[self.current_page].calculate_center(intensity_range, slice_count)
+        self.put_center_to_spinBoxes(center)
         # you must use self.draw_center() after find_center
-        return self.center[self.current_page]
+        return center
 
     def draw_center(self, img):
-        self.center[self.current_page][0] = self.controlPanel.settingPanel.spinBox_center_x.value()
-        self.center[self.current_page][1] = self.controlPanel.settingPanel.spinBox_center_y.value()
+        self.datacubes[self.current_page].center[0] = self.controlPanel.settingPanel.spinBox_center_x.value()
+        self.datacubes[self.current_page].center[1] = self.controlPanel.settingPanel.spinBox_center_y.value()
         lined_img = img.copy()
-        image_process.draw_center_line(lined_img, self.center[self.current_page])
+        image_process.draw_center_line(lined_img, self.datacubes[self.current_page].center)
         return lined_img
 
     def open_file_path(self):
         # todo : check all file have same dimension, size
-        self.current_files.clear()
+
+        load_paths = []
         if self.controlPanel.openFilePanel.radio_file.isChecked():
             path,_ = QtWidgets.QFileDialog.getOpenFileNames(self,'open')
             if len(path)==0:
                 return
-            self.current_files.extend(path)
+            load_paths.extend(path)
 
         elif self.controlPanel.openFilePanel.radio_folder.isChecked():
             path = QtWidgets.QFileDialog.getExistingDirectory(self,'open')
             if len(path)==0:
                 return
-            self.current_files.extend(file.get_file_list_from_path(path,'.mrc'))
+            load_paths.extend(file.get_file_list_from_path(path,'.mrc'))
+
         else:
             print("ERROR with open File")
             return
 
+        self.datacubes.clear()
+        self.datacubes.extend([DataCube(path) for path in load_paths])
         self.read_img(0)
-        self.center = np.zeros((len(self.current_files), 2))
-        self.controlPanel.openFilePanel.lbl_path.setText(str(self.current_files))
-        self.controlPanel.settingPanel.spinBox_center_x.setMaximum(self.img.shape[1])
-        self.controlPanel.settingPanel.spinBox_center_y.setMaximum(self.img.shape[0]) # todo : confusing x,y
+        self.controlPanel.openFilePanel.lbl_path.setText(str(load_paths))
 
     def btn_right_clicked(self):
-        if not self.current_page == len(self.current_files) - 1:
+        if not self.current_page == len(self.datacubes) - 1:
             self.read_img(self.current_page + 1)
 
     def btn_left_clicked(self):
@@ -263,32 +216,28 @@ class MainWindow(QtWidgets.QWidget):
             self.read_img(self.current_page - 1)
 
     def read_img(self,i):
+        self.datacubes[self.current_page].release()
         self.current_page = i
-        self.azavg = None
-        self.azvar = None
-        self.put_center_to_spinBoxes()
-        self.raw, self.img = file.load_mrc_img(self.current_files[self.current_page])
+        self.datacubes[i].ready()
         self.update_img()
-        self.imgPanel.lbl_current_num.setText(str(i+1)+"/"+str(len(self.current_files)))
-        self.setWindowTitle(self.current_files[self.current_page])
+        self.controlPanel.settingPanel.spinBox_center_x.setMaximum(self.datacubes[i].img.shape[0])  # todo : confusing x,y
+        self.controlPanel.settingPanel.spinBox_center_y.setMaximum(self.datacubes[i].img.shape[1])
 
-    def put_center_to_spinBoxes(self, center=None):
-        if not hasattr(self, 'center'):
-            return
+
+    def put_center_to_spinBoxes(self, center):
         self.controlPanel.settingPanel.spinBox_center_x.valueChanged.disconnect()
         self.controlPanel.settingPanel.spinBox_center_y.valueChanged.disconnect()
-        if center is not None:
-            self.center[self.current_page] = center
-        self.controlPanel.settingPanel.spinBox_center_x.setValue(self.center[self.current_page][0])
-        self.controlPanel.settingPanel.spinBox_center_y.setValue(self.center[self.current_page][1])
+        self.controlPanel.settingPanel.spinBox_center_x.setValue(center[0])
+        self.controlPanel.settingPanel.spinBox_center_y.setValue(center[1])
         self.controlPanel.settingPanel.spinBox_center_x.valueChanged.connect(self.update_img)
         self.controlPanel.settingPanel.spinBox_center_y.valueChanged.connect(self.update_img)
 
     def update_img(self):
-        if not hasattr(self,'img'):
+        if self.datacubes[self.current_page].img is None:
             return
-        img = self.img
-        if self.is_center_ready() and self.controlPanel.settingPanel.chkBox_show_centerLine.isChecked():
+        img = self.datacubes[self.current_page].img
+        if self.datacubes[self.current_page].center is not None and self.controlPanel.settingPanel.chkBox_show_centerLine.isChecked():
+            self.datacubes[self.current_page].center = [self.controlPanel.settingPanel.spinBox_center_x.value(),self.controlPanel.settingPanel.spinBox_center_y.value()] # todo: confusing x,y
             img = self.draw_center(img)
         if self.controlPanel.settingPanel.chkBox_show_beam_stopper_mask.isChecked():
             img = cv2.bitwise_and(img, img, mask=np.bitwise_not(image_process.mask))
