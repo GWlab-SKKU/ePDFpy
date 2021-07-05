@@ -15,6 +15,9 @@ def get_sample_img():
 def get_mask_data():
     return np.loadtxt('./assets/mask_data.txt',delimiter=',').astype(np.uint8)
 
+def get_sample_azimuthal_average():
+    return np.loadtxt('./assets/sample_azavg.csv',delimiter=',')
+
 def create_estimated_mask(center=None,radius=None):
     raw, img = get_sample_img()
     x1 = 900
@@ -53,4 +56,5 @@ if __name__ == '__main__':
     # mask = create_estimated_mask()
     # np.savetxt('./assets/mask_data.txt',mask,fmt='%i',delimiter=',')
 
-    print(settings['show_center_line']==True)
+    # print(settings['show_center_line']==True)
+    print(get_sample_azimuthal_average()[300])
