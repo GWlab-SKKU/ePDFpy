@@ -7,7 +7,7 @@ import image_process
 import util
 from datacube import DataCube
 from typing import List, Set, Dict, Tuple
-from eRDF_analyser import eRDF_analyser
+from rdf_analyse import rdf_analyse
 
 class DataViewer(QtWidgets.QMainWindow):
     def __init__(self, argv):
@@ -109,7 +109,7 @@ class MainWindow(QtWidgets.QWidget):
         self.controlPanel.operationPanel.btn_open_epdf_analyser.clicked.connect(self.show_erdf_analyser)
 
     def show_erdf_analyser(self):
-        self.eRDF_analyser = eRDF_analyser()
+        self.eRDF_analyser = rdf_analyse()
 
 
     def range_start_clicked(self):

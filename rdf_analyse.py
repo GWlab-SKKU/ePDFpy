@@ -1,7 +1,7 @@
 import typing
 
 from PyQt5 import QtCore, QtWidgets, QtGui
-class eRDF_analyser(QtWidgets.QWidget):
+class rdf_analyse(QtWidgets.QWidget):
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
         print("init")
