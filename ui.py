@@ -7,6 +7,7 @@ import image_process
 import util
 from datacube import DataCube
 from typing import List, Set, Dict, Tuple
+from eRDF_analyser import eRDF_analyser
 
 class DataViewer(QtWidgets.QMainWindow):
     def __init__(self, argv):
@@ -105,6 +106,11 @@ class MainWindow(QtWidgets.QWidget):
         self.graphPanel.button_start.clicked.connect(self.range_start_clicked)
         self.graphPanel.button_all.clicked.connect(self.range_all_clicked)
         self.graphPanel.button_end.clicked.connect(self.range_end_clicked)
+        self.controlPanel.operationPanel.btn_open_epdf_analyser.clicked.connect(self.show_erdf_analyser)
+
+    def show_erdf_analyser(self):
+        self.eRDF_analyser = eRDF_analyser()
+
 
     def range_start_clicked(self):
         left = self.controlPanel.settingPanel.spinBox_pixel_range_left.value()
@@ -386,12 +392,14 @@ class ControlPanel(QtWidgets.QWidget):
             self.btn_save_all_azimuthal = QtWidgets.QPushButton("save every azimuthal data")
             self.progress_bar = QtWidgets.QProgressBar()
             self.progress_bar.setValue(0)
+            self.btn_open_epdf_analyser = QtWidgets.QPushButton("Open eRDF analyser")
 
             layout.addWidget(self.btn_find_center, 0, 0)
             layout.addWidget(self.btn_get_azimuthal_avg, 0, 1)
             layout.addWidget(self.btn_save_current_azimuthal, 1, 0,1,2)
             layout.addWidget(self.btn_save_all_azimuthal, 2, 0,1,2)
             layout.addWidget(self.progress_bar,3,0,1,2)
+            layout.addWidget(self.btn_open_epdf_analyser,4,0,1,2)
 
             self.setLayout(layout)
 
