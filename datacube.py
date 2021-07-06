@@ -17,6 +17,9 @@ class DataCube:
         self.center = None
         self.azavg = None
         self.azvar = None
+        self.q_start_num = None
+        self.q_end_num = None
+        self.ds = None
 
     def ready(self):
         self.raw_img, self.img = file.load_mrc_img(self.file_path)

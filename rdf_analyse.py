@@ -1,6 +1,9 @@
 import typing
 from datacube import DataCube
 import pyqtgraph as pg
+import util
+import numpy as np
+import rdf_calculator
 
 from PyQt5 import QtCore, QtWidgets, QtGui
 class rdf_analyse(QtWidgets.QWidget):
@@ -8,27 +11,169 @@ class rdf_analyse(QtWidgets.QWidget):
         QtWidgets.QWidget.__init__(self)
         print("init")
         self.datacube = datacube
+        self.element_nums = []
+        self.ratio = []
+        self.instant_update = False
         self.initui()
+        self.binding()
 
 
     def initui(self):
         self.setMinimumSize(500, 500)
         self.layout = QtWidgets.QGridLayout()
-        self.layout.addWidget(QtWidgets.QPushButton("hello"))
         self.controlPanel = controlPanel()
-        self.graph_Iq = pg.plot()
-        self.graph_phiq = pg.plot()
-        self.graph_
+        self.graph_Iq = pg.PlotWidget(title='azimuthal average')
+        self.graph_phiq = pg.PlotWidget(title='azimuthal average')
+        self.graph_Gr = pg.PlotWidget(title='azimuthal average')
         self.layout.addWidget(self.controlPanel,0,0)
-        self.layout.addWidget(self.controlPanel,1,0)
+        self.layout.addWidget(self.graph_Iq,1,0)
+        self.layout.addWidget(self.graph_phiq, 0, 1)
+        self.layout.addWidget(self.graph_Gr, 1, 1)
         self.setLayout(self.layout)
         self.show()
 
+        self.graph_Iq.addLegend(offset=(-30, 30))
+        self.graph_phiq.addLegend(offset=(-30, 30))
+        self.graph_Gr.addLegend(offset=(-30, 30))
+
+        self.graph_Iq_Iq = self.graph_Iq.plot( pen=pg.mkPen(255, 0, 0, width=2), name='Iq')
+        self.graph_Iq_AutoFit = self.graph_Iq.plot( pen=pg.mkPen(0, 255, 0, width=2), name='AutoFit')
+        self.graph_phiq_phiq = self.graph_phiq.plot(pen=pg.mkPen(255, 0, 0, width=2), name='phiq')
+        self.graph_phiq_damp = self.graph_phiq.plot(pen=pg.mkPen(0, 255, 0, width=2), name='phiq_damp')
+        self.graph_Gr_Gr = self.graph_Gr.plot(pen=pg.mkPen(255, 0, 0, width=2), name='Gr')
+
     def update_graph(self):
-        pass
+        self.graph_Iq_Iq.setData(self.Iq)
+        self.graph_Iq_AutoFit.setData(self.Autofit)
+        self.graph_phiq_phiq.setData(self.phiq)
+        self.graph_phiq_damp.setData(self.phiq_damp)
+        self.graph_Gr_Gr.setData(self.Gr)
+
+    def binding(self):
+        self.controlPanel.fitting_factors.btn_auto_fit.clicked.connect(self.analyse)
+
+
+    def update_parameter(self):
+        # elements
+        for element_widget in self.controlPanel.fitting_elements.element_group_widgets: # todo: test
+            self.element_nums.append(element_widget.combobox.currentIndex())
+            self.ratio.append(element_widget.ratio.value())
+        self.fit_at_q = self.controlPanel.fitting_factors.spinbox_fit_at_q.value()
+        self.N = self.controlPanel.fitting_factors.spinbox_N.value()
+        self.damping = self.controlPanel.fitting_factors.spinbox_damping.value()
+        self.rmax = self.controlPanel.fitting_factors.spinbox_rmax.value()
+        self.dr = self.controlPanel.fitting_factors.spinbox_dr.value()
+        self.datacube.ds = self.controlPanel.fitting_factors.spinbox_ds.value()
+        self.is_full_q = self.controlPanel.fitting_factors.radio_full_range.isChecked()
+
+    def analyse(self):
+        self.update_parameter()
+        self.Iq, self.Autofit, self.phiq, self.phiq_damp, self.Gr, self.SS = rdf_calculator.calculation(
+            self.datacube.ds,
+            self.datacube.q_start_num,
+            self.datacube.q_end_num,
+            self.element_nums,
+            self.ratio,
+            self.datacube.azavg,
+            self.is_full_q,
+            self.damping,
+            self.rmax,
+            self.dr
+        )
+        self.update_graph()
+
 
 class controlPanel(QtWidgets.QWidget):
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
+        self.layout = QtWidgets.QVBoxLayout()
+        self.fitting_elements = self.FittingElements()
+        self.fitting_factors = self.FittingFactors()
+        self.layout.addWidget(self.fitting_elements)
+        self.layout.addWidget(self.fitting_factors)
+        self.layout.addStretch(1)
+        self.setLayout(self.layout)
+
+    class FittingElements(QtWidgets.QGroupBox):
+        def __init__(self):
+            QtWidgets.QGroupBox.__init__(self)
+            self.setTitle("Element")
+            layout = QtWidgets.QVBoxLayout()
+            self.element_group_widgets = [controlPanel.element_group("element" + str(num)) for num in range(1, 6)]
+            for element_group_widgets in self.element_group_widgets:
+                layout.addWidget(element_group_widgets)
+            self.setLayout(layout)
+
+    class FittingFactors(QtWidgets.QGroupBox):
+        def __init__(self):
+            QtWidgets.QGroupBox.__init__(self)
+            self.setTitle("Factors")
+            layout = QtWidgets.QGridLayout()
+
+            lbl_calibration_factor = QtWidgets.QLabel("Calibration factors")
+            self.spinbox_ds = QtWidgets.QDoubleSpinBox()
+            layout.addWidget(lbl_calibration_factor,0,0)
+            layout.addWidget(self.spinbox_ds,0,3)
+
+            lbl_fitting_q_range = QtWidgets.QLabel("Fitting Q Range")
+            self.radio_full_range = QtWidgets.QRadioButton("full range")
+            self.radio_tail = QtWidgets.QRadioButton("tail")
+            layout.addWidget(lbl_fitting_q_range,1,0,1,2)
+            layout.addWidget(self.radio_full_range, 1,2)
+            layout.addWidget(self.radio_tail,1,3)
+
+            self.btn_auto_fit = QtWidgets.QPushButton("Auto Fit")
+            layout.addWidget(self.btn_auto_fit,2,0,1,4)
+
+            lbl_fit_at_q = QtWidgets.QLabel("Fit at q")
+            self.spinbox_fit_at_q = QtWidgets.QDoubleSpinBox()
+            layout.addWidget(lbl_fit_at_q,3,0,1,2)
+            layout.addWidget(self.spinbox_fit_at_q, 3, 2, 1, 2)
+            lbl_N = QtWidgets.QLabel("N")
+            self.spinbox_N = QtWidgets.QDoubleSpinBox()
+            layout.addWidget(lbl_N,4,0,1,2)
+            layout.addWidget(self.spinbox_N, 4, 2, 1, 2)
+            lbl_damping = QtWidgets.QLabel("Damping")
+            self.spinbox_damping = QtWidgets.QDoubleSpinBox()
+            layout.addWidget(lbl_damping,5,0,1,2)
+            layout.addWidget(self.spinbox_damping, 5, 2, 1, 2)
+            lbl_rmax = QtWidgets.QLabel("r(max)")
+            self.spinbox_rmax = QtWidgets.QDoubleSpinBox()
+            layout.addWidget(lbl_rmax,6,0,1,2)
+            layout.addWidget(self.spinbox_rmax, 6, 2, 1, 2)
+            lbl_dr = QtWidgets.QLabel("dr")
+            self.spinbox_dr = QtWidgets.QDoubleSpinBox()
+            layout.addWidget(lbl_dr,7,0,1,2)
+            layout.addWidget(self.spinbox_dr, 7, 2, 1, 2)
+            self.btn_manual_fit = QtWidgets.QPushButton("Manual Fit")
+            layout.addWidget(self.btn_manual_fit,8,0,1,4)
+
+            lbl_instant_update = QtWidgets.QLabel("instant update")
+            self.chkbox_instant_update = QtWidgets.QCheckBox()
+            layout.addWidget(lbl_instant_update, 9,0)
+            layout.addWidget(self.chkbox_instant_update, 9, 1)
+
+            self.spinbox_dr.setValue(float(util.settings["default_dr"]))
+            self.spinbox_rmax.setValue(float(util.settings["default_rmax"]))
+            self.spinbox_damping.setValue(float(util.settings["default_damping"]))
 
 
+
+            self.setLayout(layout)
+
+
+
+
+    class element_group(QtWidgets.QWidget):
+        def __init__(self, label:str):
+            QtWidgets.QWidget.__init__(self)
+            layout = QtWidgets.QHBoxLayout()
+            lbl = QtWidgets.QLabel(label)
+            self.combobox = QtWidgets.QComboBox()
+            self.combobox.addItems(util.get_atomic_number_symbol())
+            # todo: combobox
+            self.ratio = QtWidgets.QSpinBox()
+            layout.addWidget(lbl)
+            layout.addWidget(self.combobox)
+            layout.addWidget(self.ratio)
+            self.setLayout(layout)

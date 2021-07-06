@@ -5,6 +5,7 @@ import json
 import inspect
 import os
 from pathlib import Path
+import pandas as pd
 
 settings = json.load(open("settings.json"))
 
@@ -51,10 +52,28 @@ def create_estimated_mask(center=None,radius=None):
 def save_settings(settings_to_save):
     json.dump(settings_to_save, open("settings.json", 'w'), indent=2)
 
+lst_atomic_number_symbol = None
+def get_atomic_number_symbol():
+    global lst_atomic_number_symbol
+    if lst_atomic_number_symbol is None:
+        df_atomic_number_symbol = pd.read_csv("assets/Parameter_files/atomicNumber-symbol.csv")
+        lst_atomic_number_symbol = df_atomic_number_symbol['title'].tolist()
+        lst_atomic_number_symbol.insert(0,"None")
+    return lst_atomic_number_symbol
+
+np_kirkland = None
+def get_kirkland_2010():
+    global np_kirkland
+    if np_kirkland is None:
+        np_kirkland = np.loadtxt("assets/Parameter_files/Kirkland_2010.txt")
+    return np_kirkland
+
+
 
 if __name__ == '__main__':
     # mask = create_estimated_mask()
     # np.savetxt('./assets/mask_data.txt',mask,fmt='%i',delimiter=',')
 
     # print(settings['show_center_line']==True)
-    print(get_sample_azimuthal_average()[300])
+    print(get_atomic_number_symbol())
+

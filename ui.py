@@ -109,7 +109,9 @@ class MainWindow(QtWidgets.QWidget):
         self.controlPanel.operationPanel.btn_open_epdf_analyser.clicked.connect(self.show_erdf_analyser)
 
     def show_erdf_analyser(self):
-        self.eRDF_analyser = rdf_analyse()
+        self.datacubes[self.current_page].q_start_num = self.controlPanel.settingPanel.spinBox_pixel_range_left.value()
+        self.datacubes[self.current_page].q_end_num = self.controlPanel.settingPanel.spinBox_pixel_range_right.value()
+        self.eRDF_analyser = rdf_analyse(self.datacubes[self.current_page])
 
 
     def range_start_clicked(self):
