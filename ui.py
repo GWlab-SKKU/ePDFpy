@@ -8,6 +8,7 @@ import util
 from datacube import DataCube
 from typing import List, Set, Dict, Tuple
 from rdf_analyse import rdf_analyse
+import rdf_calculator
 
 class DataViewer(QtWidgets.QMainWindow):
     def __init__(self, argv):
@@ -108,6 +109,7 @@ class MainWindow(QtWidgets.QWidget):
         self.graphPanel.button_end.clicked.connect(self.range_end_clicked)
         self.controlPanel.operationPanel.btn_open_epdf_analyser.clicked.connect(self.show_erdf_analyser)
 
+
     def show_erdf_analyser(self):
         self.datacubes[self.current_page].q_start_num = self.controlPanel.settingPanel.spinBox_pixel_range_left.value()
         self.datacubes[self.current_page].q_end_num = self.controlPanel.settingPanel.spinBox_pixel_range_right.value()
@@ -166,11 +168,12 @@ class MainWindow(QtWidgets.QWidget):
         self.controlPanel.settingPanel.spinBox_pixel_range_right.setMaximum(len(self.azavg))
         self.controlPanel.settingPanel.spinBox_pixel_range_left.setMaximum(len(self.azavg))
 
-        left = 0
-        for i in range(len(self.azavg)):
-            if int(self.azavg[i]) != 0 :
-                left = i
-                break
+        left = rdf_calculator.find_first_peak(self.azavg)
+        # left = 0
+        # for i in range(len(self.azavg)):
+        #     if int(self.azavg[i]) != 0 :
+        #         left = i
+        #         break
         self.graphPanel.region.setRegion([left, len(self.azavg)-1])
 
     def find_center(self):
@@ -257,6 +260,12 @@ class MainWindow(QtWidgets.QWidget):
         right = self.controlPanel.settingPanel.spinBox_pixel_range_right.value()
         self.graphPanel.region.setRegion([left,right])
         self.flag_range_update = False
+        if hasattr(self.datacubes[self.current_page],"analyser"):
+            print("instant update")
+            self.datacubes[self.current_page].q_start_num = int(left)
+            self.datacubes[self.current_page].q_end_num = int(right)
+            self.datacubes[self.current_page].analyser.instantfit()
+
 
     def range_to_dialog(self):
         if self.flag_range_update:
@@ -270,6 +279,11 @@ class MainWindow(QtWidgets.QWidget):
         self.graphPanel.region.sigRegionChangeFinished.connect(self.range_to_dialog)
         self.controlPanel.settingPanel.spinBox_pixel_range_left.setValue(left)
         self.controlPanel.settingPanel.spinBox_pixel_range_right.setValue(right)
+        if hasattr(self.datacubes[self.current_page],"analyser"):
+            print("instant update2")
+            self.datacubes[self.current_page].q_start_num = int(left)
+            self.datacubes[self.current_page].q_end_num = int(right)
+            self.datacubes[self.current_page].analyser.instantfit()
 
 
 class ControlPanel(QtWidgets.QWidget):

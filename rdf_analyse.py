@@ -16,6 +16,7 @@ class rdf_analyse(QtWidgets.QWidget):
         self.instant_update = False
         self.initui()
         self.binding()
+        self.datacube.analyser = self
 
 
     def initui(self):
@@ -50,7 +51,14 @@ class rdf_analyse(QtWidgets.QWidget):
         self.graph_Gr_Gr.setData(self.Gr)
 
     def binding(self):
-        self.controlPanel.fitting_factors.btn_auto_fit.clicked.connect(self.analyse)
+        self.controlPanel.fitting_factors.btn_auto_fit.clicked.connect(self.autofit)
+        self.controlPanel.fitting_factors.btn_manual_fit.clicked.connect(self.manualfit)
+        self.controlPanel.fitting_factors.spinbox_N.valueChanged.connect(self.instantfit)
+        self.controlPanel.fitting_factors.spinbox_dr.valueChanged.connect(self.instantfit)
+        self.controlPanel.fitting_factors.spinbox_rmax.valueChanged.connect(self.instantfit)
+        self.controlPanel.fitting_factors.spinbox_damping.valueChanged.connect(self.instantfit)
+        self.controlPanel.fitting_factors.spinbox_fit_at_q.valueChanged.connect(self.instantfit)
+        self.controlPanel.fitting_factors.spinbox_ds.valueChanged.connect(self.instantfit)
 
 
     def update_parameter(self):
@@ -66,9 +74,9 @@ class rdf_analyse(QtWidgets.QWidget):
         self.datacube.ds = self.controlPanel.fitting_factors.spinbox_ds.value()
         self.is_full_q = self.controlPanel.fitting_factors.radio_full_range.isChecked()
 
-    def analyse(self):
+    def autofit(self):
         self.update_parameter()
-        self.Iq, self.Autofit, self.phiq, self.phiq_damp, self.Gr, self.SS = rdf_calculator.calculation(
+        self.Iq, self.Autofit, self.phiq, self.phiq_damp, self.Gr, self.SS, self.fit_at_q, self.N = rdf_calculator.calculation(
             self.datacube.ds,
             self.datacube.q_start_num,
             self.datacube.q_end_num,
@@ -79,6 +87,48 @@ class rdf_analyse(QtWidgets.QWidget):
             self.damping,
             self.rmax,
             self.dr
+        )
+        self.controlPanel.fitting_factors.spinbox_fit_at_q.setValue(self.fit_at_q)
+        self.controlPanel.fitting_factors.spinbox_N.setValue(self.N)
+        # todo: add SS
+        self.update_graph()
+
+    def manualfit(self):
+        self.update_parameter()
+        self.Iq, self.Autofit, self.phiq, self.phiq_damp, self.Gr, self.SS, self.fit_at_q, self.N = rdf_calculator.calculation(
+            self.datacube.ds,
+            self.datacube.q_start_num,
+            self.datacube.q_end_num,
+            self.element_nums,
+            self.ratio,
+            self.datacube.azavg,
+            self.is_full_q,
+            self.damping,
+            self.rmax,
+            self.dr,
+            self.fit_at_q,
+            self.N
+        )
+        self.update_graph()
+
+    def instantfit(self):
+        if not self.controlPanel.fitting_factors.chkbox_instant_update.isChecked():
+            print("not checked")
+            return
+        self.update_parameter()
+        self.Iq, self.Autofit, self.phiq, self.phiq_damp, self.Gr, self.SS, self.fit_at_q, self.N = rdf_calculator.calculation(
+            self.datacube.ds,
+            self.datacube.q_start_num,
+            self.datacube.q_end_num,
+            self.element_nums,
+            self.ratio,
+            self.datacube.azavg,
+            self.is_full_q,
+            self.damping,
+            self.rmax,
+            self.dr,
+            self.fit_at_q,
+            self.N
         )
         self.update_graph()
 
@@ -114,6 +164,11 @@ class controlPanel(QtWidgets.QWidget):
             self.spinbox_ds = QtWidgets.QDoubleSpinBox()
             layout.addWidget(lbl_calibration_factor,0,0)
             layout.addWidget(self.spinbox_ds,0,3)
+            self.spinbox_ds.setDecimals(5)
+            self.spinbox_ds.setValue(0.001)
+            self.spinbox_ds.setSingleStep(0.001)
+            self.spinbox_ds.setMaximum(1)
+
 
             lbl_fitting_q_range = QtWidgets.QLabel("Fitting Q Range")
             self.radio_full_range = QtWidgets.QRadioButton("full range")
@@ -121,16 +176,19 @@ class controlPanel(QtWidgets.QWidget):
             layout.addWidget(lbl_fitting_q_range,1,0,1,2)
             layout.addWidget(self.radio_full_range, 1,2)
             layout.addWidget(self.radio_tail,1,3)
+            self.radio_full_range.setChecked(True)
 
             self.btn_auto_fit = QtWidgets.QPushButton("Auto Fit")
             layout.addWidget(self.btn_auto_fit,2,0,1,4)
 
             lbl_fit_at_q = QtWidgets.QLabel("Fit at q")
             self.spinbox_fit_at_q = QtWidgets.QDoubleSpinBox()
+            self.spinbox_fit_at_q.setMaximum(100000)
             layout.addWidget(lbl_fit_at_q,3,0,1,2)
             layout.addWidget(self.spinbox_fit_at_q, 3, 2, 1, 2)
             lbl_N = QtWidgets.QLabel("N")
             self.spinbox_N = QtWidgets.QDoubleSpinBox()
+            self.spinbox_N.setMaximum(100000)
             layout.addWidget(lbl_N,4,0,1,2)
             layout.addWidget(self.spinbox_N, 4, 2, 1, 2)
             lbl_damping = QtWidgets.QLabel("Damping")
