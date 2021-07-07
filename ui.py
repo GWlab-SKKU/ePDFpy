@@ -151,16 +151,19 @@ class MainWindow(QtWidgets.QWidget):
             .save_azimuthal_data(intensity_start=self.controlPanel.settingPanel.spinBox_irange1.value(),
                                  intensity_end=self.controlPanel.settingPanel.spinBox_irange2.value(),
                                  intensity_slice=self.controlPanel.settingPanel.spinBox_slice_count.value(),
-                                 imageView=self.imgPanel.imageView)
+                                 imgPanel=self.imgPanel,
+                                 draw_center_line=self.controlPanel.settingPanel.chkBox_show_centerLine.isChecked(),
+                                 masking=self.controlPanel.settingPanel.chkBox_show_beam_stopper_mask.isChecked()
+                                 )
 
     def save_all_azimuthal(self):
-        for i in range(len(self.datacubes[self.current_page])):
+        for i in range(len(self.datacubes)):
             print("processing auto_save azimuthal values", self.datacubes[self.current_page].file_path)
             self.read_img(i)
-            self.datacubes[i].save_azimuthal_data()
+            # self.datacubes[i].save_azimuthal_data()
             self.save_current_azimuthal()
-            self.controlPanel.operationPanel.progress_bar.setValue((i+1)/len(self.current_files))
-        self.controlPanel.operationPanel.progress_bar.setValue(0)
+        #     self.controlPanel.operationPanel.progress_bar.setValue((i+1)/len(self.datacubes))
+        # self.controlPanel.operationPanel.progress_bar.setValue(0)
 
     def get_azimuthal_value(self):
         self.azavg, self.azvar = self.datacubes[self.current_page].calculate_azimuthal_average()
@@ -229,6 +232,7 @@ class MainWindow(QtWidgets.QWidget):
     def read_img(self,i):
         self.datacubes[self.current_page].release()
         self.current_page = i
+        self.imgPanel.lbl_current_num.setText(str(self.current_page+1)+"/"+str(len(self.datacubes)))
         self.datacubes[i].ready()
         self.update_img()
         self.controlPanel.settingPanel.spinBox_center_x.setMaximum(self.datacubes[i].img.shape[0])  # todo : confusing x,y
@@ -439,14 +443,15 @@ class ImgPanel(QtWidgets.QWidget):
         self.setMinimumHeight(500)
         self.setLayout(layout)
         self._current_data = None
+        self.cmap = pg.ColorMap(np.linspace(0, 1, len(image_process.colorcube)), color=image_process.colorcube)
     def update_img(self,img):
-        cmap = pg.ColorMap(np.linspace(0,1,len(image_process.colorcube)),color=image_process.colorcube)
-        self.imageView.setColorMap(cmap)
+        self.imageView.setColorMap(self.cmap)
         self._current_data = img
         if len(img.shape) == 2:
             self.imageView.setImage(self._current_data.transpose(1,0))
         if len(img.shape) == 3:
             self.imageView.setImage(self._current_data.transpose(1,0,2))
+
     def get_img(self):
         return self._current_data
 

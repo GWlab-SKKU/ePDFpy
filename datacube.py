@@ -1,6 +1,8 @@
 import file
 import image_process
 import os
+import cv2
+import numpy as np
 
 class DataCube:
     _use_cupy = False
@@ -41,7 +43,7 @@ class DataCube:
             self.azavg, self.azvar = image_process.calculate_azimuthal_average(self.raw_img, self.center)
         return self.azavg, self.azvar
 
-    def save_azimuthal_data(self, intensity_start, intensity_end, intensity_slice, imageView=None):
+    def save_azimuthal_data(self, intensity_start, intensity_end, intensity_slice, imgPanel=None, draw_center_line=False, masking=False):
         if self.center is None:
             self.calculate_center((intensity_start, intensity_end), intensity_slice)
         if self.azavg is None:
@@ -54,6 +56,14 @@ class DataCube:
         folder_path, file_full_name = os.path.split(self.file_path)
         file_name, ext = os.path.splitext(file_full_name)
 
-        if imageView is not None:
+
+        if masking == True:
+            update_img = cv2.bitwise_and(self.img, self.img, mask=np.bitwise_not(image_process.mask))
+
+        if draw_center_line == True:
+            update_img = image_process.draw_center_line(update_img, self.center)
+            imgPanel.update_img(update_img)
+
+        if imgPanel is not None:
             img_file_path = os.path.join(folder_path, file.analysis_folder_name, file_name+"_img.tiff")
-            self.imgPanel.imageView.export(img_file_path)
+            imgPanel.imageView.export(img_file_path)
