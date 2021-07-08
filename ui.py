@@ -189,9 +189,7 @@ class MainWindow(QtWidgets.QWidget):
         # you must use self.draw_center() after find_center
         return center
 
-    def draw_center(self, img):
-        self.datacubes[self.current_page].center[0] = self.controlPanel.settingPanel.spinBox_center_x.value()
-        self.datacubes[self.current_page].center[1] = self.controlPanel.settingPanel.spinBox_center_y.value()
+    def draw_center(self, img): # todo: remove
         lined_img = img.copy()
         image_process.draw_center_line(lined_img, self.datacubes[self.current_page].center)
         return lined_img
@@ -240,22 +238,22 @@ class MainWindow(QtWidgets.QWidget):
 
 
     def put_center_to_spinBoxes(self, center):
-        self.controlPanel.settingPanel.spinBox_center_x.valueChanged.disconnect()
-        self.controlPanel.settingPanel.spinBox_center_y.valueChanged.disconnect()
+        self.controlPanel.settingPanel.spinBox_center_x.blockSignals(True)
+        self.controlPanel.settingPanel.spinBox_center_y.blockSignals(True)
         self.controlPanel.settingPanel.spinBox_center_x.setValue(center[0])
         self.controlPanel.settingPanel.spinBox_center_y.setValue(center[1])
-        self.controlPanel.settingPanel.spinBox_center_x.valueChanged.connect(self.update_img)
-        self.controlPanel.settingPanel.spinBox_center_y.valueChanged.connect(self.update_img)
+        self.controlPanel.settingPanel.spinBox_center_x.blockSignals(False)
+        self.controlPanel.settingPanel.spinBox_center_y.blockSignals(False)
 
     def update_img(self):
         if self.datacubes[self.current_page].img is None:
             return
-        img = self.datacubes[self.current_page].img
-        if self.datacubes[self.current_page].center is not None and self.controlPanel.settingPanel.chkBox_show_centerLine.isChecked():
-            self.datacubes[self.current_page].center = [self.controlPanel.settingPanel.spinBox_center_x.value(),self.controlPanel.settingPanel.spinBox_center_y.value()] # todo: confusing x,y
-            img = self.draw_center(img)
+        img = self.datacubes[self.current_page].img.copy()
         if self.controlPanel.settingPanel.chkBox_show_beam_stopper_mask.isChecked():
             img = cv2.bitwise_and(img, img, mask=np.bitwise_not(image_process.mask))
+        if self.datacubes[self.current_page].center is not None and self.controlPanel.settingPanel.chkBox_show_centerLine.isChecked():
+            self.put_center_to_spinBoxes(self.datacubes[self.current_page].center)
+            img = image_process.draw_center_line(img,self.datacubes[self.current_page].center)
         self.imgPanel.update_img(img)
 
     def dialog_to_range(self):

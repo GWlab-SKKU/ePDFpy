@@ -19,9 +19,10 @@ def draw_center_line(img, center):
     c_x, c_y = center
     c_x = int(c_x)
     c_y = int(c_y)
-    cv2.line(img, (c_x, 0), (c_x, img.shape[0]), 255, 5)
-    cv2.line(img, (0, c_y), (img.shape[1], c_y), 255, 5)
-    return img
+    rs = img.copy()
+    cv2.line(rs, (c_x, 0), (c_x, rs.shape[0]), 255, 5)
+    cv2.line(rs, (0, c_y), (rs.shape[1], c_y), 255, 5)
+    return rs
 
 
 def calculate_center(img, intensity_range, step_size):

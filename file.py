@@ -39,11 +39,11 @@ def save_current_azimuthal(data:np.ndarray,current_file_path,azavg,i_slice=None)
             print('Failed to make directory:',analysis_folder)
             return
     if azavg:
-        path_save = os.path.join(analysis_folder, current_file_name + "_azav")
+        path_save = os.path.join(analysis_folder, current_file_name + " azav")
     else:
-        path_save = os.path.join(analysis_folder, current_file_name + "_azvar")
+        path_save = os.path.join(analysis_folder, current_file_name + " azvar")
     if i_slice:
-        path_save = path_save+"_"+str(i_slice[0])+"to"+str(i_slice[1])+"_"+str(i_slice[2])
+        path_save = path_save+" center"+str(i_slice[0])+"to"+str(i_slice[1])+"_"+str(i_slice[2])
 
     # add extension
     path_save = path_save+".txt"
