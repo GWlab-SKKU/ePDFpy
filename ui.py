@@ -95,8 +95,8 @@ class MainWindow(QtWidgets.QWidget):
         self.imgPanel.btn_left.clicked.connect(self.btn_left_clicked)
         self.imgPanel.btn_right.clicked.connect(self.btn_right_clicked)
         self.controlPanel.operationPanel.btn_get_azimuthal_avg.clicked.connect(self.get_azimuthal_value)
-        self.controlPanel.settingPanel.spinBox_center_x.valueChanged.connect(self.update_img)
-        self.controlPanel.settingPanel.spinBox_center_y.valueChanged.connect(self.update_img)
+        self.controlPanel.settingPanel.spinBox_center_x.valueChanged.connect(self.spinbox_changed_event)
+        self.controlPanel.settingPanel.spinBox_center_y.valueChanged.connect(self.spinbox_changed_event)
         self.controlPanel.operationPanel.btn_save_current_azimuthal.clicked.connect(self.save_current_azimuthal)
         self.controlPanel.operationPanel.btn_save_all_azimuthal.clicked.connect(self.save_all_azimuthal)
         self.controlPanel.settingPanel.chkBox_show_centerLine.stateChanged.connect(self.update_img)
@@ -109,6 +109,11 @@ class MainWindow(QtWidgets.QWidget):
         self.graphPanel.button_end.clicked.connect(self.range_end_clicked)
         self.controlPanel.operationPanel.btn_open_epdf_analyser.clicked.connect(self.show_erdf_analyser)
 
+    def spinbox_changed_event(self):
+        x = self.controlPanel.settingPanel.spinBox_center_x.value()
+        y = self.controlPanel.settingPanel.spinBox_center_y.value()
+        self.datacubes[self.current_page].center = (x,y)
+        self.update_img()
 
     def show_erdf_analyser(self):
         self.datacubes[self.current_page].q_start_num = self.controlPanel.settingPanel.spinBox_pixel_range_left.value()
@@ -233,9 +238,9 @@ class MainWindow(QtWidgets.QWidget):
         self.imgPanel.lbl_current_num.setText(str(self.current_page+1)+"/"+str(len(self.datacubes)))
         self.datacubes[i].ready()
         self.update_img()
+        self.setWindowTitle(self.datacubes[self.current_page].file_path)
         self.controlPanel.settingPanel.spinBox_center_x.setMaximum(self.datacubes[i].img.shape[0])  # todo : confusing x,y
         self.controlPanel.settingPanel.spinBox_center_y.setMaximum(self.datacubes[i].img.shape[1])
-
 
     def put_center_to_spinBoxes(self, center):
         self.controlPanel.settingPanel.spinBox_center_x.blockSignals(True)
@@ -267,7 +272,6 @@ class MainWindow(QtWidgets.QWidget):
             self.datacubes[self.current_page].q_start_num = int(left)
             self.datacubes[self.current_page].q_end_num = int(right)
             self.datacubes[self.current_page].analyser.instantfit()
-
 
     def range_to_dialog(self):
         if self.flag_range_update:
