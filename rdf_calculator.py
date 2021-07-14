@@ -79,7 +79,7 @@ def KirklandFactors(s2, paramK_element):
                 np.exp(-s2 * d3) * c3)
     return np.array(f)
 
-def find_first_peak(azavg):
+def find_first_peak(azavg, derivative=0):
     # flattening
     first_peak_idx = 1
     for i in range(len(azavg)):
@@ -92,19 +92,25 @@ def find_first_peak(azavg):
     azavg2 = azavg.copy()
     azavg2[range_slice] = filtered_part
 
+    # first order
     x = azavg2[0:int(len(azavg) * 0.3)]
     low_peaks, _ = find_peaks(-x, distance=20)
 
-    if len(low_peaks) >= 0 :
-        if low_peaks[0] < int(len(azavg) * 0.3):
-            return low_peaks[0]
+    if len(low_peaks) > 0 and (derivative is not 2):
+        return low_peaks[0]
+    if derivative == 1:
+        return None
+
+    # second order
     else:
         x = np.gradient(azavg2, 0.1)
-        peaks, _ = find_peaks(x, distance=20)
+        # peaks, _ = find_peaks(x, distance=20)
         low_peaks, _ = find_peaks(-x, distance=20)
 
-        peaks = peaks[azavg2[peaks] != 0]
+        # peaks = peaks[azavg2[peaks] != 0]
         low_peaks = low_peaks[azavg2[low_peaks] != 0]
 
-        return low_peaks[0]
-
+        if len(low_peaks) > 0:
+            return low_peaks[0]
+        else:
+            return None

@@ -6,6 +6,8 @@ import inspect
 import os
 from pathlib import Path
 import pandas as pd
+from PIL import Image
+
 
 settings = json.load(open("settings.json"))
 
@@ -68,7 +70,41 @@ def get_kirkland_2010():
         np_kirkland = np.loadtxt("assets/Parameter_files/Kirkland_2010.txt")
     return np_kirkland
 
+def load_previous_dc_azavg(dc):
+    current_folder, current_file_full_name = os.path.split(dc.file_path)
+    current_file_name, current_ext = os.path.splitext(current_file_full_name)
+    analysis_folder = os.path.join(current_folder, "Analysis pdf_tools") # todo: temp
 
+    path_save = os.path.join(analysis_folder, current_file_name + " azav")
+
+    i_slice = [settings['intensity_range_1'],settings['intensity_range_2'],settings['slice_count']]
+    if i_slice:
+        path_save = path_save + " center" + str(i_slice[0]) + "to" + str(i_slice[1]) + "_" + str(i_slice[2])
+
+    # add extension
+    path_save = path_save + ".txt"
+
+    if not os.path.isfile(path_save):
+        print('There is no such file:', path_save)
+        return
+    dc.azavg = np.loadtxt(path_save)
+    return dc.azavg
+
+def load_previous_tiff(dc):
+    current_folder, current_file_full_name = os.path.split(dc.file_path)
+    current_file_name, current_ext = os.path.splitext(current_file_full_name)
+    analysis_folder = os.path.join(current_folder, "Analysis pdf_tools")  # todo: temp
+
+    path_save = os.path.join(analysis_folder, current_file_name + "_img.tiff")
+
+    if not os.path.isfile(path_save):
+        print('There is no such file:', path_save)
+        return
+    dc.display_img = np.array(Image.open(path_save))
+    return dc.display_img
+
+def get_multiple_dc(folder_path):
+    pass
 
 if __name__ == '__main__':
     # mask = create_estimated_mask()
@@ -76,4 +112,3 @@ if __name__ == '__main__':
 
     # print(settings['show_center_line']==True)
     print(get_atomic_number_symbol())
-
