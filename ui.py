@@ -10,6 +10,7 @@ from typing import List, Set, Dict, Tuple
 from rdf_analyse import rdf_analyse
 import rdf_calculator
 
+
 class DataViewer(QtWidgets.QMainWindow):
     def __init__(self, argv):
         self.qtapp = QtWidgets.QApplication.instance()
@@ -87,7 +88,6 @@ class MainWindow(QtWidgets.QWidget):
             self.btn_left_clicked()
         if e.key() == QtCore.Qt.Key.Key_PageDown:
             self.btn_right_clicked()
-
 
     def btn_binding(self):
         self.controlPanel.openFilePanel.btn_path.clicked.connect(self.open_file_path)

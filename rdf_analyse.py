@@ -4,6 +4,7 @@ import pyqtgraph as pg
 import util
 import numpy as np
 import rdf_calculator
+from PyQt5.QtWidgets import QMessageBox
 
 from PyQt5 import QtCore, QtWidgets, QtGui
 class rdf_analyse(QtWidgets.QWidget):
@@ -21,17 +22,19 @@ class rdf_analyse(QtWidgets.QWidget):
 
     def initui(self):
         self.setMinimumSize(500, 500)
-        self.layout = QtWidgets.QGridLayout()
-        self.controlPanel = controlPanel()
-        self.graph_Iq = pg.PlotWidget(title='azimuthal average')
-        self.graph_phiq = pg.PlotWidget(title='azimuthal average')
-        self.graph_Gr = pg.PlotWidget(title='azimuthal average')
-        self.layout.addWidget(self.controlPanel,0,0)
-        self.layout.addWidget(self.graph_Iq,1,0)
-        self.layout.addWidget(self.graph_phiq, 0, 1)
-        self.layout.addWidget(self.graph_Gr, 1, 1)
+        self.layout = QtWidgets.QHBoxLayout()
+        self.controlPanel = ControlPanel()
+        self.graphPanel = GraphPanel()
+
+        self.layout.addWidget(self.controlPanel)
+        self.layout.addWidget(self.graphPanel)
+        self.layout.setStretch(1, 1)
         self.setLayout(self.layout)
         self.show()
+
+        self.graph_Iq = self.graphPanel.graph_Iq
+        self.graph_phiq = self.graphPanel.graph_phiq
+        self.graph_Gr = self.graphPanel.graph_Gr
 
         self.graph_Iq.addLegend(offset=(-30, 30))
         self.graph_phiq.addLegend(offset=(-30, 30))
@@ -60,7 +63,6 @@ class rdf_analyse(QtWidgets.QWidget):
         self.controlPanel.fitting_factors.spinbox_fit_at_q.valueChanged.connect(self.instantfit)
         self.controlPanel.fitting_factors.spinbox_ds.valueChanged.connect(self.instantfit)
 
-
     def update_parameter(self):
         # elements
         for element_widget in self.controlPanel.fitting_elements.element_group_widgets: # todo: test
@@ -75,6 +77,8 @@ class rdf_analyse(QtWidgets.QWidget):
         self.is_full_q = self.controlPanel.fitting_factors.radio_full_range.isChecked()
 
     def autofit(self):
+        if self.check_condition():
+            return
         self.update_parameter()
         self.Iq, self.Autofit, self.phiq, self.phiq_damp, self.Gr, self.SS, self.fit_at_q, self.N = rdf_calculator.calculation(
             self.datacube.ds,
@@ -88,12 +92,15 @@ class rdf_analyse(QtWidgets.QWidget):
             self.rmax,
             self.dr
         )
+
         self.controlPanel.fitting_factors.spinbox_fit_at_q.setValue(self.fit_at_q)
         self.controlPanel.fitting_factors.spinbox_N.setValue(self.N)
         # todo: add SS
         self.update_graph()
 
     def manualfit(self):
+        if self.check_condition():
+            return
         self.update_parameter()
         self.Iq, self.Autofit, self.phiq, self.phiq_damp, self.Gr, self.SS, self.fit_at_q, self.N = rdf_calculator.calculation(
             self.datacube.ds,
@@ -132,8 +139,35 @@ class rdf_analyse(QtWidgets.QWidget):
         )
         self.update_graph()
 
+    def check_condition(self):
+        if self.datacube.azavg is None:
+            QMessageBox.about(self, "info", "azimuthally averaged intensity is not calculated yet.")
 
-class controlPanel(QtWidgets.QWidget):
+        return True
+
+class GraphPanel(QtWidgets.QWidget):
+    def __init__(self):
+        QtWidgets.QWidget.__init__(self)
+        self.layout = QtWidgets.QVBoxLayout()
+        self.graph_Iq = pg.PlotWidget(title='I(q)')
+        self.graph_phiq = pg.PlotWidget(title='Φ(q)')
+        self.graph_Gr = pg.PlotWidget(title='G(r)')
+
+        # self.layout.addWidget(self.graph_Iq)
+        # self.layout.addWidget(self.graph_phiq)
+        # self.layout.addWidget(self.graph_Gr)
+
+
+        self.splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        self.splitter.addWidget(self.graph_Iq)
+        self.splitter.addWidget(self.graph_phiq)
+        self.splitter.addWidget(self.graph_Gr)
+
+        self.layout.addWidget(self.splitter)
+        self.setLayout(self.layout)
+
+
+class ControlPanel(QtWidgets.QWidget):
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
         self.layout = QtWidgets.QVBoxLayout()
@@ -149,9 +183,12 @@ class controlPanel(QtWidgets.QWidget):
             QtWidgets.QGroupBox.__init__(self)
             self.setTitle("Element")
             layout = QtWidgets.QVBoxLayout()
-            self.element_group_widgets = [controlPanel.element_group("element" + str(num)) for num in range(1, 6)]
+            layout.setSpacing(0)
+            layout.setContentsMargins(0,0,0,0)
+            self.element_group_widgets = [ControlPanel.element_group("element" + str(num)) for num in range(1, 6)]
             for element_group_widgets in self.element_group_widgets:
                 layout.addWidget(element_group_widgets)
+                element_group_widgets.setContentsMargins(0,0,0,0)
             self.setLayout(layout)
 
     class FittingFactors(QtWidgets.QGroupBox):
@@ -215,17 +252,13 @@ class controlPanel(QtWidgets.QWidget):
             self.spinbox_rmax.setValue(float(util.settings["default_rmax"]))
             self.spinbox_damping.setValue(float(util.settings["default_damping"]))
 
-
-
             self.setLayout(layout)
-
-
-
 
     class element_group(QtWidgets.QWidget):
         def __init__(self, label:str):
             QtWidgets.QWidget.__init__(self)
             layout = QtWidgets.QHBoxLayout()
+            layout.setContentsMargins(1,1,1,1)
             lbl = QtWidgets.QLabel(label)
             self.combobox = QtWidgets.QComboBox()
             self.combobox.addItems(util.get_atomic_number_symbol())
@@ -235,3 +268,12 @@ class controlPanel(QtWidgets.QWidget):
             layout.addWidget(self.combobox)
             layout.addWidget(self.ratio)
             self.setLayout(layout)
+
+
+
+if __name__ == "__main__":
+    qtapp = QtWidgets.QApplication([])
+    # QtWidgets.QMainWindow().show()
+    window = rdf_analyse(DataCube("assets/Camera 230 mm Ceta 20210312 1333_50s_20f_area01.mrc"))
+    window.show()
+    qtapp.exec()
