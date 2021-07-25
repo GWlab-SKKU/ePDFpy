@@ -159,6 +159,14 @@ class GraphPanel(QtWidgets.QWidget):
         self.graph_phiq = pg.PlotWidget(title='Φ(q)')
         self.graph_Gr = pg.PlotWidget(title='G(r)')
 
+        self.axis1 = pg.InfiniteLine(angle=0)
+        self.axis2 = pg.InfiniteLine(angle=0)
+        self.axis3 = pg.InfiniteLine(angle=0)
+
+        self.graph_Iq.addItem(self.axis1)
+        self.graph_phiq.addItem(self.axis2)
+        self.graph_Gr.addItem(self.axis3)
+
         # self.layout.addWidget(self.graph_Iq)
         # self.layout.addWidget(self.graph_phiq)
         # self.layout.addWidget(self.graph_Gr)
