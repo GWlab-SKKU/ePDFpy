@@ -9,7 +9,7 @@ from PyQt5 import QtCore, QtWidgets
 
 class rdf_analyse(QtWidgets.QMainWindow):
     def __init__(self, datacube: DataCube):
-        QtWidgets.QWidget.__init__(self)
+        super().__init__()
         print("init")
         self.datacube = datacube
         self.element_nums = []
@@ -21,17 +21,15 @@ class rdf_analyse(QtWidgets.QMainWindow):
 
 
     def initui(self):
-        self.setMinimumSize(500, 500)
+        self.setMinimumSize(800, 600)
         self.layout = QtWidgets.QHBoxLayout()
-        self.controlPanel = ControlPanel()
+        self.controlPanel = ControlPanel(self)
         self.graphPanel = GraphPanel()
-        # self.titleBar = TitleBar(self)
 
-        # self.layout.addWidget(self.TitleBar)
         self.layout.addWidget(self.controlPanel)
         self.layout.addWidget(self.graphPanel)
         self.layout.setStretch(1, 1)
-        self.setLayout(self.layout)
+        # self.setLayout(self.layout)
         self.show()
 
         self.graph_Iq = self.graphPanel.graph_Iq
@@ -47,6 +45,10 @@ class rdf_analyse(QtWidgets.QMainWindow):
         self.graph_phiq_phiq = self.graph_phiq.plot(pen=pg.mkPen(255, 0, 0, width=2), name='phiq')
         self.graph_phiq_damp = self.graph_phiq.plot(pen=pg.mkPen(0, 255, 0, width=2), name='phiq_damp')
         self.graph_Gr_Gr = self.graph_Gr.plot(pen=pg.mkPen(255, 0, 0, width=2), name='Gr')
+
+        centralWidget = QtWidgets.QWidget()
+        centralWidget.setLayout(self.layout)
+        self.setCentralWidget(centralWidget)
 
     def update_graph(self):
         self.graph_Iq_Iq.setData(self.q, self.Iq)
@@ -183,15 +185,17 @@ class GraphPanel(QtWidgets.QWidget):
 
 
 class ControlPanel(QtWidgets.QWidget):
-    def __init__(self):
+    def __init__(self, mainWindow:QtWidgets.QMainWindow):
         QtWidgets.QWidget.__init__(self)
         self.layout = QtWidgets.QVBoxLayout()
+        self.load_and_save = self.LoadAndSaveGroup(mainWindow)
         self.fitting_elements = self.FittingElements()
         self.fitting_factors = self.FittingFactors()
-        self.load_and_save = self.LoadAndSaveGroup()
+
+        self.layout.addWidget(self.load_and_save)
         self.layout.addWidget(self.fitting_elements)
         self.layout.addWidget(self.fitting_factors)
-        self.layout.addWidget(self.load_and_save)
+
         self.layout.addStretch(1)
         self.setLayout(self.layout)
 
@@ -201,7 +205,7 @@ class ControlPanel(QtWidgets.QWidget):
             self.setTitle("Element")
             layout = QtWidgets.QVBoxLayout()
             layout.setSpacing(0)
-            layout.setContentsMargins(0,0,0,0)
+            layout.setContentsMargins(10,0,5,5)
             self.element_group_widgets = [ControlPanel.element_group("element" + str(num)) for num in range(1, 6)]
             for element_group_widgets in self.element_group_widgets:
                 layout.addWidget(element_group_widgets)
@@ -272,15 +276,35 @@ class ControlPanel(QtWidgets.QWidget):
             self.setLayout(layout)
 
     class LoadAndSaveGroup(QtWidgets.QGroupBox):
-        def __init__(self):
+        def __init__(self, mainWindow:QtWidgets.QMainWindow):
             QtWidgets.QGroupBox.__init__(self)
             self.setTitle("Load and Save")
-            layout = QtWidgets.QVBoxLayout()
-            self.btn_load_setting = QtWidgets.QPushButton("Load Setting")
-            self.btn_save_setting = QtWidgets.QPushButton("Save Setting")
-            layout.addWidget(self.btn_load_setting)
-            layout.addWidget(self.btn_save_setting)
+            layout = QtWidgets.QHBoxLayout()
+            self.menu_file = self.create_menu(mainWindow)
+            self.lbl_file_name = QtWidgets.QLabel("...")
+            layout.addWidget(self.menu_file)
+            layout.addWidget(self.lbl_file_name)
             self.setLayout(layout)
+
+        def create_menu(self, mainWindow:QtWidgets.QMainWindow):
+            menubar = mainWindow.menuBar()
+
+            self.load_setting = QtWidgets.QAction("&Load setting", self)
+            self.save_setting = QtWidgets.QAction("&Save setting", self)
+            self.save_setting_as = QtWidgets.QAction("&Save setting as", self)
+            self.load_azavg_from_file = QtWidgets.QAction("&Load azavg from file", self)
+            self.load_azavg_from_main_window = QtWidgets.QAction("&Load azavg from main window", self)
+
+            filemenu = menubar.addMenu("     File     ")
+            filemenu.addAction(self.load_setting)
+            filemenu.addAction(self.save_setting)
+            filemenu.addAction(self.save_setting_as)
+            filemenu.addSeparator()
+            filemenu.addAction(self.load_azavg_from_file)
+            filemenu.addAction(self.load_azavg_from_main_window)
+
+            menubar.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
+            return menubar
 
     class element_group(QtWidgets.QWidget):
         def __init__(self, label:str):
@@ -299,62 +323,8 @@ class ControlPanel(QtWidgets.QWidget):
 
 
 
-class TitleBar(QtWidgets.QWidget):
-
-    def __init__(self, mainWindow:QtWidgets.QMainWindow):
-        super().__init__()
-        self.layout = QtWidgets.QHBoxLayout()
-        self.setLayout(self.layout)
-        self.mainWindow = mainWindow
-        self.menu = self.createMenu(mainWindow)
-        self.window_control = self.WindowControlBar(mainWindow)
-        self.label_filename = QtWidgets.QLabel("filename")
-
-        self.layout.addWidget(self.menu,alignment=QtCore.Qt.AlignLeft)
-        self.layout.addWidget(self.label_filename, alignment=QtCore.Qt.AlignLeft)
-        self.layout.addStretch(1)
-        self.layout.addWidget(self.window_control, alignment=QtCore.Qt.AlignRight)
-
-        self.setMaximumHeight(50)
-        self.setContentsMargins(0, 0, 0, 0)
-        self.layout.setContentsMargins(0, 0, 0, 0)
-        self.layout.setSpacing(0)
-
-    def createMenu(self, mainWindow:QtWidgets.QMainWindow):
-        menubar = mainWindow.menuBar()
-        filemenu = menubar.addMenu('    &File    ')
-        openmenu = filemenu.addMenu('   &open  ')
-        self._openRecentMenu = filemenu.addMenu('   &open Recent File  ')
-        save_menu = filemenu.addMenu('   &save  ')
-        save_current_image_menu = filemenu.addMenu('   &save_current_image  ')
-
-        # OPENMENU
-        self.openAuto = QtWidgets.QAction("&auto", self)
-        self.openDM = QtWidgets.QAction("&DM Memory Map", self)
-        self.openGatan = QtWidgets.QAction("&Gatan K2 Binary", self)
-        self.openEMPAD = QtWidgets.QAction("&EMPAD", self)
-        # openAuto.triggered.connect(openFile)
-        openmenu.addAction(self.openAuto)
-        openmenu.addAction(self.openDM)
-        openmenu.addAction(self.openGatan)
-        openmenu.addAction(self.openEMPAD)
-
-        self.addRecentFileMenu()
-
-        # Save Menu
-        self.save_as_file = QtWidgets.QAction("&save as file", self)
-        self.save_as_directory = QtWidgets.QAction("&save as directory", self)
-        save_menu.addAction(self.save_as_file)
-        save_menu.addAction(self.save_as_directory)
 
 
-        self.save_diffraction_space = QtWidgets.QAction("&diffraction space", self)
-        self.save_real_space = QtWidgets.QAction("&real space", self)
-        save_current_image_menu.addAction(self.save_diffraction_space)
-        save_current_image_menu.addAction(self.save_real_space)
-
-        menubar.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
-        return menubar
 
 
 
