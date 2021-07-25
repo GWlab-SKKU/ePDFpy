@@ -3,12 +3,11 @@ import os, sys
 import pyqtgraph as pg
 import file
 import numpy as np
-import image_process
 import util
 from datacube import DataCube
-from typing import List, Set, Dict, Tuple
+from typing import List
 from rdf_analyse import rdf_analyse
-import rdf_calculator
+from calculate import rdf_calculator, image_process
 
 
 class DataViewer(QtWidgets.QMainWindow):
@@ -258,7 +257,7 @@ class MainWindow(QtWidgets.QWidget):
             img = cv2.bitwise_and(img, img, mask=np.bitwise_not(image_process.mask))
         if self.datacubes[self.current_page].center is not None and self.controlPanel.settingPanel.chkBox_show_centerLine.isChecked():
             self.put_center_to_spinBoxes(self.datacubes[self.current_page].center)
-            img = image_process.draw_center_line(img,self.datacubes[self.current_page].center)
+            img = image_process.draw_center_line(img, self.datacubes[self.current_page].center)
         self.imgPanel.update_img(img)
 
     def dialog_to_range(self):

@@ -70,7 +70,7 @@ def calculation(ds, q_start_num, q_end_num, element_nums, ratio, azavg, is_full_
 
     Gr = 8 * np.pi * phiq_damp @ np.sin(q[:, None] * r) * ds
 
-    return Iq, Autofit, phiq, phiq_damp, Gr, SS, fit_at_q, N
+    return q, r, Iq, Autofit, phiq, phiq_damp, Gr, SS, fit_at_q, N
 
 
 def KirklandFactors(s2, paramK_element):

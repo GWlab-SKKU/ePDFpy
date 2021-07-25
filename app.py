@@ -5,17 +5,10 @@ import dash_html_components as html
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
-import numpy as np
-
-
 import mrcfile
-import file
 from pathlib import Path
-import glob
 import numpy as np
-import image_process
-import matplotlib.pyplot as plt
-import cv2
+from calculate import image_process
 
 mrc_search_path = '/mnt/experiment/TEM diffraction/'
 mrc_file_paths = [str(i) for i in Path(mrc_search_path).rglob("*.mrc")]

@@ -2,7 +2,6 @@ import numpy as np
 import cv2
 import time
 import util
-from matplotlib import pyplot as plt
 
 
 try:
@@ -233,12 +232,9 @@ def calculate_azimuthal_average_cuda(raw_image, center):
 if __name__ == '__main__':
 
     import mrcfile
-    import file
     from pathlib import Path
-    import glob
     import numpy as np
     import image_process
-    import matplotlib.pyplot as plt
     import cv2
 
     mrc_search_path = '/mnt/experiment/TEM diffraction/'

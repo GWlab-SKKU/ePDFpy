@@ -8,12 +8,7 @@ from pathlib import Path
 import pandas as pd
 from PIL import Image
 
-
-
 settings = json.load(open("settings.json"))
-
-def message(title,msg):
-    QMessageBox.about(title,msg)
 
 def get_sample_img():
     return file.load_mrc_img("./assets/Camera 230 mm Ceta 20210312 1333_50s_20f_area01.mrc")

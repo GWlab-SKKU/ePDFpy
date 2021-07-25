@@ -1,12 +1,12 @@
-import typing
 from datacube import DataCube
 import pyqtgraph as pg
 import util
-import numpy as np
-import rdf_calculator
+from calculate import rdf_calculator
 from PyQt5.QtWidgets import QMessageBox
 
-from PyQt5 import QtCore, QtWidgets, QtGui
+from PyQt5 import QtCore, QtWidgets
+
+
 class rdf_analyse(QtWidgets.QWidget):
     def __init__(self, datacube: DataCube):
         QtWidgets.QWidget.__init__(self)
@@ -40,18 +40,18 @@ class rdf_analyse(QtWidgets.QWidget):
         self.graph_phiq.addLegend(offset=(-30, 30))
         self.graph_Gr.addLegend(offset=(-30, 30))
 
-        self.graph_Iq_Iq = self.graph_Iq.plot( pen=pg.mkPen(255, 0, 0, width=2), name='Iq')
+        self.graph_Iq_Iq = self.graph_Iq.plot(pen=pg.mkPen(255, 0, 0, width=2), name='Iq')
         self.graph_Iq_AutoFit = self.graph_Iq.plot( pen=pg.mkPen(0, 255, 0, width=2), name='AutoFit')
         self.graph_phiq_phiq = self.graph_phiq.plot(pen=pg.mkPen(255, 0, 0, width=2), name='phiq')
         self.graph_phiq_damp = self.graph_phiq.plot(pen=pg.mkPen(0, 255, 0, width=2), name='phiq_damp')
         self.graph_Gr_Gr = self.graph_Gr.plot(pen=pg.mkPen(255, 0, 0, width=2), name='Gr')
 
     def update_graph(self):
-        self.graph_Iq_Iq.setData(self.Iq)
-        self.graph_Iq_AutoFit.setData(self.Autofit)
-        self.graph_phiq_phiq.setData(self.phiq)
-        self.graph_phiq_damp.setData(self.phiq_damp)
-        self.graph_Gr_Gr.setData(self.Gr)
+        self.graph_Iq_Iq.setData(self.q, self.Iq)
+        self.graph_Iq_AutoFit.setData(self.q, self.Autofit)
+        self.graph_phiq_phiq.setData(self.q, self.phiq)
+        self.graph_phiq_damp.setData(self.q, self.phiq_damp)
+        self.graph_Gr_Gr.setData(self.r, self.Gr)
 
     def binding(self):
         self.controlPanel.fitting_factors.btn_auto_fit.clicked.connect(self.autofit)
@@ -77,10 +77,10 @@ class rdf_analyse(QtWidgets.QWidget):
         self.is_full_q = self.controlPanel.fitting_factors.radio_full_range.isChecked()
 
     def autofit(self):
-        if self.check_condition():
+        if not self.check_condition():
             return
         self.update_parameter()
-        self.Iq, self.Autofit, self.phiq, self.phiq_damp, self.Gr, self.SS, self.fit_at_q, self.N = rdf_calculator.calculation(
+        self.q, self.r, self.Iq, self.Autofit, self.phiq, self.phiq_damp, self.Gr, self.SS, self.fit_at_q, self.N = rdf_calculator.calculation(
             self.datacube.ds,
             self.datacube.q_start_num,
             self.datacube.q_end_num,
@@ -99,10 +99,10 @@ class rdf_analyse(QtWidgets.QWidget):
         self.update_graph()
 
     def manualfit(self):
-        if self.check_condition():
+        if not self.check_condition():
             return
         self.update_parameter()
-        self.Iq, self.Autofit, self.phiq, self.phiq_damp, self.Gr, self.SS, self.fit_at_q, self.N = rdf_calculator.calculation(
+        self.q, self.r, self.Iq, self.Autofit, self.phiq, self.phiq_damp, self.Gr, self.SS, self.fit_at_q, self.N = rdf_calculator.calculation(
             self.datacube.ds,
             self.datacube.q_start_num,
             self.datacube.q_end_num,
@@ -123,7 +123,7 @@ class rdf_analyse(QtWidgets.QWidget):
             print("not checked")
             return
         self.update_parameter()
-        self.Iq, self.Autofit, self.phiq, self.phiq_damp, self.Gr, self.SS, self.fit_at_q, self.N = rdf_calculator.calculation(
+        self.q, self.r, self.Iq, self.Autofit, self.phiq, self.phiq_damp, self.Gr, self.SS, self.fit_at_q, self.N = rdf_calculator.calculation(
             self.datacube.ds,
             self.datacube.q_start_num,
             self.datacube.q_end_num,
@@ -142,7 +142,7 @@ class rdf_analyse(QtWidgets.QWidget):
     def check_condition(self):
         if self.datacube.azavg is None:
             QMessageBox.about(self, "info", "azimuthally averaged intensity is not calculated yet.")
-
+            return False
         return True
 
 class GraphPanel(QtWidgets.QWidget):
@@ -274,6 +274,6 @@ class ControlPanel(QtWidgets.QWidget):
 if __name__ == "__main__":
     qtapp = QtWidgets.QApplication([])
     # QtWidgets.QMainWindow().show()
-    window = rdf_analyse(DataCube("assets/Camera 230 mm Ceta 20210312 1333_50s_20f_area01.mrc"))
+    window = rdf_analyse(DataCube("../assets/Camera 230 mm Ceta 20210312 1333_50s_20f_area01.mrc"))
     window.show()
     qtapp.exec()

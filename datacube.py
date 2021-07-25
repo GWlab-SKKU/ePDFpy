@@ -1,5 +1,5 @@
 import file
-import image_process
+from calculate import image_process
 import os
 import cv2
 import numpy as np
