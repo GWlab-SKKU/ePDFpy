@@ -56,12 +56,18 @@ class rdf_analyse(QtWidgets.QWidget):
     def binding(self):
         self.controlPanel.fitting_factors.btn_auto_fit.clicked.connect(self.autofit)
         self.controlPanel.fitting_factors.btn_manual_fit.clicked.connect(self.manualfit)
+
+        # instant fit
         self.controlPanel.fitting_factors.spinbox_N.valueChanged.connect(self.instantfit)
         self.controlPanel.fitting_factors.spinbox_dr.valueChanged.connect(self.instantfit)
         self.controlPanel.fitting_factors.spinbox_rmax.valueChanged.connect(self.instantfit)
         self.controlPanel.fitting_factors.spinbox_damping.valueChanged.connect(self.instantfit)
         self.controlPanel.fitting_factors.spinbox_fit_at_q.valueChanged.connect(self.instantfit)
         self.controlPanel.fitting_factors.spinbox_ds.valueChanged.connect(self.instantfit)
+        for widget in self.controlPanel.fitting_elements.element_group_widgets:
+            widget.combobox.currentIndexChanged.connect(self.instantfit)
+            widget.ratio.valueChanged.connect(self.instantfit)
+
 
     def update_parameter(self):
         # elements
