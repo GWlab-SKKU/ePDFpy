@@ -12,15 +12,15 @@ class DataCube:
     except ImportError:
         _use_cupy = False
 
-    def __init__(self, file_path):
+    def __init__(self, file_path=None):
         self.file_path = file_path
         self.raw_img = None
         self.img = None
         self.center = None
         self.azavg = None
         self.azvar = None
-        self.q_start_num = None
-        self.q_end_num = None
+        self.pixel_start_n = None
+        self.pixel_end_n = None
         self.ds = None
         self.display_img = None
 

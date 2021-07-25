@@ -1,8 +1,10 @@
 import mrcfile
 import os
 import numpy as np
+from PyQt5.QtWidgets import QFileDialog
+import json
 
-analysis_folder_name = "Analysis pdf_tools"
+analysis_folder_name = "Analysis ePDFpy"
 
 def load_mrc_img(fp):
     with mrcfile.open(fp) as mrc:
@@ -26,22 +28,30 @@ def get_file_list_from_path(fp, extension=None):
                     file_list.append(os.path.join(path, filename))
     return file_list
 
-
-def save_current_azimuthal(data:np.ndarray,current_file_path,azavg,i_slice=None):
-    assert type(data) is np.ndarray
-    current_folder, current_file_full_name = os.path.split(current_file_path)
-    current_file_name,current_ext = os.path.splitext(current_file_full_name)
+def make_analyse_folder(dc_filepath):
+    current_folder, current_file_full_name = os.path.split(dc_filepath)
     analysis_folder = os.path.join(current_folder,analysis_folder_name)
     if not os.path.isdir(analysis_folder):
         try :
             os.makedirs(analysis_folder)
+            return analysis_folder
         except:
             print('Failed to make directory:',analysis_folder)
-            return
+            return False
+
+def save_current_azimuthal(data:np.ndarray,current_file_path,azavg:bool,i_slice=None):
+    assert type(data) is np.ndarray
+    current_folder_path, file_name = os.path.split(current_file_path)
+    file_short_name, file_ext = os.path.splitext(file_name)
+
+    analysis_folder_path = make_analyse_folder(current_file_path)
+    if not analysis_folder_path:
+        return
+
     if azavg:
-        path_save = os.path.join(analysis_folder, current_file_name + " azav")
+        path_save = os.path.join(analysis_folder_path, file_short_name + " azav")
     else:
-        path_save = os.path.join(analysis_folder, current_file_name + " azvar")
+        path_save = os.path.join(analysis_folder_path, file_short_name + " azvar")
     if i_slice:
         path_save = path_save+" center"+str(i_slice[0])+"to"+str(i_slice[1])+"_"+str(i_slice[2])
 
@@ -52,6 +62,48 @@ def save_current_azimuthal(data:np.ndarray,current_file_path,azavg,i_slice=None)
     print("save to",path_save)
 
 
+def load_pdf_setting_default(dc_file_path):
+    current_folder_path, file_name = os.path.split(dc_file_path)
+    file_short_name, file_ext = os.path.splitext(file_name)
+
+    analysis_folder_path = os.path.join(dc_file_path,analysis_folder_name)
+    pdf_setting_path = os.path.join(analysis_folder_path, file_short_name + " pdf_setting.json")
+    if os.path.isfile(pdf_setting_path):
+        return json.load(pdf_setting_path)
+    else:
+        return False
+
+def load_pdf_setting_manual():
+    fp, _ = QFileDialog.getOpenFileName()
+    return json.load(fp)
+
+def save_pdf_setting_default(dc_file_path, pdf_setting):
+    current_folder_path, file_name = os.path.split(dc_file_path)
+    file_short_name, file_ext = os.path.splitext(file_name)
+
+    analysis_folder_path = os.path.join(dc_file_path,analysis_folder_name)
+    pdf_setting_path = os.path.join(analysis_folder_path, file_short_name + " pdf_setting.json")
+    json.dump(pdf_setting, open(pdf_setting_path, 'w'), indent=2)
+    return True
+
+def save_pdf_setting_manual(dc_file_path):
+    fp, _ = QFileDialog.getSaveFileName()
+    json.dump(fp, open(fp, 'w'), indent=2)
+    return True
+
+
+def load_azavg_default(dc_file_path):
+    pass
+
+def load_azavg_manual():
+    fp, _ = QFileDialog.getOpenFileName()
+    current_folder_path, file_name = os.path.split(fp)
+    file_short_name, file_ext = os.path.splitext(file_name)
+    if file_ext == ".csv":
+        return np.loadtxt(fp,delimiter=",")
+    if file_ext == ".txt":
+        return np.loadtxt(fp)
+
 if __name__ == '__main__':
     # file_list = get_file_list_from_path('/mnt/experiment/TEM diffraction/210312','.mrc')
     # print(os.path.split(file_list[0]))
@@ -59,4 +111,10 @@ if __name__ == '__main__':
     # pth="/mnt/experiment/TEM diffraction/210215/sample47_TiGe44_bot_AD/Camera 230 mm Ceta 20210215 1438_2s_1f_area01.mrc"
     # print(os.path.split(pth))
     # save_current_azimuthal(np.array([1,2,3]),pth,True)
+    from PyQt5.QtWidgets import QMainWindow
+    from PyQt5 import QtWidgets
+    qtapp = QtWidgets.QApplication([])
+    # load_azavg_manual(r"Y:\experiment\TEM diffraction\210520\Analysis pdf_tools\Camera 230 mm Ceta 20210520 1306_Au azav center110to120_1.txt")
+    load_azavg_manual()
+    qtapp.exec_()
     pass

@@ -18,21 +18,20 @@ class DataViewer(QtWidgets.QMainWindow):
         QtWidgets.QMainWindow.__init__(self)
         self.this_dir, self.this_filename = os.path.split(__file__)
 
-        # Make settings collection
-
-        self.main_window = MainWindow()
+        self.main_window = MainWindow(self)
         self.main_window.show()
 
 
 class MainWindow(QtWidgets.QWidget):
-    def __init__(self):
+    def __init__(self, mainWindow):
         QtWidgets.QWidget.__init__(self)
         self.plotWindow = None
+        self.mainWindow = mainWindow
         self.current_page = 0
         self.upper = QtWidgets.QFrame(self)
         self.lower = QtWidgets.QFrame(self)
         self.splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
-        self.controlPanel = ControlPanel()
+        self.controlPanel = ControlPanel(self.mainWindow)
         self.controlPanel.setMaximumWidth(330)
         self.imgPanel = ImgPanel()
         self.graphPanel = GraphPanel()
@@ -89,7 +88,8 @@ class MainWindow(QtWidgets.QWidget):
             self.btn_right_clicked()
 
     def btn_binding(self):
-        self.controlPanel.openFilePanel.btn_path.clicked.connect(self.open_file_path)
+        self.controlPanel.openFilePanel.open_img_file.triggered.connect(self.open_image_file)
+        self.controlPanel.openFilePanel.open_img_folder.triggered.connect(self.open_image_folder)
         self.controlPanel.operationPanel.btn_find_center.clicked.connect(lambda: (self.find_center(),self.update_img()))
         self.imgPanel.btn_left.clicked.connect(self.btn_left_clicked)
         self.imgPanel.btn_right.clicked.connect(self.btn_right_clicked)
@@ -115,8 +115,11 @@ class MainWindow(QtWidgets.QWidget):
         self.update_img()
 
     def show_erdf_analyser(self):
-        self.datacubes[self.current_page].q_start_num = self.controlPanel.settingPanel.spinBox_pixel_range_left.value()
-        self.datacubes[self.current_page].q_end_num = self.controlPanel.settingPanel.spinBox_pixel_range_right.value()
+        if len(self.datacubes) == 0:
+            self.eRDF_analyser = rdf_analyse(DataCube())
+            return
+        self.datacubes[self.current_page].pixel_start_n = self.controlPanel.settingPanel.spinBox_pixel_range_left.value()
+        self.datacubes[self.current_page].pixel_end_n = self.controlPanel.settingPanel.spinBox_pixel_range_right.value()
         self.eRDF_analyser = rdf_analyse(self.datacubes[self.current_page])
 
 
@@ -198,30 +201,25 @@ class MainWindow(QtWidgets.QWidget):
         image_process.draw_center_line(lined_img, self.datacubes[self.current_page].center)
         return lined_img
 
-    def open_file_path(self):
-        # todo : check all file have same dimension, size
-
+    def open_image_file(self):
         load_paths = []
-        if self.controlPanel.openFilePanel.radio_file.isChecked():
-            path,_ = QtWidgets.QFileDialog.getOpenFileNames(self,'open')
-            if len(path)==0:
-                return
-            load_paths.extend(path)
-
-        elif self.controlPanel.openFilePanel.radio_folder.isChecked():
-            path = QtWidgets.QFileDialog.getExistingDirectory(self,'open')
-            if len(path)==0:
-                return
-            load_paths.extend(file.get_file_list_from_path(path,'.mrc'))
-
-        else:
-            print("ERROR with open File")
+        path,_ = QtWidgets.QFileDialog.getOpenFileNames(self,'open')
+        if len(path)==0:
             return
-
+        load_paths.extend(path)
         self.datacubes.clear()
         self.datacubes.extend([DataCube(path) for path in load_paths])
         self.read_img(0)
-        self.controlPanel.openFilePanel.lbl_path.setText(str(load_paths))
+
+    def open_image_folder(self):
+        load_paths = []
+        path = QtWidgets.QFileDialog.getExistingDirectory(self,'open')
+        if len(path)==0:
+            return
+        load_paths.extend(file.get_file_list_from_path(path,'.mrc'))
+        self.datacubes.clear()
+        self.datacubes.extend([DataCube(path) for path in load_paths])
+        self.read_img(0)
 
     def btn_right_clicked(self):
         if not self.current_page == len(self.datacubes) - 1:
@@ -268,8 +266,8 @@ class MainWindow(QtWidgets.QWidget):
         self.flag_range_update = False
         if hasattr(self.datacubes[self.current_page],"analyser"):
             print("instant update")
-            self.datacubes[self.current_page].q_start_num = int(left)
-            self.datacubes[self.current_page].q_end_num = int(right)
+            self.datacubes[self.current_page].pixel_start_n = int(left)
+            self.datacubes[self.current_page].pixel_end_n = int(right)
             self.datacubes[self.current_page].analyser.instantfit()
 
     def range_to_dialog(self):
@@ -286,8 +284,8 @@ class MainWindow(QtWidgets.QWidget):
         self.controlPanel.settingPanel.spinBox_pixel_range_right.setValue(right)
         if hasattr(self.datacubes[self.current_page],"analyser"):
             print("instant update2")
-            self.datacubes[self.current_page].q_start_num = int(left)
-            self.datacubes[self.current_page].q_end_num = int(right)
+            self.datacubes[self.current_page].pixel_start_n = int(left)
+            self.datacubes[self.current_page].pixel_end_n = int(right)
             self.datacubes[self.current_page].analyser.instantfit()
 
 
@@ -295,9 +293,9 @@ class ControlPanel(QtWidgets.QWidget):
     # text_fixed_height = 25
     # text_fixed_width = 70
 
-    def __init__(self):
+    def __init__(self, mainWindow):
         QtWidgets.QWidget.__init__(self)
-        self.openFilePanel = self.OpenFilePanel("OpenFile")
+        self.openFilePanel = self.OpenFilePanel("OpenFile", mainWindow)
         self.settingPanel = self.SettingPanel("Settings")
         self.operationPanel = self.OperationPanel("Operation")
 
@@ -308,30 +306,69 @@ class ControlPanel(QtWidgets.QWidget):
         layout.addStretch(1)
         self.setLayout(layout)
 
+    # class OpenFilePanel(QtWidgets.QGroupBox):
+    #     def __init__(self,arg,mainWindow: QtWidgets.QMainWindow):
+    #         QtWidgets.QGroupBox.__init__(self,arg)
+    #         layout = QtWidgets.QGridLayout()
+    #
+    #         radio_grp = QtWidgets.QGroupBox()
+    #         self.radio_folder = QtWidgets.QRadioButton("Folder")
+    #         self.radio_file = QtWidgets.QRadioButton("File")
+    #         radio_grp_layout = QtWidgets.QBoxLayout(QtWidgets.QBoxLayout.LeftToRight)
+    #         radio_grp.setLayout(radio_grp_layout)
+    #         radio_grp_layout.addWidget(self.radio_folder)
+    #         radio_grp_layout.addWidget(self.radio_file)
+    #         self.radio_file.setChecked(True)
+    #
+    #         self.lbl_path = QtWidgets.QLabel("/")
+    #         self.btn_path = QtWidgets.QPushButton("open")
+    #         # self.lbl_path.setFixedHeight(ControlPanel.text_fixed_height)
+    #         self.lbl_path.setMaximumWidth(300)
+    #
+    #
+    #         layout.addWidget(radio_grp, 0, 0)
+    #         layout.addWidget(self.btn_path, 0, 1)
+    #         layout.addWidget(self.lbl_path, 1, 0, 1, 2)
+    #         self.setLayout(layout)
+
     class OpenFilePanel(QtWidgets.QGroupBox):
-        def __init__(self,arg):
-            QtWidgets.QGroupBox.__init__(self,arg)
-            layout = QtWidgets.QGridLayout()
-
-            radio_grp = QtWidgets.QGroupBox()
-            self.radio_folder = QtWidgets.QRadioButton("Folder")
-            self.radio_file = QtWidgets.QRadioButton("File")
-            radio_grp_layout = QtWidgets.QBoxLayout(QtWidgets.QBoxLayout.LeftToRight)
-            radio_grp.setLayout(radio_grp_layout)
-            radio_grp_layout.addWidget(self.radio_folder)
-            radio_grp_layout.addWidget(self.radio_file)
-            self.radio_file.setChecked(True)
-
-            self.lbl_path = QtWidgets.QLabel("/")
-            self.btn_path = QtWidgets.QPushButton("open")
-            # self.lbl_path.setFixedHeight(ControlPanel.text_fixed_height)
-            self.lbl_path.setMaximumWidth(300)
-
-
-            layout.addWidget(radio_grp, 0, 0)
-            layout.addWidget(self.btn_path, 0, 1)
-            layout.addWidget(self.lbl_path, 1, 0, 1, 2)
+        def __init__(self, arg, mainWindow: QtWidgets.QMainWindow):
+            QtWidgets.QGroupBox.__init__(self)
+            self.setTitle(arg)
+            layout = QtWidgets.QHBoxLayout()
+            self.menu_file = self.create_menu(mainWindow)
+            self.lbl_file_name = QtWidgets.QLabel("...")
+            layout.addWidget(self.menu_file)
+            layout.addWidget(self.lbl_file_name)
             self.setLayout(layout)
+
+        def create_menu(self, mainWindow: QtWidgets.QMainWindow):
+            menubar = mainWindow.menuBar()
+
+            self.open_img_file = QtWidgets.QAction("Open &img file", self)
+            self.open_img_folder = QtWidgets.QAction("Open &img folder", self)
+            self.open_preset = QtWidgets.QAction("Open &preset", self)
+            self.save_preset = QtWidgets.QAction("Save &preset", self)
+            self.open_presets = QtWidgets.QAction("Open p&resets", self)
+            self.save_presets = QtWidgets.QAction("Save p&resets", self)
+            self.open_azavg_only = QtWidgets.QAction("Open &azavg only", self)
+            self.save_azavg_only = QtWidgets.QAction("Save &azavg only", self)
+
+            filemenu = menubar.addMenu("     File     ")
+            filemenu.addAction(self.open_img_file)
+            filemenu.addAction(self.open_img_folder)
+            filemenu.addSeparator()
+            filemenu.addAction(self.open_preset)
+            filemenu.addAction(self.save_preset)
+            filemenu.addSeparator()
+            filemenu.addAction(self.open_presets)
+            filemenu.addAction(self.save_presets)
+            filemenu.addSeparator()
+            filemenu.addAction(self.open_azavg_only)
+            filemenu.addAction(self.save_azavg_only)
+
+            menubar.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+            return menubar
 
     class SettingPanel(QtWidgets.QGroupBox):
         def __init__(self,arg):
@@ -501,7 +538,7 @@ class GraphPanel(QtWidgets.QWidget):
         if self.azav_curr_dat is None:
             self.azav_curr_dat = dat
             self.plot_azav_curr.setData(self.azav_curr_dat)
-        else :
+        else:
             self.azav_prev_dat = self.azav_curr_dat
             self.azav_curr_dat = dat
             self.plot_azav_curr.setData(self.azav_curr_dat)

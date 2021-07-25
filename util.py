@@ -71,7 +71,7 @@ def get_kirkland_2010():
 def load_previous_dc_azavg(dc):
     current_folder, current_file_full_name = os.path.split(dc.file_path)
     current_file_name, current_ext = os.path.splitext(current_file_full_name)
-    analysis_folder = os.path.join(current_folder, "Analysis pdf_tools") # todo: temp
+    analysis_folder = os.path.join(current_folder, file.analysis_folder_name) # todo: temp
 
     path_save = os.path.join(analysis_folder, current_file_name + " azav")
 
