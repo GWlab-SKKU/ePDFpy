@@ -90,6 +90,13 @@ class MainWindow(QtWidgets.QWidget):
     def btn_binding(self):
         self.controlPanel.openFilePanel.open_img_file.triggered.connect(self.open_image_file)
         self.controlPanel.openFilePanel.open_img_folder.triggered.connect(self.open_image_folder)
+        # self.controlPanel.openFilePanel.open_preset.triggered.connect()
+        # self.controlPanel.openFilePanel.save_preset.triggered.connect()
+        # self.controlPanel.openFilePanel.open_presets.triggered.connect()
+        # self.controlPanel.openFilePanel.save_presets.triggered.connect()
+        self.controlPanel.openFilePanel.open_azavg_only.triggered.connect(self.open_azavg_only)
+        # self.controlPanel.openFilePanel.save_azavg_only.triggered.connect()
+
         self.controlPanel.operationPanel.btn_find_center.clicked.connect(lambda: (self.find_center(),self.update_img()))
         self.imgPanel.btn_left.clicked.connect(self.btn_left_clicked)
         self.imgPanel.btn_right.clicked.connect(self.btn_right_clicked)
@@ -107,6 +114,8 @@ class MainWindow(QtWidgets.QWidget):
         self.graphPanel.button_all.clicked.connect(self.range_all_clicked)
         self.graphPanel.button_end.clicked.connect(self.range_end_clicked)
         self.controlPanel.operationPanel.btn_open_epdf_analyser.clicked.connect(self.show_erdf_analyser)
+
+
 
     def spinbox_changed_event(self):
         x = self.controlPanel.settingPanel.spinBox_center_x.value()
@@ -220,6 +229,21 @@ class MainWindow(QtWidgets.QWidget):
         self.datacubes.clear()
         self.datacubes.extend([DataCube(path) for path in load_paths])
         self.read_img(0)
+
+    def open_azavg_only(self):
+        azavg = file.load_azavg_manual()
+        self.datacubes.clear()
+        self.datacubes=[DataCube()]
+        self.datacubes[0].azavg = azavg
+
+        self.graphPanel.update_graph(azavg)
+        self.controlPanel.settingPanel.spinBox_pixel_range_right.setMaximum(len(azavg))
+        self.controlPanel.settingPanel.spinBox_pixel_range_left.setMaximum(len(azavg))
+
+        left = rdf_calculator.find_first_peak(azavg)
+        self.graphPanel.region.setRegion([left, len(azavg)-1])
+
+
 
     def btn_right_clicked(self):
         if not self.current_page == len(self.datacubes) - 1:
