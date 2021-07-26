@@ -24,6 +24,13 @@ class DataCube:
         self.ds = None
         self.display_img = None
 
+        self.fit_at_q = None
+        self.N = None
+        self.damping = None
+        self.rmax = None
+        self.dr = None
+        self.is_full_q = None
+
     def ready(self):
         self.raw_img, self.img = file.load_mrc_img(self.file_path)
 
