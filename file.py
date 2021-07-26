@@ -38,6 +38,7 @@ def make_analyse_folder(dc_filepath):
         except:
             print('Failed to make directory:',analysis_folder)
             return False
+    return analysis_folder
 
 def save_current_azimuthal(data:np.ndarray,current_file_path,azavg:bool,i_slice=None):
     assert type(data) is np.ndarray
@@ -62,29 +63,35 @@ def save_current_azimuthal(data:np.ndarray,current_file_path,azavg:bool,i_slice=
     print("save to",path_save)
 
 
-def load_pdf_setting_default(dc_file_path):
+def load_preset_default(dc_file_path):
     current_folder_path, file_name = os.path.split(dc_file_path)
     file_short_name, file_ext = os.path.splitext(file_name)
 
-    analysis_folder_path = os.path.join(dc_file_path,analysis_folder_name)
-    pdf_setting_path = os.path.join(analysis_folder_path, file_short_name + " pdf_setting.json")
-    if os.path.isfile(pdf_setting_path):
-        return json.load(pdf_setting_path)
+    analysis_folder_path = os.path.join(current_folder_path,analysis_folder_name)
+    preset_path = os.path.join(analysis_folder_path, file_short_name + " preset.json")
+    if os.path.isfile(preset_path):
+        return json.load(preset_path)
     else:
         return False
 
-def load_pdf_setting_manual():
+def load_preset_manual():
     fp, _ = QFileDialog.getOpenFileName()
     return json.load(fp)
 
-def save_pdf_setting_default(dc_file_path, pdf_setting):
+def save_preset_default(dc_file_path, setting):
     current_folder_path, file_name = os.path.split(dc_file_path)
     file_short_name, file_ext = os.path.splitext(file_name)
 
-    analysis_folder_path = os.path.join(dc_file_path,analysis_folder_name)
-    pdf_setting_path = os.path.join(analysis_folder_path, file_short_name + " pdf_setting.json")
-    json.dump(pdf_setting, open(pdf_setting_path, 'w'), indent=2)
+    analysis_folder_path = make_analyse_folder(dc_file_path)
+    preset_path = os.path.join(analysis_folder_path, file_short_name + " preset.json")
+    if setting['mrc_file_path'] is not None:
+        setting['mrc_file_path'] = os.path.relpath(dc_file_path, os.path.split(preset_path)[0])
+    json.dump(setting, open(preset_path, 'w'), indent=2)
     return True
+
+def load_preset():
+    fp, _ = QFileDialog.getOpenFileName()
+    return json.load(fp)
 
 def save_pdf_setting_manual(dc_file_path):
     fp, _ = QFileDialog.getSaveFileName()
