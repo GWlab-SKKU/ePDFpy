@@ -79,14 +79,14 @@ class rdf_analyse(QtWidgets.QMainWindow):
         self.controlPanel.load_and_save.load_azavg_from_main_window.triggered.connect(self.load_azavg_from_main_window)
 
     def load_pdf_setting(self):
-        rs = file.load_pdf_setting_default()
+        rs = file.load_preset_default()
         if not rs:
-            rs = file.load_pdf_setting_manual()
+            rs = file.load_preset_manual()
         self.pdf_setting = rs
         self.set_pdf_setting()
 
     def save_pdf_setting(self):
-        file.save_pdf_setting_default()
+        file.save_preset_default()
         pass
 
     def save_pdf_setting_as(self):
@@ -298,6 +298,7 @@ class ControlPanel(QtWidgets.QWidget):
             lbl_fit_at_q = QtWidgets.QLabel("Fit at q")
             self.spinbox_fit_at_q = QtWidgets.QDoubleSpinBox()
             self.spinbox_fit_at_q.setMaximum(100000)
+            self.spinbox_fit_at_q.setDecimals(5)
             layout.addWidget(lbl_fit_at_q, 3, 0, 1, 2)
             layout.addWidget(self.spinbox_fit_at_q, 3, 2, 1, 2)
             lbl_N = QtWidgets.QLabel("N")
