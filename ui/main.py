@@ -6,20 +6,16 @@ import numpy as np
 import util
 from datacube import DataCube
 from typing import List
-from rdf_analyse import rdf_analyse
+from ui.rdf_analyse import rdf_analyse
 from calculate import rdf_calculator, image_process
 
 
 class DataViewer(QtWidgets.QMainWindow):
-    def __init__(self, argv):
-        self.qtapp = QtWidgets.QApplication.instance()
-        if not self.qtapp:
-            self.qtapp = QtWidgets.QApplication(argv)
+    def __init__(self):
         QtWidgets.QMainWindow.__init__(self)
-        self.this_dir, self.this_filename = os.path.split(__file__)
-
         self.main_window = MainWindow(self)
-        self.main_window.show()
+        self.setCentralWidget(self.main_window)
+        self.resize(1080,600)
 
 
 class MainWindow(QtWidgets.QWidget):
@@ -32,7 +28,7 @@ class MainWindow(QtWidgets.QWidget):
         self.lower = QtWidgets.QFrame(self)
         self.splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         self.controlPanel = ControlPanel(self.mainWindow)
-        self.controlPanel.setMaximumWidth(330)
+        self.controlPanel.setMaximumWidth(300)
         self.imgPanel = ImgPanel()
         self.graphPanel = GraphPanel()
         self.upper_layout = QtWidgets.QHBoxLayout()
@@ -54,7 +50,6 @@ class MainWindow(QtWidgets.QWidget):
         self.setLayout(self.layout)
         self.btn_binding()
         self.isShowCenter=True
-        self.resize(1080,600)
         self.flag_range_update = False
         self.datacubes: List[DataCube] = []
 
@@ -604,5 +599,9 @@ class GraphPanel(QtWidgets.QWidget):
 
 
 if __name__ == '__main__':
-    app = DataViewer(sys.argv)
-    sys.exit(app.qtapp.exec_())
+    qtapp = QtWidgets.QApplication.instance()
+    if not qtapp:
+        qtapp = QtWidgets.QApplication(sys.argv)
+    app = DataViewer()
+    app.show()
+    sys.exit(qtapp.exec_())
