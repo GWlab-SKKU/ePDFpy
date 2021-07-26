@@ -91,7 +91,7 @@ class MainWindow(QtWidgets.QWidget):
         self.controlPanel.openFilePanel.open_img_file.triggered.connect(self.open_image_file)
         self.controlPanel.openFilePanel.open_img_folder.triggered.connect(self.open_image_folder)
         # self.controlPanel.openFilePanel.open_preset.triggered.connect()
-        # self.controlPanel.openFilePanel.save_preset.triggered.connect()
+        self.controlPanel.openFilePanel.save_preset.triggered.connect(self.save_preset)
         # self.controlPanel.openFilePanel.open_presets.triggered.connect()
         # self.controlPanel.openFilePanel.save_presets.triggered.connect()
         self.controlPanel.openFilePanel.open_azavg_only.triggered.connect(self.open_azavg_only)
@@ -127,10 +127,12 @@ class MainWindow(QtWidgets.QWidget):
         if len(self.datacubes) == 0:
             self.eRDF_analyser = rdf_analyse(DataCube())
             return
-        self.datacubes[self.current_page].pixel_start_n = self.controlPanel.settingPanel.spinBox_pixel_range_left.value()
-        self.datacubes[self.current_page].pixel_end_n = self.controlPanel.settingPanel.spinBox_pixel_range_right.value()
+        self.update_datacubes()
         self.eRDF_analyser = rdf_analyse(self.datacubes[self.current_page])
 
+    def update_datacubes(self):
+        self.datacubes[self.current_page].pixel_start_n = self.controlPanel.settingPanel.spinBox_pixel_range_left.value()
+        self.datacubes[self.current_page].pixel_end_n = self.controlPanel.settingPanel.spinBox_pixel_range_right.value()
 
     def range_start_clicked(self):
         left = self.controlPanel.settingPanel.spinBox_pixel_range_left.value()
@@ -243,7 +245,35 @@ class MainWindow(QtWidgets.QWidget):
         left = rdf_calculator.find_first_peak(azavg)
         self.graphPanel.region.setRegion([left, len(azavg)-1])
 
+    def save_preset(self):
+        self.update_datacubes()
+        to_update = {"Calibration_factor":self.datacubes[self.current_page].ds,
+         "Fit_at_Q": self.datacubes[self.current_page].fit_at_q,
+         "N": self.datacubes[self.current_page].N,
+         "Damping": self.datacubes[self.current_page].damping,
+         "r(max)": self.datacubes[self.current_page].rmax,
+         "dr": self.datacubes[self.current_page].dr,
+         "Is_full_Q": self.datacubes[self.current_page].is_full_q,
+         "pixel_start_num": self.datacubes[self.current_page].pixel_start_n,
+         "pixel_end_num": self.datacubes[self.current_page].pixel_end_n,
+         "center_x": self.datacubes[self.current_page].center[0],
+         "center_y": self.datacubes[self.current_page].center[1],
+         "mrc_file_path": self.datacubes[self.current_page].file_path}
+        file.save_preset_default(self.datacubes[self.current_page].file_path, to_update)
 
+    def load_preset(self):
+        preset = file.load_preset()
+        self.datacubes[self.current_page].fit_at_q = preset["Fit_at_Q"]
+        self.datacubes[self.current_page].N = preset["N"]
+        self.datacubes[self.current_page].damping = preset["Damping"]
+        self.datacubes[self.current_page].rmax = preset["r(max)"]
+        self.datacubes[self.current_page].dr = preset["dr"]
+        self.datacubes[self.current_page].is_full_q = preset["Is_full_Q"]
+        self.datacubes[self.current_page].pixel_end_n = preset["pixel_end_num"]
+        self.datacubes[self.current_page].pixel_start_n = preset["pixel_start_num"]
+        self.datacubes[self.current_page].center = [preset["center_x"],preset["center_y"]]
+        self.datacubes[self.current_page].file_path = preset["mrc_file_path"]
+        self.read_img(0)
 
     def btn_right_clicked(self):
         if not self.current_page == len(self.datacubes) - 1:
@@ -369,8 +399,8 @@ class ControlPanel(QtWidgets.QWidget):
         def create_menu(self, mainWindow: QtWidgets.QMainWindow):
             menubar = mainWindow.menuBar()
 
-            self.open_img_file = QtWidgets.QAction("Open &img file", self)
-            self.open_img_folder = QtWidgets.QAction("Open &img folder", self)
+            self.open_img_file = QtWidgets.QAction("Open &image file", self)
+            self.open_img_folder = QtWidgets.QAction("Open &image folder", self)
             self.open_preset = QtWidgets.QAction("Open &preset", self)
             self.save_preset = QtWidgets.QAction("Save &preset", self)
             self.open_presets = QtWidgets.QAction("Open p&resets", self)
