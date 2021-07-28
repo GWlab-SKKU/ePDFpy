@@ -48,6 +48,7 @@ class DoubleSpinBox(QtWidgets.QDoubleSpinBox):
 
 
 
+
 class DoubleLineEdit(QtWidgets.QLineEdit):
     def __init__(self):
         super().__init__()

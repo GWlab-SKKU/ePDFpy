@@ -69,7 +69,7 @@ def get_kirkland_2010():
     return np_kirkland
 
 def load_previous_dc_azavg(dc):
-    current_folder, current_file_full_name = os.path.split(dc.file_path)
+    current_folder, current_file_full_name = os.path.split(dc.mrc_file_path)
     current_file_name, current_ext = os.path.splitext(current_file_full_name)
     analysis_folder = os.path.join(current_folder, file.analysis_folder_name) # todo: temp
 
@@ -89,7 +89,7 @@ def load_previous_dc_azavg(dc):
     return dc.azavg
 
 def load_previous_tiff(dc):
-    current_folder, current_file_full_name = os.path.split(dc.file_path)
+    current_folder, current_file_full_name = os.path.split(dc.mrc_file_path)
     current_file_name, current_ext = os.path.splitext(current_file_full_name)
     analysis_folder = os.path.join(current_folder, "Analysis pdf_tools")  # todo: temp
 

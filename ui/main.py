@@ -8,7 +8,7 @@ from datacube import DataCube
 from typing import List
 from ui.rdf_analyse import rdf_analyse
 from calculate import rdf_calculator, image_process
-
+from PyQt5.QtWidgets import QMessageBox
 
 class DataViewer(QtWidgets.QMainWindow):
     def __init__(self):
@@ -85,9 +85,9 @@ class MainWindow(QtWidgets.QWidget):
     def btn_binding(self):
         self.controlPanel.openFilePanel.open_img_file.triggered.connect(self.open_image_file)
         self.controlPanel.openFilePanel.open_img_folder.triggered.connect(self.open_image_folder)
-        # self.controlPanel.openFilePanel.open_preset.triggered.connect()
+        self.controlPanel.openFilePanel.open_preset.triggered.connect(self.load_preset)
         self.controlPanel.openFilePanel.save_preset.triggered.connect(self.save_preset)
-        # self.controlPanel.openFilePanel.open_presets.triggered.connect()
+        self.controlPanel.openFilePanel.open_presets.triggered.connect(self.open_preset_folder)
         # self.controlPanel.openFilePanel.save_presets.triggered.connect()
         self.controlPanel.openFilePanel.open_azavg_only.triggered.connect(self.open_azavg_only)
         # self.controlPanel.openFilePanel.save_azavg_only.triggered.connect()
@@ -109,7 +109,6 @@ class MainWindow(QtWidgets.QWidget):
         self.graphPanel.button_all.clicked.connect(self.range_all_clicked)
         self.graphPanel.button_end.clicked.connect(self.range_end_clicked)
         self.controlPanel.operationPanel.btn_open_epdf_analyser.clicked.connect(self.show_erdf_analyser)
-
 
 
     def spinbox_changed_event(self):
@@ -171,7 +170,7 @@ class MainWindow(QtWidgets.QWidget):
 
     def save_all_azimuthal(self):
         for i in range(len(self.datacubes)):
-            print("processing auto_save azimuthal values", self.datacubes[self.current_page].file_path)
+            print("processing auto_save azimuthal values", self.datacubes[self.current_page].mrc_file_path)
             self.read_img(i)
             # self.datacubes[i].save_azimuthal_data()
             self.save_current_azimuthal()
@@ -180,17 +179,20 @@ class MainWindow(QtWidgets.QWidget):
 
     def get_azimuthal_value(self):
         self.azavg, self.azvar = self.datacubes[self.current_page].calculate_azimuthal_average()
-        self.graphPanel.update_graph(self.azavg)
-        self.controlPanel.settingPanel.spinBox_pixel_range_right.setMaximum(len(self.azavg))
-        self.controlPanel.settingPanel.spinBox_pixel_range_left.setMaximum(len(self.azavg))
+        self.update_azavg_graph(self.azavg)
 
-        left = rdf_calculator.find_first_peak(self.azavg)
+    def update_azavg_graph(self, azavg):
+        self.graphPanel.update_graph(azavg)
+        self.controlPanel.settingPanel.spinBox_pixel_range_right.setMaximum(len(azavg))
+        self.controlPanel.settingPanel.spinBox_pixel_range_left.setMaximum(len(azavg))
+
+        left = rdf_calculator.find_first_peak(azavg)
         # left = 0
         # for i in range(len(self.azavg)):
         #     if int(self.azavg[i]) != 0 :
         #         left = i
         #         break
-        self.graphPanel.region.setRegion([left, len(self.azavg)-1])
+        self.graphPanel.region.setRegion([left, len(azavg)-1])
 
     def find_center(self):
         i1 = self.controlPanel.settingPanel.spinBox_irange1.value()
@@ -210,7 +212,7 @@ class MainWindow(QtWidgets.QWidget):
     def open_image_file(self):
         load_paths = []
         path,_ = QtWidgets.QFileDialog.getOpenFileNames(self,'open')
-        if len(path)==0:
+        if len(path) == 0:
             return
         load_paths.extend(path)
         self.datacubes.clear()
@@ -220,19 +222,35 @@ class MainWindow(QtWidgets.QWidget):
     def open_image_folder(self):
         load_paths = []
         path = QtWidgets.QFileDialog.getExistingDirectory(self,'open')
-        if len(path)==0:
+        if len(path) == 0:
             return
         load_paths.extend(file.get_file_list_from_path(path,'.mrc'))
+        if len(load_paths) == 0:
+            QMessageBox.about("no file found")
+            return
         self.datacubes.clear()
         self.datacubes.extend([DataCube(path) for path in load_paths])
         self.read_img(0)
 
+    def open_preset_folder(self):
+        load_paths = []
+        path = QtWidgets.QFileDialog.getExistingDirectory(self, 'open')
+        if len(path) == 0:
+            return
+        load_paths.extend(file.get_file_list_from_path(path, file.preset_ext))
+        if len(load_paths) == 0:
+            QMessageBox.about("no file found")
+            return
+        self.datacubes.clear()
+        self.datacubes.extend([file.load_preset(path) for path in load_paths])
+        self.read_img(0)
+
     def open_azavg_only(self, azavg=None):  # for averaging_multiple_gr.py
-        if azavg is None:
+        if azavg is None or azavg is False:
             azavg = file.load_azavg_manual()
 
         self.datacubes.clear()
-        self.datacubes=[DataCube()]
+        self.datacubes.append(DataCube())
         self.datacubes[0].azavg = azavg
 
         self.graphPanel.update_graph(azavg)
@@ -242,35 +260,33 @@ class MainWindow(QtWidgets.QWidget):
         left = rdf_calculator.find_first_peak(azavg)
         self.graphPanel.region.setRegion([left, len(azavg)-1])
 
+    def load_preset(self):
+        self.datacubes.clear()
+        dc = file.load_preset()
+        if not dc:
+            return
+        self.datacubes.append(dc)
+        self.read_img(0)
+        # if dc.azavg is not None:
+        #     self.update_azavg_graph(dc.azavg)
+
     def save_preset(self):
         self.update_datacubes()
-        to_update = {"Calibration_factor":self.datacubes[self.current_page].ds,
-         "Fit_at_Q": self.datacubes[self.current_page].fit_at_q,
-         "N": self.datacubes[self.current_page].N,
-         "Damping": self.datacubes[self.current_page].damping,
-         "r(max)": self.datacubes[self.current_page].rmax,
-         "dr": self.datacubes[self.current_page].dr,
-         "Is_full_Q": self.datacubes[self.current_page].is_full_q,
-         "pixel_start_num": self.datacubes[self.current_page].pixel_start_n,
-         "pixel_end_num": self.datacubes[self.current_page].pixel_end_n,
-         "center_x": self.datacubes[self.current_page].center[0],
-         "center_y": self.datacubes[self.current_page].center[1],
-         "mrc_file_path": self.datacubes[self.current_page].file_path}
-        file.save_preset_default(self.datacubes[self.current_page].file_path, to_update)
+        # to_update = {"Calibration_factor":self.datacubes[self.current_page].ds,
+        #  "Fit_at_Q": self.datacubes[self.current_page].fit_at_q,
+        #  "N": self.datacubes[self.current_page].N,
+        #  "Damping": self.datacubes[self.current_page].damping,
+        #  "r(max)": self.datacubes[self.current_page].rmax,
+        #  "dr": self.datacubes[self.current_page].dr,
+        #  "Is_full_Q": self.datacubes[self.current_page].is_full_q,
+        #  "pixel_start_num": self.datacubes[self.current_page].pixel_start_n,
+        #  "pixel_end_num": self.datacubes[self.current_page].pixel_end_n,
+        #  "center_x": self.datacubes[self.current_page].center[0],
+        #  "center_y": self.datacubes[self.current_page].center[1],
+        #  "mrc_file_path": self.datacubes[self.current_page].file_path}
+        file.save_preset_default(self.datacubes[self.current_page].mrc_file_path, self.datacubes[self.current_page])
 
-    def load_preset(self):
-        preset = file.load_preset()
-        self.datacubes[self.current_page].fit_at_q = preset["Fit_at_Q"]
-        self.datacubes[self.current_page].N = preset["N"]
-        self.datacubes[self.current_page].damping = preset["Damping"]
-        self.datacubes[self.current_page].rmax = preset["r(max)"]
-        self.datacubes[self.current_page].dr = preset["dr"]
-        self.datacubes[self.current_page].is_full_q = preset["Is_full_Q"]
-        self.datacubes[self.current_page].pixel_end_n = preset["pixel_end_num"]
-        self.datacubes[self.current_page].pixel_start_n = preset["pixel_start_num"]
-        self.datacubes[self.current_page].center = [preset["center_x"],preset["center_y"]]
-        self.datacubes[self.current_page].file_path = preset["mrc_file_path"]
-        self.read_img(0)
+
 
     def btn_right_clicked(self):
         if not self.current_page == len(self.datacubes) - 1:
@@ -286,9 +302,14 @@ class MainWindow(QtWidgets.QWidget):
         self.imgPanel.lbl_current_num.setText(str(self.current_page+1)+"/"+str(len(self.datacubes)))
         self.datacubes[i].ready()
         self.update_img()
-        self.setWindowTitle(self.datacubes[self.current_page].file_path)
+        self.setWindowTitle(self.datacubes[self.current_page].mrc_file_path)
         self.controlPanel.settingPanel.spinBox_center_x.setMaximum(self.datacubes[i].img.shape[0])  # todo : confusing x,y
         self.controlPanel.settingPanel.spinBox_center_y.setMaximum(self.datacubes[i].img.shape[1])
+
+        if not self.datacubes[i].center[0] is None:
+            self.put_center_to_spinBoxes(self.datacubes[i].center)
+        if not self.datacubes[i].azavg is None:
+            self.update_azavg_graph(self.datacubes[i].azavg)
 
     def put_center_to_spinBoxes(self, center):
         self.controlPanel.settingPanel.spinBox_center_x.blockSignals(True)
@@ -304,8 +325,7 @@ class MainWindow(QtWidgets.QWidget):
         img = self.datacubes[self.current_page].img.copy()
         if self.controlPanel.settingPanel.chkBox_show_beam_stopper_mask.isChecked():
             img = cv2.bitwise_and(img, img, mask=np.bitwise_not(image_process.mask))
-        if self.datacubes[self.current_page].center is not None and self.controlPanel.settingPanel.chkBox_show_centerLine.isChecked():
-            self.put_center_to_spinBoxes(self.datacubes[self.current_page].center)
+        if self.datacubes[self.current_page].center[0] is not None and self.controlPanel.settingPanel.chkBox_show_centerLine.isChecked():
             img = image_process.draw_center_line(img, self.datacubes[self.current_page].center)
         self.imgPanel.update_img(img)
 
@@ -315,7 +335,7 @@ class MainWindow(QtWidgets.QWidget):
         right = self.controlPanel.settingPanel.spinBox_pixel_range_right.value()
         self.graphPanel.region.setRegion([left,right])
         self.flag_range_update = False
-        if hasattr(self.datacubes[self.current_page],"analyser"):
+        if self.datacubes[self.current_page].analyser is not None:
             print("instant update")
             self.datacubes[self.current_page].pixel_start_n = int(left)
             self.datacubes[self.current_page].pixel_end_n = int(right)
@@ -333,7 +353,7 @@ class MainWindow(QtWidgets.QWidget):
         self.graphPanel.region.sigRegionChangeFinished.connect(self.range_to_dialog)
         self.controlPanel.settingPanel.spinBox_pixel_range_left.setValue(left)
         self.controlPanel.settingPanel.spinBox_pixel_range_right.setValue(right)
-        if hasattr(self.datacubes[self.current_page],"analyser"):
+        if self.datacubes[self.current_page].analyser is not None:
             print("instant update2")
             self.datacubes[self.current_page].pixel_start_n = int(left)
             self.datacubes[self.current_page].pixel_end_n = int(right)

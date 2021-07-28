@@ -16,8 +16,9 @@ class rdf_analyse(QtWidgets.QMainWindow):
         super().__init__()
         self.datacube = datacube
         self.datacube.analyser = self
-        self.datacube.element_nums = []
-        self.datacube.element_ratio = []
+        if self.datacube.element_nums is None:
+            self.datacube.element_nums = []
+            self.datacube.element_ratio = []
         self.instant_update = False
         self.initui()
         self.binding()
@@ -53,12 +54,56 @@ class rdf_analyse(QtWidgets.QMainWindow):
         centralWidget.setLayout(self.layout)
         self.setCentralWidget(centralWidget)
 
+        self.put_data_to_ui()
+        if self.datacube.Gr is not None:
+            self.update_graph()
+
+    def put_data_to_ui(self):
+        # elements
+        print(self.datacube.element_nums)
+        if self.datacube.element_nums is not None:
+            for i in range(len(self.datacube.element_nums)):
+                self.controlPanel.fitting_elements.element_group_widgets[i].combobox.setCurrentIndex(self.datacube.element_nums[i])
+                self.controlPanel.fitting_elements.element_group_widgets[i].element_ratio.setValue(self.datacube.element_ratio[i])
+
+        # factors
+
+        if self.datacube.fit_at_q is not None:
+            self.controlPanel.fitting_factors.spinbox_fit_at_q.blockSignals(True)
+            self.controlPanel.fitting_factors.spinbox_fit_at_q.setValue(self.datacube.fit_at_q)
+            self.controlPanel.fitting_factors.spinbox_fit_at_q.blockSignals(False)
+        if self.datacube.ds is not None:
+            self.controlPanel.fitting_factors.spinbox_ds.blockSignals(True)
+            self.controlPanel.fitting_factors.spinbox_ds.setValue(self.datacube.ds)
+            self.controlPanel.fitting_factors.spinbox_ds.blockSignals(False)
+        if self.datacube.N is not None:
+            self.controlPanel.fitting_factors.spinbox_N.blockSignals(True)
+            self.controlPanel.fitting_factors.spinbox_N.setValue(self.datacube.N)
+            self.controlPanel.fitting_factors.spinbox_N.blockSignals(False)
+        if self.datacube.damping is not None:
+            self.controlPanel.fitting_factors.spinbox_damping.blockSignals(True)
+            self.controlPanel.fitting_factors.spinbox_damping.setValue(self.datacube.damping)
+            self.controlPanel.fitting_factors.spinbox_damping.blockSignals(False)
+        if self.datacube.dr is not None:
+            self.controlPanel.fitting_factors.spinbox_dr.blockSignals(True)
+            self.controlPanel.fitting_factors.spinbox_dr.setValue(self.datacube.dr)
+            self.controlPanel.fitting_factors.spinbox_dr.blockSignals(False)
+        if self.datacube.is_full_q is not None:
+            if self.datacube.is_full_q:
+                self.controlPanel.fitting_factors.radio_full_range.blockSignals(True)
+                self.controlPanel.fitting_factors.radio_full_range.setChecked(True)
+                self.controlPanel.fitting_factors.radio_full_range.blockSignals(False)
+            else:
+                self.controlPanel.fitting_factors.radio_tail.blockSignals(True)
+                self.controlPanel.fitting_factors.radio_tail.setChecked(True)
+                self.controlPanel.fitting_factors.radio_tail.blockSignals(False)
+
     def update_graph(self):
-        self.graph_Iq_Iq.setData(self.q, self.Iq)
-        self.graph_Iq_AutoFit.setData(self.q, self.Autofit)
-        self.graph_phiq_phiq.setData(self.q, self.phiq)
-        self.graph_phiq_damp.setData(self.q, self.phiq_damp)
-        self.graph_Gr_Gr.setData(self.r, self.Gr)
+        self.graph_Iq_Iq.setData(self.datacube.q, self.datacube.Iq)
+        self.graph_Iq_AutoFit.setData(self.datacube.q, self.datacube.Autofit)
+        self.graph_phiq_phiq.setData(self.datacube.q, self.datacube.phiq)
+        self.graph_phiq_damp.setData(self.datacube.q, self.datacube.phiq_damp)
+        self.graph_Gr_Gr.setData(self.datacube.r, self.datacube.Gr)
 
     def binding(self):
         self.controlPanel.fitting_factors.btn_auto_fit.clicked.connect(self.autofit)
@@ -133,6 +178,8 @@ class rdf_analyse(QtWidgets.QMainWindow):
 
     def update_parameter(self):
         # elements
+        self.datacube.element_nums.clear()
+        self.datacube.element_ratio.clear()
         for element_widget in self.controlPanel.fitting_elements.element_group_widgets:  # todo: test
             self.datacube.element_nums.append(element_widget.combobox.currentIndex())
             self.datacube.element_ratio.append(element_widget.element_ratio.value())
@@ -148,7 +195,7 @@ class rdf_analyse(QtWidgets.QMainWindow):
         if not self.check_condition():
             return
         self.update_parameter()
-        self.q, self.r, self.Iq, self.Autofit, self.phiq, self.phiq_damp, self.Gr, self.SS, self.datacube.fit_at_q, self.datacube.N = rdf_calculator.calculation(
+        self.datacube.q, self.datacube.r, self.datacube.Iq, self.datacube.Autofit, self.datacube.phiq, self.datacube.phiq_damp, self.datacube.Gr, self.datacube.SS, self.datacube.fit_at_q, self.datacube.N = rdf_calculator.calculation(
             self.datacube.ds,
             self.datacube.pixel_start_n,
             self.datacube.pixel_end_n,
@@ -170,7 +217,7 @@ class rdf_analyse(QtWidgets.QMainWindow):
         if not self.check_condition():
             return
         self.update_parameter()
-        self.q, self.r, self.Iq, self.Autofit, self.phiq, self.phiq_damp, self.Gr, self.SS, self.datacube.fit_at_q, self.datacube.N = rdf_calculator.calculation(
+        self.datacube.q, self.datacube.r, self.datacube.Iq, self.datacube.Autofit, self.datacube.phiq, self.datacube.phiq_damp, self.datacube.Gr, self.datacube.SS, self.datacube.fit_at_q, self.datacube.N = rdf_calculator.calculation(
             self.datacube.ds,
             self.datacube.pixel_start_n,
             self.datacube.pixel_end_n,
@@ -187,11 +234,11 @@ class rdf_analyse(QtWidgets.QMainWindow):
         self.update_graph()
 
     def instantfit(self):
+        self.update_parameter()
         if not self.controlPanel.fitting_factors.chkbox_instant_update.isChecked():
             # print("not checked")
             return
-        self.update_parameter()
-        self.q, self.r, self.Iq, self.Autofit, self.phiq, self.phiq_damp, self.Gr, self.SS, self.datacube.fit_at_q, self.datacube.N = rdf_calculator.calculation(
+        self.datacube.q, self.datacube.r, self.datacube.Iq, self.datacube.Autofit, self.datacube.phiq, self.datacube.phiq_damp, self.datacube.Gr, self.datacube.SS, self.datacube.fit_at_q, self.datacube.N = rdf_calculator.calculation(
             self.datacube.ds,
             self.datacube.pixel_start_n,
             self.datacube.pixel_end_n,
@@ -279,6 +326,7 @@ class ControlPanel(QtWidgets.QWidget):
 
             lbl_calibration_factor = QtWidgets.QLabel("Calibration factors")
             self.spinbox_ds = ui_util.DoubleSpinBox()
+            self.spinbox_ds.setValue(0.001)
             self.spinbox_ds_step = ui_util.DoubleLineEdit()
             self.spinbox_ds_step.textChanged.connect(
                 lambda : self.spinbox_ds.setSingleStep(float(self.spinbox_ds_step.text())))

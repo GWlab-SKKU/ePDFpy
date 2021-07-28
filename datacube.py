@@ -13,10 +13,10 @@ class DataCube:
         _use_cupy = False
 
     def __init__(self, file_path=None):
-        self.file_path = file_path
+        self.mrc_file_path = file_path
         self.raw_img = None
         self.img = None
-        self.center = None
+        self.center = [None,None]
         self.azavg = None
         self.azvar = None
         self.pixel_start_n = None
@@ -31,8 +31,22 @@ class DataCube:
         self.dr = None
         self.is_full_q = None
 
+        self.q = None
+        self.r = None
+
+        self.Iq = None
+        self.Gr = None
+
+        self.SS = None
+        self.phiq = None
+        self.phiq_damp = None
+        self.Autofit = None
+        self.analyser = None
+        self.element_nums = None
+        self.element_ratio = None
+
     def ready(self):
-        self.raw_img, self.img = file.load_mrc_img(self.file_path)
+        self.raw_img, self.img = file.load_mrc_img(self.mrc_file_path)
 
     def release(self):
         self.raw_img, self.img = None, None
@@ -58,10 +72,10 @@ class DataCube:
             self.calculate_azimuthal_average()
 
         i_list = [intensity_start,intensity_end,intensity_slice]
-        file.save_current_azimuthal(self.azavg, self.file_path, True,  i_slice=i_list) # todo: seperate method
-        file.save_current_azimuthal(self.azvar, self.file_path, False, i_slice=i_list)
+        file.save_current_azimuthal(self.azavg, self.mrc_file_path, True, i_slice=i_list) # todo: seperate method
+        file.save_current_azimuthal(self.azvar, self.mrc_file_path, False, i_slice=i_list)
 
-        folder_path, file_full_name = os.path.split(self.file_path)
+        folder_path, file_full_name = os.path.split(self.mrc_file_path)
         file_name, ext = os.path.splitext(file_full_name)
 
 
