@@ -1,11 +1,14 @@
+import typing
+
 import file
 from datacube import DataCube
 import pyqtgraph as pg
 import util
 from calculate import rdf_calculator
 from PyQt5.QtWidgets import QMessageBox
+import ui.ui_util as ui_util
+from PyQt5 import QtCore, QtWidgets, QtGui
 
-from PyQt5 import QtCore, QtWidgets
 
 
 class rdf_analyse(QtWidgets.QMainWindow):
@@ -128,7 +131,6 @@ class rdf_analyse(QtWidgets.QMainWindow):
         self.controlPanel.fitting_factors.spinbox_rmax.setValue(self.pdf_setting["r(max)"])
         self.controlPanel.fitting_factors.spinbox_dr.setValue(self.pdf_setting["dr"])
 
-
     def update_parameter(self):
         # elements
         for element_widget in self.controlPanel.fitting_elements.element_group_widgets:  # todo: test
@@ -186,7 +188,7 @@ class rdf_analyse(QtWidgets.QMainWindow):
 
     def instantfit(self):
         if not self.controlPanel.fitting_factors.chkbox_instant_update.isChecked():
-            print("not checked")
+            # print("not checked")
             return
         self.update_parameter()
         self.q, self.r, self.Iq, self.Autofit, self.phiq, self.phiq_damp, self.Gr, self.SS, self.datacube.fit_at_q, self.datacube.N = rdf_calculator.calculation(
@@ -276,59 +278,106 @@ class ControlPanel(QtWidgets.QWidget):
             layout = QtWidgets.QGridLayout()
 
             lbl_calibration_factor = QtWidgets.QLabel("Calibration factors")
-            self.spinbox_ds = QtWidgets.QDoubleSpinBox()
-            layout.addWidget(lbl_calibration_factor, 0, 0)
-            layout.addWidget(self.spinbox_ds, 0, 3)
-            self.spinbox_ds.setDecimals(5)
-            self.spinbox_ds.setValue(0.001)
-            self.spinbox_ds.setSingleStep(0.001)
-            self.spinbox_ds.setMaximum(1)
+            self.spinbox_ds = ui_util.DoubleSpinBox()
+            self.spinbox_ds_step = ui_util.DoubleLineEdit()
+            self.spinbox_ds_step.textChanged.connect(
+                lambda : self.spinbox_ds.setSingleStep(float(self.spinbox_ds_step.text())))
+            self.spinbox_ds.setRange(0,1e+10)
+            self.spinbox_ds_step.setText("0.01")
 
             lbl_fitting_q_range = QtWidgets.QLabel("Fitting Q Range")
             self.radio_full_range = QtWidgets.QRadioButton("full range")
             self.radio_tail = QtWidgets.QRadioButton("tail")
-            layout.addWidget(lbl_fitting_q_range, 1, 0, 1, 2)
-            layout.addWidget(self.radio_full_range, 1, 2)
-            layout.addWidget(self.radio_tail, 1, 3)
             self.radio_full_range.setChecked(True)
 
             self.btn_auto_fit = QtWidgets.QPushButton("Auto Fit")
-            layout.addWidget(self.btn_auto_fit, 2, 0, 1, 4)
 
             lbl_fit_at_q = QtWidgets.QLabel("Fit at q")
-            self.spinbox_fit_at_q = QtWidgets.QDoubleSpinBox()
-            self.spinbox_fit_at_q.setMaximum(100000)
-            self.spinbox_fit_at_q.setDecimals(5)
-            layout.addWidget(lbl_fit_at_q, 3, 0, 1, 2)
-            layout.addWidget(self.spinbox_fit_at_q, 3, 2, 1, 2)
+            self.spinbox_fit_at_q = ui_util.DoubleSpinBox()
+            self.spinbox_fit_at_q_step = ui_util.DoubleLineEdit()
+            self.spinbox_fit_at_q_step.textChanged.connect(
+                lambda : self.spinbox_fit_at_q.setSingleStep(float(self.spinbox_fit_at_q_step.text())))
+            self.spinbox_fit_at_q.setRange(0,1e+10)
+            self.spinbox_fit_at_q_step.setText("0.1")
+
             lbl_N = QtWidgets.QLabel("N")
-            self.spinbox_N = QtWidgets.QDoubleSpinBox()
-            self.spinbox_N.setMaximum(100000)
-            layout.addWidget(lbl_N, 4, 0, 1, 2)
-            layout.addWidget(self.spinbox_N, 4, 2, 1, 2)
+            self.spinbox_N = ui_util.DoubleSpinBox()
+            self.spinbox_N_step = ui_util.DoubleLineEdit()
+            self.spinbox_N_step.textChanged.connect(
+                lambda: self.spinbox_N.setSingleStep(float(self.spinbox_N_step.text())))
+            self.spinbox_N.setRange(0, 1e+10)
+            self.spinbox_N_step.setText("0.1")
+
             lbl_damping = QtWidgets.QLabel("Damping")
-            self.spinbox_damping = QtWidgets.QDoubleSpinBox()
-            layout.addWidget(lbl_damping, 5, 0, 1, 2)
-            layout.addWidget(self.spinbox_damping, 5, 2, 1, 2)
+            self.spinbox_damping = ui_util.DoubleSpinBox()
+            self.spinbox_damping_step = ui_util.DoubleLineEdit()
+            self.spinbox_damping_step.textChanged.connect(
+                lambda: self.spinbox_damping.setSingleStep(float(self.spinbox_damping_step.text())))
+            self.spinbox_damping.setRange(0, 1e+10)
+            self.spinbox_damping_step.setText("0.1")
+
             lbl_rmax = QtWidgets.QLabel("r(max)")
-            self.spinbox_rmax = QtWidgets.QDoubleSpinBox()
-            layout.addWidget(lbl_rmax, 6, 0, 1, 2)
-            layout.addWidget(self.spinbox_rmax, 6, 2, 1, 2)
+            self.spinbox_rmax = ui_util.DoubleSpinBox()
+            self.spinbox_rmax_step = ui_util.DoubleLineEdit()
+            self.spinbox_rmax_step.textChanged.connect(
+                lambda: self.spinbox_rmax.setSingleStep(float(self.spinbox_rmax_step.text())))
+            self.spinbox_rmax.setRange(0, 1e+10)
+            self.spinbox_rmax_step.setText("1")
+
+
             lbl_dr = QtWidgets.QLabel("dr")
-            self.spinbox_dr = QtWidgets.QDoubleSpinBox()
-            layout.addWidget(lbl_dr, 7, 0, 1, 2)
-            layout.addWidget(self.spinbox_dr, 7, 2, 1, 2)
+            self.spinbox_dr = ui_util.DoubleSpinBox()
+            self.spinbox_dr_step = ui_util.DoubleLineEdit()
+            self.spinbox_dr_step.textChanged.connect(
+                lambda: self.spinbox_dr.setSingleStep(float(self.spinbox_dr_step.text())))
+            self.spinbox_dr.setRange(0, 1e+10)
+            self.spinbox_dr_step.setText("0.01")
+
+
             self.btn_manual_fit = QtWidgets.QPushButton("Manual Fit")
             layout.addWidget(self.btn_manual_fit, 8, 0, 1, 4)
 
             lbl_instant_update = QtWidgets.QLabel("instant update")
             self.chkbox_instant_update = QtWidgets.QCheckBox()
-            layout.addWidget(lbl_instant_update, 9, 0)
-            layout.addWidget(self.chkbox_instant_update, 9, 1)
 
             self.spinbox_dr.setValue(float(util.settings["default_dr"]))
             self.spinbox_rmax.setValue(float(util.settings["default_rmax"]))
             self.spinbox_damping.setValue(float(util.settings["default_damping"]))
+
+
+            layout.addWidget(lbl_calibration_factor, 0, 0)
+            layout.addWidget(self.spinbox_ds, 0, 2, 1, 1)
+            layout.addWidget(self.spinbox_ds_step, 0, 3, 1, 1)
+
+            layout.addWidget(lbl_fitting_q_range, 1, 0, 1, 2)
+            layout.addWidget(self.radio_full_range, 1, 2)
+            layout.addWidget(self.radio_tail, 1, 3)
+
+            layout.addWidget(self.btn_auto_fit, 2, 0, 1, 4)
+
+            layout.addWidget(lbl_fit_at_q, 3, 0, 1, 2)
+            layout.addWidget(self.spinbox_fit_at_q, 3, 2, 1, 1)
+            layout.addWidget(self.spinbox_fit_at_q_step, 3, 3, 1, 1)
+
+            layout.addWidget(lbl_N, 4, 0, 1, 2)
+            layout.addWidget(self.spinbox_N, 4, 2, 1, 1)
+            layout.addWidget(self.spinbox_N_step, 4, 3, 1, 1)
+
+            layout.addWidget(lbl_damping, 5, 0, 1, 2)
+            layout.addWidget(self.spinbox_damping, 5, 2, 1, 1)
+            layout.addWidget(self.spinbox_damping_step, 5, 3, 1, 1)
+
+            layout.addWidget(lbl_rmax, 6, 0, 1, 2)
+            layout.addWidget(self.spinbox_rmax, 6, 2, 1, 1)
+            layout.addWidget(self.spinbox_rmax_step, 6, 3, 1, 1)
+
+            layout.addWidget(lbl_dr, 7, 0, 1, 2)
+            layout.addWidget(self.spinbox_dr, 7, 2, 1, 1)
+            layout.addWidget(self.spinbox_dr_step, 7, 3, 1, 1)
+
+            layout.addWidget(lbl_instant_update, 9, 0)
+            layout.addWidget(self.chkbox_instant_update, 9, 1)
+
 
             self.setLayout(layout)
 
