@@ -227,8 +227,10 @@ class MainWindow(QtWidgets.QWidget):
         self.datacubes.extend([DataCube(path) for path in load_paths])
         self.read_img(0)
 
-    def open_azavg_only(self):
-        azavg = file.load_azavg_manual()
+    def open_azavg_only(self, azavg=None):  # for averaging_multiple_gr.py
+        if azavg is None:
+            azavg = file.load_azavg_manual()
+
         self.datacubes.clear()
         self.datacubes=[DataCube()]
         self.datacubes[0].azavg = azavg
