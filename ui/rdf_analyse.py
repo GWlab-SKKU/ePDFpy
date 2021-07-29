@@ -67,36 +67,21 @@ class rdf_analyse(QtWidgets.QMainWindow):
                 self.controlPanel.fitting_elements.element_group_widgets[i].element_ratio.setValue(self.datacube.element_ratio[i])
 
         # factors
-
         if self.datacube.fit_at_q is not None:
-            self.controlPanel.fitting_factors.spinbox_fit_at_q.blockSignals(True)
-            self.controlPanel.fitting_factors.spinbox_fit_at_q.setValue(self.datacube.fit_at_q)
-            self.controlPanel.fitting_factors.spinbox_fit_at_q.blockSignals(False)
+            ui_util.update_value(self.controlPanel.fitting_factors.spinbox_fit_at_q,self.datacube.fit_at_q)
         if self.datacube.ds is not None:
-            self.controlPanel.fitting_factors.spinbox_ds.blockSignals(True)
-            self.controlPanel.fitting_factors.spinbox_ds.setValue(self.datacube.ds)
-            self.controlPanel.fitting_factors.spinbox_ds.blockSignals(False)
+            ui_util.update_value(self.controlPanel.fitting_factors.spinbox_ds,self.datacube.ds)
         if self.datacube.N is not None:
-            self.controlPanel.fitting_factors.spinbox_N.blockSignals(True)
-            self.controlPanel.fitting_factors.spinbox_N.setValue(self.datacube.N)
-            self.controlPanel.fitting_factors.spinbox_N.blockSignals(False)
+            ui_util.update_value(self.controlPanel.fitting_factors.spinbox_N,self.datacube.N)
         if self.datacube.damping is not None:
-            self.controlPanel.fitting_factors.spinbox_damping.blockSignals(True)
-            self.controlPanel.fitting_factors.spinbox_damping.setValue(self.datacube.damping)
-            self.controlPanel.fitting_factors.spinbox_damping.blockSignals(False)
+            ui_util.update_value(self.controlPanel.fitting_factors.spinbox_damping,self.datacube.damping)
         if self.datacube.dr is not None:
-            self.controlPanel.fitting_factors.spinbox_dr.blockSignals(True)
-            self.controlPanel.fitting_factors.spinbox_dr.setValue(self.datacube.dr)
-            self.controlPanel.fitting_factors.spinbox_dr.blockSignals(False)
+            ui_util.update_value(self.controlPanel.fitting_factors.spinbox_dr,self.datacube.dr)
         if self.datacube.is_full_q is not None:
             if self.datacube.is_full_q:
-                self.controlPanel.fitting_factors.radio_full_range.blockSignals(True)
-                self.controlPanel.fitting_factors.radio_full_range.setChecked(True)
-                self.controlPanel.fitting_factors.radio_full_range.blockSignals(False)
+                ui_util.update_value(self.controlPanel.fitting_factors.radio_full_range,True)
             else:
-                self.controlPanel.fitting_factors.radio_tail.blockSignals(True)
-                self.controlPanel.fitting_factors.radio_tail.setChecked(True)
-                self.controlPanel.fitting_factors.radio_tail.blockSignals(False)
+                ui_util.update_value(self.controlPanel.fitting_factors.radio_tail,True)
 
     def update_graph(self):
         self.graph_Iq_Iq.setData(self.datacube.q, self.datacube.Iq)
@@ -207,9 +192,9 @@ class rdf_analyse(QtWidgets.QMainWindow):
             self.datacube.rmax,
             self.datacube.dr
         )
-
-        self.controlPanel.fitting_factors.spinbox_fit_at_q.setValue(self.datacube.fit_at_q)
-        self.controlPanel.fitting_factors.spinbox_N.setValue(self.datacube.N)
+        print(self.datacube.N)
+        ui_util.update_value(self.controlPanel.fitting_factors.spinbox_fit_at_q,self.datacube.fit_at_q)
+        ui_util.update_value(self.controlPanel.fitting_factors.spinbox_N,self.datacube.N)
         # todo: add SS
         self.update_graph()
 

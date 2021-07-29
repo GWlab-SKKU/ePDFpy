@@ -108,3 +108,15 @@ class CoordinatesPlotWidget(pg.PlotWidget):
         # print(self.getPlotItem().dataItems[0].xDisp) # xData, yData, xDisp, yDisp
         self.coor_update_toggle = not self.coor_update_toggle
         return super().mousePressEvent(ev)
+
+def update_value(widget:QtWidgets.QWidget, value):
+    """ update value without occuring signal """
+    widget.blockSignals(True)
+    if issubclass(type(widget),QtWidgets.QRadioButton):
+        widget.setChecked(value)
+    if issubclass(type(widget),QtWidgets.QDoubleSpinBox):
+        widget.setValue(value)
+    if issubclass(type(widget),QtWidgets.QSpinBox):
+        widget.setValue(value)
+
+    widget.blockSignals(False)
