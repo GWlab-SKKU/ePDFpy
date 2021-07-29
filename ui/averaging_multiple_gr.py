@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtCore
 import ui.main as main
 import pyqtgraph as pg
 import os
@@ -119,11 +119,15 @@ class Viewer(QtWidgets.QWidget):
             grCube.chkbox_module = self.leftPanel.graphGroup.add_module(os.path.split(data_r_file)[1],color_rgb_text)
             grCube.chkbox_module.chkbox.clicked.connect(grCube.plot_show_hide)
             grCube.chkbox_module.chkbox.clicked.connect(self.calculate_average)
+
+            grCube.binding_event()
+
             self.grCubes.append(grCube)
 
         self.calculate_average()
         self.rightPanel.graphView.autoRange()
         self.rightPanel.graphView.setRange(xRange=[0,10])
+
 
     def load_Gr_file(self, path):
         df = pd.read_csv(path)
@@ -171,7 +175,10 @@ class Viewer(QtWidgets.QWidget):
         self.average_plot.setData(r, self.gr_avg)
         pass
 
-
+    # def hovering_event(self):
+    #     for grCube in self.grCubes:
+    #         grCube.chkbox_module:GraphModule
+    #         grCube.chkbox_module.enterEvent_list.append(grCube.plotItem)
 
 
 class GrCube:
@@ -180,11 +187,14 @@ class GrCube:
         self.data_r_path = None
         self.data_q_path = None
         self.data_azav_path = None
+        self.color = None
 
         self.project_folder = None
         self.plotItem = None
+        self.chkbox_module:GraphModule
         self.chkbox_module = None
         self.Gr = None
+
 
     def plot_show_hide(self):
         if self.chkbox_module.chkbox.isChecked():
@@ -201,10 +211,16 @@ class GrCube:
 
     def binding_event(self):
         # widget enter event
-        print(self.plotItem.pen)
-        self.plotItem.pen()
-        self.plotItem.setPen()
-        self.chkbox_module.enterEvent_list.append()
+
+        enter_pen = pg.mkPen(self.color,width=5)
+        default_pen = pg.mkPen(self.color,width=1)
+
+        print(enter_pen)
+
+        self.chkbox_module.enterEvent_list.append(lambda :self.plotItem.setPen(enter_pen))
+        self.chkbox_module.leaveEvent_list.append(lambda :self.plotItem.setPen(default_pen))
+
+
 
 
 class GraphPanel(QtWidgets.QWidget):
@@ -302,7 +318,15 @@ class GraphModule(QtWidgets.QWidget):
         # self.chkbox.styleSheet()
         pass
 
+    def enterEvent(self, a0: QtCore.QEvent) -> None:
+        super().enterEvent(a0)
+        for func in self.enterEvent_list:
+            func()
 
+    def leaveEvent(self, a0: QtCore.QEvent) -> None:
+        super().leaveEvent(a0)
+        for func in self.leaveEvent_list:
+            func()
 
 
 if __name__ == "__main__":
