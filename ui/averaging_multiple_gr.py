@@ -165,7 +165,7 @@ class Viewer(QtWidgets.QWidget):
                 gr_path_list.append(str(file.absolute()))
                 azavg_path_lst.append(searched_files[0])
             else:
-                QMessageBox.about(self,"failed to find azav file for {}".format(file))
+                QMessageBox.about(self,"Not Found","failed to find azav file for {}".format(file))
 
         return gr_path_list, azavg_path_lst
 
