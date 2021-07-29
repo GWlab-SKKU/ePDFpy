@@ -22,6 +22,7 @@ class Viewer(QtWidgets.QWidget):
         super().__init__()
         self.initui()
         self.grCubes = []
+        self.avg_azavg = None
         self.binding()
 
     def initui(self):
@@ -65,21 +66,25 @@ class Viewer(QtWidgets.QWidget):
         np.savetxt(fp+".txt", avg_azavg)
 
     def open_analyzer(self):
-        azavg_list = []
-        shortest_end = 1000000
-        for grCube in self.grCubes:
-            azavg = np.loadtxt(grCube.data_azav_path)
-            if shortest_end > len(azavg):
-                shortest_end = len(azavg)
-            azavg_list.append(azavg)
-        azavg_list = [azavg[:shortest_end] for azavg in azavg_list]
-        np.array(azavg_list)
-        avg_azavg = np.average(np.array(azavg_list), axis=0).transpose()
-        self.avg_azavg = avg_azavg
+        if self.grCubes is None or len(self.grCubes) is 0:
+            pass
+        else:
+            azavg_list = []
+            shortest_end = 1000000
+            for grCube in self.grCubes:
+                azavg = np.loadtxt(grCube.data_azav_path)
+                if shortest_end > len(azavg):
+                    shortest_end = len(azavg)
+                azavg_list.append(azavg)
+            azavg_list = [azavg[:shortest_end] for azavg in azavg_list]
+            np.array(azavg_list)
+            avg_azavg = np.average(np.array(azavg_list), axis=0).transpose()
+            self.avg_azavg = avg_azavg
 
         analyzer_window = main.DataViewer()
         analyzer_window.show()
-        analyzer_window.main_window.open_azavg_only(self.avg_azavg)
+        if self.avg_azavg is not None:
+            analyzer_window.main_window.open_azavg_only(self.avg_azavg)
 
 
     def open_btn_clicked(self):
