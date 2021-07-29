@@ -30,9 +30,16 @@ class rdf_analyse(QtWidgets.QMainWindow):
         self.controlPanel = ControlPanel(self)
         self.graphPanel = GraphPanel()
 
-        self.layout.addWidget(self.controlPanel)
-        self.layout.addWidget(self.graphPanel)
-        self.layout.setStretch(1, 1)
+        self.splitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+        self.splitter.addWidget(self.controlPanel)
+        self.splitter.addWidget(self.graphPanel)
+        self.splitter.setStretchFactor(0, 1)
+        self.splitter.setStretchFactor(1, 2)
+        self.layout.addWidget(self.splitter)
+
+        # self.layout.addWidget(self.controlPanel)
+        # self.layout.addWidget(self.graphPanel)
+        # self.layout.setStretch(1, 1)
         # self.setLayout(self.layout)
         self.show()
 
@@ -302,7 +309,8 @@ class ControlPanel(QtWidgets.QWidget):
         self.layout.addWidget(self.one_graph)
 
         self.layout.addStretch(1)
-        self.setMaximumWidth(300)
+        self.setMinimumWidth(200)
+        # self.resize(600,1000)
         self.setLayout(self.layout)
         # self.layout.setContentsMargins(0,0,0,0)
 
