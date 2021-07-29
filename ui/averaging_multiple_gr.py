@@ -120,6 +120,7 @@ class Viewer(QtWidgets.QWidget):
             self.grCubes.append(grCube)
 
         self.calculate_average()
+        self.rightPanel.graphView.setRange(xRange=[0,10])
 
     def load_Gr_file(self, path):
         df = pd.read_csv(path)
