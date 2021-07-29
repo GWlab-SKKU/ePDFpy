@@ -8,7 +8,7 @@ from pathlib import Path
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtCore import Qt, QRectF
 import numpy as np
-import ui_util
+from ui import ui_util
 
 
 class Viewer(QtWidgets.QWidget):
