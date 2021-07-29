@@ -155,7 +155,7 @@ class Viewer(QtWidgets.QWidget):
             fp1 = os.path.split(fp1)[1]
             fp1 = fp1[:fp1.rfind("_r30_")]
             search_name = fp1[:32]
-            rglob = Path(folder).rglob(search_name+"*"+"azav.txt")
+            rglob = Path(folder).rglob(search_name+"*azav*.txt")
             searched_files = []
             for fp2 in rglob:
                 searched_files.append(str(fp2.absolute()))
