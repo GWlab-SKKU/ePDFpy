@@ -103,8 +103,8 @@ class MainWindow(QtWidgets.QWidget):
         self.controlPanel.operationPanel.btn_save_all_azimuthal.clicked.connect(self.save_all_azimuthal)
         self.controlPanel.settingPanel.chkBox_show_centerLine.stateChanged.connect(self.update_img)
         self.controlPanel.settingPanel.chkBox_show_beam_stopper_mask.stateChanged.connect(self.update_img)
-        self.controlPanel.settingPanel.spinBox_pixel_range_left.valueChanged.connect(self.dialog_to_range)
-        self.controlPanel.settingPanel.spinBox_pixel_range_right.valueChanged.connect(self.dialog_to_range)
+        self.graphPanel.spinBox_pixel_range_left.valueChanged.connect(self.dialog_to_range)
+        self.graphPanel.spinBox_pixel_range_right.valueChanged.connect(self.dialog_to_range)
         self.graphPanel.region.sigRegionChangeFinished.connect(self.range_to_dialog)
         self.graphPanel.button_start.clicked.connect(self.range_start_clicked)
         self.graphPanel.button_all.clicked.connect(self.range_all_clicked)
@@ -126,12 +126,12 @@ class MainWindow(QtWidgets.QWidget):
         self.eRDF_analyser = rdf_analyse(self.datacubes[self.current_page])
 
     def update_datacubes(self):
-        self.datacubes[self.current_page].pixel_start_n = self.controlPanel.settingPanel.spinBox_pixel_range_left.value()
-        self.datacubes[self.current_page].pixel_end_n = self.controlPanel.settingPanel.spinBox_pixel_range_right.value()
+        self.datacubes[self.current_page].pixel_start_n = self.graphPanel.spinBox_pixel_range_left.value()
+        self.datacubes[self.current_page].pixel_end_n = self.graphPanel.spinBox_pixel_range_right.value()
 
     def range_start_clicked(self):
-        left = self.controlPanel.settingPanel.spinBox_pixel_range_left.value()
-        right = self.controlPanel.settingPanel.spinBox_pixel_range_right.value()
+        left = self.graphPanel.spinBox_pixel_range_left.value()
+        right = self.graphPanel.spinBox_pixel_range_right.value()
         l = left
         r = left+int((right-left)/4)
         print("left {}, right {}".format(l, r))
@@ -142,8 +142,8 @@ class MainWindow(QtWidgets.QWidget):
         print(self.graphPanel.plot_azav.viewRange())
 
     def range_all_clicked(self):
-        # l = self.controlPanel.settingPanel.spinBox_pixel_range_left.value()
-        # r = self.controlPanel.settingPanel.spinBox_pixel_range_right.value()
+        # l = self.graphPanel.spinBox_pixel_range_left.value()
+        # r = self.graphPanel.spinBox_pixel_range_right.value()
         # mx = np.max(self.datacubes[self.current_page].azavg[l:r])
         # mn = np.min(self.datacubes[self.current_page].azavg[l:r])
         # self.graphPanel.plot_azav.setXRange(l, r, padding=0.1)
@@ -151,8 +151,8 @@ class MainWindow(QtWidgets.QWidget):
         self.graphPanel.plot_azav.autoRange()
 
     def range_end_clicked(self):
-        left = self.controlPanel.settingPanel.spinBox_pixel_range_left.value()
-        right = self.controlPanel.settingPanel.spinBox_pixel_range_right.value()
+        left = self.graphPanel.spinBox_pixel_range_left.value()
+        right = self.graphPanel.spinBox_pixel_range_right.value()
         l = right-int((right - left) / 4)
         r = right
         mx = np.max(self.datacubes[self.current_page].azavg[l:r])
@@ -185,8 +185,8 @@ class MainWindow(QtWidgets.QWidget):
 
     def update_azavg_graph(self, azavg):
         self.graphPanel.update_graph(azavg)
-        self.controlPanel.settingPanel.spinBox_pixel_range_right.setMaximum(len(azavg))
-        self.controlPanel.settingPanel.spinBox_pixel_range_left.setMaximum(len(azavg))
+        self.graphPanel.spinBox_pixel_range_right.setMaximum(len(azavg))
+        self.graphPanel.spinBox_pixel_range_left.setMaximum(len(azavg))
 
         left = rdf_calculator.find_first_peak(azavg)
         # left = 0
@@ -259,8 +259,8 @@ class MainWindow(QtWidgets.QWidget):
         self.datacubes[0].azavg = azavg
 
         self.graphPanel.update_graph(azavg)
-        self.controlPanel.settingPanel.spinBox_pixel_range_right.setMaximum(len(azavg))
-        self.controlPanel.settingPanel.spinBox_pixel_range_left.setMaximum(len(azavg))
+        self.graphPanel.spinBox_pixel_range_right.setMaximum(len(azavg))
+        self.graphPanel.spinBox_pixel_range_left.setMaximum(len(azavg))
 
         left = rdf_calculator.find_first_peak(azavg)
         self.graphPanel.region.setRegion([left, len(azavg)-1])
@@ -341,8 +341,8 @@ class MainWindow(QtWidgets.QWidget):
 
     def dialog_to_range(self):
         self.flag_range_update = True
-        left = self.controlPanel.settingPanel.spinBox_pixel_range_left.value()
-        right = self.controlPanel.settingPanel.spinBox_pixel_range_right.value()
+        left = self.graphPanel.spinBox_pixel_range_left.value()
+        right = self.graphPanel.spinBox_pixel_range_right.value()
         self.graphPanel.region.setRegion([left,right])
         self.flag_range_update = False
         if self.datacubes[self.current_page].analyser is not None:
@@ -361,8 +361,8 @@ class MainWindow(QtWidgets.QWidget):
         self.graphPanel.region.disconnect()
         self.graphPanel.region.setRegion([left, right])
         self.graphPanel.region.sigRegionChangeFinished.connect(self.range_to_dialog)
-        self.controlPanel.settingPanel.spinBox_pixel_range_left.setValue(left)
-        self.controlPanel.settingPanel.spinBox_pixel_range_right.setValue(right)
+        self.graphPanel.spinBox_pixel_range_left.setValue(left)
+        self.graphPanel.spinBox_pixel_range_right.setValue(right)
         if self.datacubes[self.current_page].analyser is not None:
             print("instant update2")
             self.datacubes[self.current_page].pixel_start_n = int(left)
@@ -511,13 +511,13 @@ class ControlPanel(QtWidgets.QWidget):
             layout.addWidget(self.chkBox_show_beam_stopper_mask,5,0,1,4)
 
 
-            lbl_pixel_range = QtWidgets.QLabel("pixel Range")
-            self.spinBox_pixel_range_left = QtWidgets.QSpinBox()
-            self.spinBox_pixel_range_right = QtWidgets.QSpinBox()
+            # lbl_pixel_range = QtWidgets.QLabel("pixel Range")
+            # self.spinBox_pixel_range_left = QtWidgets.QSpinBox()
+            # self.spinBox_pixel_range_right = QtWidgets.QSpinBox()
 
-            layout.addWidget(lbl_pixel_range, 6, 0, 1, 2)
-            layout.addWidget(self.spinBox_pixel_range_left, 6, 2)
-            layout.addWidget(self.spinBox_pixel_range_right, 6, 3)
+            # layout.addWidget(lbl_pixel_range, 6, 0, 1, 2)
+            # layout.addWidget(self.spinBox_pixel_range_left, 6, 2)
+            # layout.addWidget(self.spinBox_pixel_range_right, 6, 3)
 
             self.setLayout(layout)
 
@@ -558,8 +558,8 @@ class ImgPanel(QtWidgets.QWidget):
         layout.addWidget(self.btn_left,1,0,1,4)
         layout.addWidget(self.btn_right,1,5,1,4)
         layout.addWidget(self.lbl_current_num,1,4)
-        self.setMinimumWidth(500)
-        self.setMinimumHeight(500)
+        self.setMinimumWidth(300)
+        self.setMinimumHeight(300)
         self.setLayout(layout)
         self._current_data = None
         self.cmap = pg.ColorMap(np.linspace(0, 1, len(image_process.colorcube)), color=image_process.colorcube)
@@ -583,6 +583,8 @@ class GraphPanel(QtWidgets.QWidget):
         self.plot_azav = ui_util.CoordinatesPlotWidget(title='azimuthal average')
         self.layout = QtWidgets.QHBoxLayout()
         self.layout.addWidget(self.plot_azav)
+        
+        
         self.setLayout(self.layout)
         self.setMinimumHeight(200)
         self.region = pg.LinearRegionItem([0, 100])
@@ -593,12 +595,23 @@ class GraphPanel(QtWidgets.QWidget):
         self.button_grp_widget = QtWidgets.QWidget()
         self.button_grp_widget.layout = QtWidgets.QVBoxLayout()
         self.button_grp_widget.setLayout(self.button_grp_widget.layout)
+
+        self.button_grp_widget.layout.addStretch(1)
+        lbl_pixel_range = QtWidgets.QLabel("pixel Range")
+        self.spinBox_pixel_range_left = QtWidgets.QSpinBox()
+        self.spinBox_pixel_range_right = QtWidgets.QSpinBox()
+        self.button_grp_widget.layout.addWidget(lbl_pixel_range)
+        self.button_grp_widget.layout.addWidget(self.spinBox_pixel_range_left)
+        self.button_grp_widget.layout.addWidget(self.spinBox_pixel_range_right)
+
+        
         self.button_start = QtWidgets.QPushButton("start")
         self.button_all = QtWidgets.QPushButton("all")
         self.button_end = QtWidgets.QPushButton("end")
         self.button_grp_widget.layout.addWidget(self.button_start)
         self.button_grp_widget.layout.addWidget(self.button_all)
         self.button_grp_widget.layout.addWidget(self.button_end)
+        self.button_grp_widget.layout.addStretch(1)
 
         self.layout.addWidget(self.button_grp_widget)
 
