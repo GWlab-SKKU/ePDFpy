@@ -36,14 +36,18 @@ class rdf_analyse(QtWidgets.QMainWindow):
         # self.setLayout(self.layout)
         self.show()
 
+        self.graph_Iq_half_tail = self.controlPanel.one_graph.graph_Iq_half_tail
         self.graph_Iq = self.graphPanel.graph_Iq
         self.graph_phiq = self.graphPanel.graph_phiq
         self.graph_Gr = self.graphPanel.graph_Gr
 
+        self.graph_Iq_half_tail.addLegend(offset=(-30,30))
         self.graph_Iq.addLegend(offset=(-30, 30))
         self.graph_phiq.addLegend(offset=(-30, 30))
         self.graph_Gr.addLegend(offset=(-30, 30))
 
+        self.graph_Iq_half_tail_Iq = self.graph_Iq_half_tail.plot(pen=pg.mkPen(255, 0, 0, width=2), name='Iq')
+        self.graph_Iq_half_tail_AutoFit = self.graph_Iq_half_tail.plot(pen=pg.mkPen(0, 255, 0, width=2), name='AutoFit')
         self.graph_Iq_Iq = self.graph_Iq.plot(pen=pg.mkPen(255, 0, 0, width=2), name='Iq')
         self.graph_Iq_AutoFit = self.graph_Iq.plot(pen=pg.mkPen(0, 255, 0, width=2), name='AutoFit')
         self.graph_phiq_phiq = self.graph_phiq.plot(pen=pg.mkPen(255, 0, 0, width=2), name='phiq')
@@ -84,6 +88,11 @@ class rdf_analyse(QtWidgets.QMainWindow):
                 ui_util.update_value(self.controlPanel.fitting_factors.radio_tail,True)
 
     def update_graph(self):
+        self.graph_Iq_half_tail_Iq.setData(self.datacube.q, self.datacube.Iq)
+        self.graph_Iq_half_tail_AutoFit.setData(self.datacube.q, self.datacube.Autofit)
+        self.graph_Iq_half_tail.setXRange(self.datacube.q.max()/2,self.datacube.q.max())
+        self.graph_Iq_half_tail.enableAutoRange(axis='y')
+        self.graph_Iq_half_tail.autoRange()
         self.graph_Iq_Iq.setData(self.datacube.q, self.datacube.Iq)
         self.graph_Iq_AutoFit.setData(self.datacube.q, self.datacube.Autofit)
         self.graph_phiq_phiq.setData(self.datacube.q, self.datacube.phiq)
@@ -285,13 +294,27 @@ class ControlPanel(QtWidgets.QWidget):
         self.load_and_save = self.LoadAndSaveGroup(mainWindow)
         self.fitting_elements = self.FittingElements()
         self.fitting_factors = self.FittingFactors()
+        self.one_graph = self.OneGraph()
 
         # self.layout.addWidget(self.load_and_save)
         self.layout.addWidget(self.fitting_elements)
         self.layout.addWidget(self.fitting_factors)
+        self.layout.addWidget(self.one_graph)
 
         self.layout.addStretch(1)
+        self.setMaximumWidth(300)
         self.setLayout(self.layout)
+        # self.layout.setContentsMargins(0,0,0,0)
+
+    class OneGraph(QtWidgets.QWidget):
+        def __init__(self):
+            super().__init__()
+            self.layout = QtWidgets.QHBoxLayout()
+            self.graph_Iq_half_tail = ui_util.CoordinatesPlotWidget(title='I(q)')
+            self.layout.addWidget(self.graph_Iq_half_tail)
+            self.setLayout(self.layout)
+            self.layout.setContentsMargins(0,0,0,0)
+
 
     class FittingElements(QtWidgets.QGroupBox):
         def __init__(self):
