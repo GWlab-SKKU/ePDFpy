@@ -104,12 +104,22 @@ def save_preset_default(dc_file_path, datacube):
     if dc_file_path is None and datacube.azavg_file_path is not None:
         # when you load only azavg
         current_folder_path, file_name = os.path.split(datacube.azavg_file_path)
-    else:
-        # default
-        current_folder_path, file_name = os.path.split(dc_file_path)
-    file_short_name, file_ext = os.path.splitext(file_name)
+        file_short_name, file_ext = os.path.splitext(file_name)
+        analysis_folder_path = make_analyse_folder(dc_file_path)
 
-    analysis_folder_path = make_analyse_folder(dc_file_path)
+    elif dc_file_path is None and datacube.azavg_file_path is None:
+        # if come from averaging multiple
+        fp, _ = QFileDialog.getSaveFileName(filter="preset Files (*.preset.json)")
+        current_folder_path, file_name = os.path.split(fp)
+        file_short_name, file_ext = os.path.splitext(file_name)
+        analysis_folder_path = current_folder_path
+
+    else:
+        current_folder_path, file_name = os.path.split(dc_file_path)
+        file_short_name, file_ext = os.path.splitext(file_name)
+        analysis_folder_path = make_analyse_folder(dc_file_path)
+
+
     preset_path = os.path.join(analysis_folder_path, file_short_name + preset_ext)
     azavg_path = os.path.join(analysis_folder_path, file_short_name + azavg_ext)
     data_q_path = os.path.join(analysis_folder_path, file_short_name + data_q_ext)
