@@ -14,13 +14,15 @@ azavg_ext = ".azavg.csv"
 data_q_ext = ".q.csv"
 data_r_ext = ".r.csv"
 
+
 def load_mrc_img(fp):
     with mrcfile.open(fp) as mrc:
         raw_img = mrc.data
-    easy_img = np.log(np.abs(raw_img)+1)
+    easy_img = np.log(np.abs(raw_img) + 1)
     easy_img = easy_img / easy_img.max() * 255
     easy_img = easy_img.astype('uint8')
     return raw_img, easy_img
+
 
 def get_file_list_from_path2(fp, extension=None):
     if type(extension) is str:
@@ -36,26 +38,29 @@ def get_file_list_from_path2(fp, extension=None):
                     file_list.append(os.path.join(path, filename))
     return file_list
 
+
 def get_file_list_from_path(fp, extension=None):
-    files = Path(fp).rglob("*"+extension)
+    files = Path(fp).rglob("*" + extension)
     file_list = []
     for _file in files:
         file_list.append(str(_file.absolute()))
     return file_list
 
+
 def make_analyse_folder(dc_filepath):
     current_folder, current_file_full_name = os.path.split(dc_filepath)
-    analysis_folder = os.path.join(current_folder,analysis_folder_name)
+    analysis_folder = os.path.join(current_folder, analysis_folder_name)
     if not os.path.isdir(analysis_folder):
-        try :
+        try:
             os.makedirs(analysis_folder)
             return analysis_folder
         except:
-            print('Failed to make directory:',analysis_folder)
+            print('Failed to make directory:', analysis_folder)
             return False
     return analysis_folder
 
-def save_current_azimuthal(data:np.ndarray,current_file_path,azavg:bool,i_slice=None):
+
+def save_current_azimuthal(data: np.ndarray, current_file_path, azavg: bool, i_slice=None):
     assert type(data) is np.ndarray
     current_folder_path, file_name = os.path.split(current_file_path)
     file_short_name, file_ext = os.path.splitext(file_name)
@@ -69,32 +74,39 @@ def save_current_azimuthal(data:np.ndarray,current_file_path,azavg:bool,i_slice=
     else:
         path_save = os.path.join(analysis_folder_path, file_short_name + " azvar")
     if i_slice:
-        path_save = path_save+" center"+str(i_slice[0])+"to"+str(i_slice[1])+"_"+str(i_slice[2])
+        path_save = path_save + " center" + str(i_slice[0]) + "to" + str(i_slice[1]) + "_" + str(i_slice[2])
 
     # add extension
-    path_save = path_save+".txt"
+    path_save = path_save + ".txt"
 
-    np.savetxt(path_save,data)
-    print("save to",path_save)
+    np.savetxt(path_save, data)
+    print("save to", path_save)
 
 
 def load_preset_default(dc_file_path):
     current_folder_path, file_name = os.path.split(dc_file_path)
     file_short_name, file_ext = os.path.splitext(file_name)
 
-    analysis_folder_path = os.path.join(current_folder_path,analysis_folder_name)
+    analysis_folder_path = os.path.join(current_folder_path, analysis_folder_name)
     preset_path = os.path.join(analysis_folder_path, file_short_name + preset_ext)
     if os.path.isfile(preset_path):
         return json.load(preset_path)
     else:
         return False
 
+
 def load_preset_manual():
     fp, _ = QFileDialog.getOpenFileName()
     return json.load(fp)
 
+
 def save_preset_default(dc_file_path, datacube):
-    current_folder_path, file_name = os.path.split(dc_file_path)
+    if dc_file_path is None and datacube.azavg_file_path is not None:
+        # when you load only azavg
+        current_folder_path, file_name = os.path.split(datacube.azavg_file_path)
+    else:
+        # default
+        current_folder_path, file_name = os.path.split(dc_file_path)
     file_short_name, file_ext = os.path.splitext(file_name)
 
     analysis_folder_path = make_analyse_folder(dc_file_path)
@@ -107,16 +119,17 @@ def save_preset_default(dc_file_path, datacube):
 
     # save azavg
     if to_upload['azavg'] is not None:
-        np.savetxt(azavg_path,to_upload['azavg'])
+        np.savetxt(azavg_path, to_upload['azavg'])
     # save q data
     if to_upload['q'] is not None:
-        df = pd.DataFrame({'q':to_upload['q'],'Iq':to_upload['Iq'],'Autofit':to_upload['Autofit'],'phiq':to_upload['phiq'],'phiq_damp':to_upload['phiq_damp']})
-        df.to_csv(data_q_path,index=None)
+        df = pd.DataFrame(
+            {'q': to_upload['q'], 'Iq': to_upload['Iq'], 'Autofit': to_upload['Autofit'], 'phiq': to_upload['phiq'],
+             'phiq_damp': to_upload['phiq_damp']})
+        df.to_csv(data_q_path, index=None)
     # save r data
     if to_upload['r'] is not None:
         df = pd.DataFrame({'r': to_upload['r'], 'Gr': to_upload['Gr']})
         df.to_csv(data_r_path, index=None)
-
 
     # convert to relative path
     if to_upload['mrc_file_path'] is not None:
@@ -128,26 +141,27 @@ def save_preset_default(dc_file_path, datacube):
     to_upload2 = {}
 
     # remove data that not support to save as json
-    for key,value in to_upload.items():
+    for key, value in to_upload.items():
         if type(value) in [int, str, float, list, np.float64, np.int64]:
-            to_upload2.update({key:value})
+            to_upload2.update({key: value})
 
     # int64 exception handling
-    for key,value in to_upload.items():
+    for key, value in to_upload.items():
         if type(value) == np.int64:
             to_upload2[key] = int(value)
         if type(value) == np.float64:
             to_upload2[key] = float(value)
 
     if to_upload2['center'][0] is not None:
-        to_upload2['center'] = [int(to_upload2['center'][0]),int(to_upload2['center'][1])]
+        to_upload2['center'] = [int(to_upload2['center'][0]), int(to_upload2['center'][1])]
 
-    print("save data:",to_upload2)
+    print("save data:", to_upload2)
 
     json.dump(to_upload2, open(preset_path, 'w'), indent=2)
     return True
 
-def load_preset(fp:str=None):
+
+def load_preset(fp: str = None):
     if fp is None:
         fp, _ = QFileDialog.getOpenFileName(filter="preset Files (*.preset.json)")
     if fp == '':
@@ -176,29 +190,38 @@ def load_preset(fp:str=None):
         dc.Autofit = df_q['Autofit']
 
     # convert relative path to absolute path
-    content['mrc_file_path'] = os.path.abspath(os.path.join(fp,"..",content['mrc_file_path']))
+    content['mrc_file_path'] = os.path.abspath(os.path.join(fp, "..", content['mrc_file_path']))
 
     # put content in DataCube
     for key, value in content.items():
         if key in vars(dc).keys():
-            setattr(dc,key,value)
+            setattr(dc, key, value)
 
     return dc
+
 
 def save_pdf_setting_manual(dc_file_path):
     fp, _ = QFileDialog.getSaveFileName()
     json.dump(fp, open(fp, 'w'), indent=2)
     return True
 
-def load_azavg_from_preset(preset_path:str):
-    preset_path.rfind(preset_ext)
+
+# def load_azavg_from_preset(preset_path:str):
+#     preset_path.rfind(preset_ext)
 
 
 def load_azavg_manual():
     fp, _ = QFileDialog.getOpenFileName()
+    if fp is '':
+        return
+    azavg = load_azavg(fp)
+    dc = DataCube()
+    dc.azavg = azavg
+    dc.azavg_file_path = fp
     return load_azavg(fp)
 
-def load_azavg(fp):
+
+def load_azavg(fp) -> np.ndarray:
     current_folder_path, file_name = os.path.split(fp)
     file_short_name, file_ext = os.path.splitext(file_name)
     if file_ext == ".csv":
@@ -216,6 +239,7 @@ if __name__ == '__main__':
     # save_current_azimuthal(np.array([1,2,3]),pth,True)
     from PyQt5.QtWidgets import QMainWindow
     from PyQt5 import QtWidgets
+
     qtapp = QtWidgets.QApplication([])
     # load_azavg_manual(r"Y:\experiment\TEM diffraction\210520\Analysis pdf_tools\Camera 230 mm Ceta 20210520 1306_Au azav center110to120_1.txt")
     load_azavg_manual()

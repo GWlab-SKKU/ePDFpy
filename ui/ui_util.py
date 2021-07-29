@@ -5,6 +5,8 @@ from PyQt5.QtCore import QRegExp
 from PyQt5.QtGui import QRegExpValidator
 from PyQt5.QtWidgets import QWidget
 import numpy as np
+from pyqtgraph.graphicsItems.LegendItem import LegendItem
+import pyqtgraph as pg
 
 
 class binding():
@@ -65,3 +67,44 @@ class IntLineEdit(QtWidgets.QLineEdit):
 
     def validate(self, input: str, pos: int):
         return self.validator.validate(input, pos)
+
+
+class CoordinatesPlotWidget(pg.PlotWidget):
+    def __init__(self, parent=None, background='default', offset=None, plotItem=None, **kargs):
+        super().__init__(parent, background, plotItem, **kargs)
+
+        # self.setRange(QRectF(-50, -50, 100, 100))
+        # self.coor_label = pg.TextItem(text="x:{} \ny:{}".format(0, 0))
+        # self.addItem(self.coor_label)
+        # self.coor_label.setParentItem(self.getViewBox())
+        # self.coor_label.setPos(10,10)
+
+
+        # legend = self.addLegend()
+        if offset is None:
+            offset = (3,-3)
+
+        legend = LegendItem(offset=offset)
+        legend.setParentItem(self.getViewBox())
+
+        style = pg.PlotDataItem()
+        legend.addItem(style, 'A2')
+        self.legend_labelitem = legend.getLabel(style)
+        self.legend_labelitem.setText('x:0 y:0')
+        self.coor_update_toggle = True
+
+    def mouseMoveEvent(self, ev):
+        if self.coor_update_toggle:
+            qp = self.plotItem.vb.mapSceneToView(ev.localPos())
+            x = str(qp.x())
+            y = str(qp.y())
+            x = x[:x.find('.') + 1] + x[x.find('.') + 1:][:4]
+            y = y[:y.find('.') + 1] + y[y.find('.') + 1:][:4]
+            self.legend_labelitem.setText("x:{} \ny:{}".format(x,y))
+        # self.coor_label.setText("x:{} \ny:{}".format(str(qp.x())[:8],str(qp.y())[:8]))
+        return super(CoordinatesPlotWidget, self).mouseMoveEvent(ev)
+
+    def mousePressEvent(self, ev):
+        # print(self.getPlotItem().dataItems[0].xDisp) # xData, yData, xDisp, yDisp
+        self.coor_update_toggle = not self.coor_update_toggle
+        return super().mousePressEvent(ev)

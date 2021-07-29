@@ -9,6 +9,7 @@ from typing import List
 from ui.rdf_analyse import rdf_analyse
 from calculate import rdf_calculator, image_process
 from PyQt5.QtWidgets import QMessageBox
+from ui import ui_util
 
 class DataViewer(QtWidgets.QMainWindow):
     def __init__(self):
@@ -248,6 +249,9 @@ class MainWindow(QtWidgets.QWidget):
     def open_azavg_only(self, azavg=None):  # for averaging_multiple_gr.py
         if azavg is None or azavg is False:
             azavg = file.load_azavg_manual()
+            if azavg is None:
+                return
+
 
         self.datacubes.clear()
         self.datacubes.append(DataCube())
@@ -286,6 +290,11 @@ class MainWindow(QtWidgets.QWidget):
         #  "mrc_file_path": self.datacubes[self.current_page].file_path}
         file.save_preset_default(self.datacubes[self.current_page].mrc_file_path, self.datacubes[self.current_page])
 
+    def save_presets(self):
+        for i in range(len(self.datacubes)):
+
+            self.read_img(i)
+            self.save_preset()
 
 
     def btn_right_clicked(self):
@@ -569,7 +578,8 @@ class GraphPanel(QtWidgets.QWidget):
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
         self.imageView = pg.ImageView()
-        self.plot_azav = pg.PlotWidget(title='azimuthal average')
+        # self.plot_azav = pg.PlotWidget(title='azimuthal average')
+        self.plot_azav = ui_util.CoordinatesPlotWidget(title='azimuthal average')
         self.layout = QtWidgets.QHBoxLayout()
         self.layout.addWidget(self.plot_azav)
         self.setLayout(self.layout)

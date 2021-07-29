@@ -6,8 +6,10 @@ import glob
 import pandas as pd
 from pathlib import Path
 from PyQt5.QtWidgets import QMessageBox
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QRectF
 import numpy as np
+import ui_util
+
 
 class Viewer(QtWidgets.QWidget):
 
@@ -120,6 +122,7 @@ class Viewer(QtWidgets.QWidget):
             self.grCubes.append(grCube)
 
         self.calculate_average()
+        self.rightPanel.graphView.autoRange()
         self.rightPanel.graphView.setRange(xRange=[0,10])
 
     def load_Gr_file(self, path):
@@ -209,10 +212,12 @@ class GraphPanel(QtWidgets.QWidget):
         super().__init__()
         self.layout = QtWidgets.QVBoxLayout()
         self.setLayout(self.layout)
-        self.graphView = pg.PlotWidget(title='G(r)')
+        self.graphView = ui_util.CoordinatesPlotWidget(title='G(r)')
         self.axis1 = pg.InfiniteLine(angle=0)
         self.graphView.addItem(self.axis1)
         self.layout.addWidget(self.graphView)
+
+
 
 
 class LeftPanel(QtWidgets.QWidget):

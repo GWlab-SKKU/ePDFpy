@@ -14,6 +14,7 @@ class DataCube:
 
     def __init__(self, file_path=None):
         self.mrc_file_path = file_path
+        self.azavg_file_path = None
         self.raw_img = None
         self.img = None
         self.center = [None,None]

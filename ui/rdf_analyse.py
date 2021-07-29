@@ -265,9 +265,12 @@ class GraphPanel(QtWidgets.QWidget):
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
         self.layout = QtWidgets.QVBoxLayout()
-        self.graph_Iq = pg.PlotWidget(title='I(q)')
-        self.graph_phiq = pg.PlotWidget(title='Φ(q)')
-        self.graph_Gr = pg.PlotWidget(title='G(r)')
+        # self.graph_Iq = pg.PlotWidget(title='I(q)')
+        # self.graph_phiq = pg.PlotWidget(title='Φ(q)')
+        # self.graph_Gr = pg.PlotWidget(title='G(r)')
+        self.graph_Iq = ui_util.CoordinatesPlotWidget(title='I(q)')
+        self.graph_phiq = ui_util.CoordinatesPlotWidget(title='Φ(q)')
+        self.graph_Gr = ui_util.CoordinatesPlotWidget(title='G(r)')
 
         self.axis1 = pg.InfiniteLine(angle=0)
         self.axis2 = pg.InfiniteLine(angle=0)
