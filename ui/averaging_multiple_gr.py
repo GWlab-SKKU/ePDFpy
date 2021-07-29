@@ -99,7 +99,8 @@ class Viewer(QtWidgets.QWidget):
             grCube.unit_path = data_r_file
 
             # graph name
-            graph_name = data_r_file[data_r_file.rfind("_")+1:data_r_file.find("Data_r.csv")]
+            # graph_name = data_r_file[data_r_file.rfind("_")+1:data_r_file.find("Data_r.csv")]
+            graph_name = data_r_file[data_r_file.rfind("_") + 1:data_r_file.find("r30.csv")]
 
             # put parameters
 
@@ -128,18 +129,18 @@ class Viewer(QtWidgets.QWidget):
 
 
     def get_csv_files_from_folder(self, folder):
-        csvfiles = Path(folder).rglob("*Data_r.csv")
+        csvfiles = Path(folder).rglob("*_r30_*.csv")
         gr_path_list = []
         azavg_path_lst = []
         for file in csvfiles:
-            if file.name in ["diagonal.csv", "diagonal_1.csv", "line.csv"]:
-                continue
-            if "r30" in file.name:
-                continue
+            # if file.name in ["diagonal.csv", "diagonal_1.csv", "line.csv"]:
+            #     continue
+            # if "r30" not in file.name:
+            #     continue
 
             fp1 = str(file.absolute())
             fp1 = os.path.split(fp1)[1]
-            fp1 = fp1[:fp1.rfind("Data_")-1]
+            fp1 = fp1[:fp1.rfind("_r30_")]
             search_name = fp1[:32]
             rglob = Path(folder).rglob(search_name+"*"+"azav.txt")
             searched_files = []
