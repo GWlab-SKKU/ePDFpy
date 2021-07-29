@@ -135,27 +135,28 @@ class MainWindow(QtWidgets.QWidget):
         l = left
         r = left+int((right-left)/4)
         print("left {}, right {}".format(l, r))
-        mx = np.max(self.azavg[l:r])
-        mn = np.min(self.azavg[l:r])
+        mx = np.max(self.datacubes[self.current_page].azavg[l:r])
+        mn = np.min(self.datacubes[self.current_page].azavg[l:r])
         self.graphPanel.plot_azav.setXRange(l, r, padding=0.1)
         self.graphPanel.plot_azav.setYRange(mn, mx, padding=0.1)
         print(self.graphPanel.plot_azav.viewRange())
 
     def range_all_clicked(self):
-        l = self.controlPanel.settingPanel.spinBox_pixel_range_left.value()
-        r = self.controlPanel.settingPanel.spinBox_pixel_range_right.value()
-        mx = np.max(self.azavg[l:r])
-        mn = np.min(self.azavg[l:r])
-        self.graphPanel.plot_azav.setXRange(l, r, padding=0.1)
-        self.graphPanel.plot_azav.setYRange(mn, mx, padding=0.1)
+        # l = self.controlPanel.settingPanel.spinBox_pixel_range_left.value()
+        # r = self.controlPanel.settingPanel.spinBox_pixel_range_right.value()
+        # mx = np.max(self.datacubes[self.current_page].azavg[l:r])
+        # mn = np.min(self.datacubes[self.current_page].azavg[l:r])
+        # self.graphPanel.plot_azav.setXRange(l, r, padding=0.1)
+        # self.graphPanel.plot_azav.setYRange(mn, mx, padding=0.1)
+        self.graphPanel.plot_azav.autoRange()
 
     def range_end_clicked(self):
         left = self.controlPanel.settingPanel.spinBox_pixel_range_left.value()
         right = self.controlPanel.settingPanel.spinBox_pixel_range_right.value()
         l = right-int((right - left) / 4)
         r = right
-        mx = np.max(self.azavg[l:r])
-        mn = np.min(self.azavg[l:r])
+        mx = np.max(self.datacubes[self.current_page].azavg[l:r])
+        mn = np.min(self.datacubes[self.current_page].azavg[l:r])
         self.graphPanel.plot_azav.setXRange(l, r, padding=0.1)
         self.graphPanel.plot_azav.setYRange(mn, mx, padding=0.1)
 
@@ -179,8 +180,8 @@ class MainWindow(QtWidgets.QWidget):
         # self.controlPanel.operationPanel.progress_bar.setValue(0)
 
     def get_azimuthal_value(self):
-        self.azavg, self.azvar = self.datacubes[self.current_page].calculate_azimuthal_average()
-        self.update_azavg_graph(self.azavg)
+        self.datacubes[self.current_page].azavg, self.azvar = self.datacubes[self.current_page].calculate_azimuthal_average()
+        self.update_azavg_graph(self.datacubes[self.current_page].azavg)
 
     def update_azavg_graph(self, azavg):
         self.graphPanel.update_graph(azavg)
@@ -189,8 +190,8 @@ class MainWindow(QtWidgets.QWidget):
 
         left = rdf_calculator.find_first_peak(azavg)
         # left = 0
-        # for i in range(len(self.azavg)):
-        #     if int(self.azavg[i]) != 0 :
+        # for i in range(len(self.datacubes[self.current_page].azavg)):
+        #     if int(self.datacubes[self.current_page].azavg[i]) != 0 :
         #         left = i
         #         break
         self.graphPanel.region.setRegion([left, len(azavg)-1])

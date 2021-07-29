@@ -301,7 +301,7 @@ class ControlPanel(QtWidgets.QWidget):
         self.fitting_elements = self.FittingElements()
         self.fitting_factors = self.FittingFactors()
 
-        self.layout.addWidget(self.load_and_save)
+        # self.layout.addWidget(self.load_and_save)
         self.layout.addWidget(self.fitting_elements)
         self.layout.addWidget(self.fitting_factors)
 
