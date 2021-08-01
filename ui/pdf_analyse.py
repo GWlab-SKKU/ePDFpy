@@ -11,7 +11,7 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 
 
 
-class rdf_analyse(QtWidgets.QMainWindow):
+class pdf_analyse(QtWidgets.QMainWindow):
     def __init__(self, datacube):
         super().__init__()
         self.datacube = datacube
@@ -23,6 +23,7 @@ class rdf_analyse(QtWidgets.QMainWindow):
         self.initui()
         self.binding()
         self.pdf_setting = {}
+        self.setWindowTitle("pdf analyzer")
 
     def initui(self):
         self.setMinimumSize(800, 600)
@@ -498,6 +499,6 @@ class ControlPanel(QtWidgets.QWidget):
 if __name__ == "__main__":
     qtapp = QtWidgets.QApplication([])
     # QtWidgets.QMainWindow().show()
-    window = rdf_analyse(DataCube("../assets/Camera 230 mm Ceta 20210312 1333_50s_20f_area01.mrc"))
+    window = pdf_analyse(DataCube("../assets/Camera 230 mm Ceta 20210312 1333_50s_20f_area01.mrc"))
     window.show()
     qtapp.exec()

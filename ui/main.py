@@ -6,7 +6,7 @@ import numpy as np
 import util
 from datacube import DataCube
 from typing import List
-from ui.rdf_analyse import rdf_analyse
+from ui.pdf_analyse import pdf_analyse
 from calculate import rdf_calculator, image_process
 from PyQt5.QtWidgets import QMessageBox
 from ui import ui_util
@@ -53,6 +53,7 @@ class MainWindow(QtWidgets.QWidget):
         self.isShowCenter=True
         self.flag_range_update = False
         self.datacubes: List[DataCube] = []
+        self.setWindowTitle("Main window")
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         util.settings["intensity_range_1"] = self.controlPanel.settingPanel.spinBox_irange1.value()
@@ -120,10 +121,10 @@ class MainWindow(QtWidgets.QWidget):
 
     def show_erdf_analyser(self):
         if len(self.datacubes) == 0:
-            self.eRDF_analyser = rdf_analyse(DataCube())
+            self.eRDF_analyser = pdf_analyse(DataCube())
             return
         self.update_datacubes()
-        self.eRDF_analyser = rdf_analyse(self.datacubes[self.current_page])
+        self.eRDF_analyser = pdf_analyse(self.datacubes[self.current_page])
 
     def update_datacubes(self):
         self.datacubes[self.current_page].pixel_start_n = self.graphPanel.spinBox_pixel_range_left.value()
@@ -525,13 +526,13 @@ class ControlPanel(QtWidgets.QWidget):
         def __init__(self,arg):
             QtWidgets.QGroupBox.__init__(self,arg)
             layout = QtWidgets.QGridLayout()
-            self.btn_find_center = QtWidgets.QPushButton("find center")
-            self.btn_get_azimuthal_avg = QtWidgets.QPushButton("get azimuthal data")
-            self.btn_save_current_azimuthal = QtWidgets.QPushButton("save current azimuthal data")
-            self.btn_save_all_azimuthal = QtWidgets.QPushButton("save every azimuthal data")
+            self.btn_find_center = QtWidgets.QPushButton("Find center")
+            self.btn_get_azimuthal_avg = QtWidgets.QPushButton("Get azimuthal data")
+            self.btn_save_current_azimuthal = QtWidgets.QPushButton("Save current azimuthal data")
+            self.btn_save_all_azimuthal = QtWidgets.QPushButton("Save every azimuthal data")
             self.progress_bar = QtWidgets.QProgressBar()
             self.progress_bar.setValue(0)
-            self.btn_open_epdf_analyser = QtWidgets.QPushButton("Open eRDF analyser")
+            self.btn_open_epdf_analyser = QtWidgets.QPushButton("Open pdf analyser")
 
             layout.addWidget(self.btn_find_center, 0, 0)
             layout.addWidget(self.btn_get_azimuthal_avg, 0, 1)
@@ -605,9 +606,9 @@ class GraphPanel(QtWidgets.QWidget):
         self.button_grp_widget.layout.addWidget(self.spinBox_pixel_range_right)
 
         
-        self.button_start = QtWidgets.QPushButton("start")
-        self.button_all = QtWidgets.QPushButton("all")
-        self.button_end = QtWidgets.QPushButton("end")
+        self.button_start = QtWidgets.QPushButton("Start")
+        self.button_all = QtWidgets.QPushButton("All")
+        self.button_end = QtWidgets.QPushButton("End")
         self.button_grp_widget.layout.addWidget(self.button_start)
         self.button_grp_widget.layout.addWidget(self.button_all)
         self.button_grp_widget.layout.addWidget(self.button_end)
