@@ -1,5 +1,6 @@
 import file
 from calculate import image_process
+
 import os
 import cv2
 import numpy as np
@@ -57,7 +58,7 @@ class DataCube:
         return self.center
 
     def calculate_azimuthal_average(self):
-        if self.center is None:
+        if self.center[0] is None:
             raise Exception("You need to calculate center first")
 
         if DataCube._use_cupy:
@@ -67,7 +68,7 @@ class DataCube:
         return self.azavg, self.azvar
 
     def save_azimuthal_data(self, intensity_start, intensity_end, intensity_slice, imgPanel=None, draw_center_line=False, masking=False):
-        if self.center is None:
+        if self.center[0] is None:
             self.calculate_center((intensity_start, intensity_end), intensity_slice)
         if self.azavg is None:
             self.calculate_azimuthal_average()
