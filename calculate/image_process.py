@@ -10,7 +10,8 @@ try:
 except ImportError:
     use_cupy = False
 
-mask = util.get_mask_data()
+# mask = np.loadtxt('./assets/mask_data2.txt',delimiter=',').astype(np.uint8)
+mask = np.loadtxt('./assets/mask_data.txt',delimiter=',').astype(np.uint8)
 colorcube = (np.loadtxt("./assets/colorcube256.csv", delimiter=",", dtype=np.float32) * 255).astype('int')
 
 
@@ -229,25 +230,28 @@ def calculate_azimuthal_average_cuda(raw_image, center):
 
 
 
+# if __name__ == '__main__':
+#
+#     import mrcfile
+#     from pathlib import Path
+#     import numpy as np
+#     import image_process
+#     import cv2
+#
+#     mrc_search_path = '/mnt/experiment/TEM diffraction/'
+#     mrc_file_paths = [str(i) for i in Path(mrc_search_path).rglob("*.mrc")]
+#     random_mrc_files = np.random.choice(mrc_file_paths, 10)
+#
+#     # %%
+#
+#     mrc_img = mrcfile.open(random_mrc_files[0])
+#     raw_img = mrc_img.data
+#     img = np.array(raw_img)
+#     center = image_process.calculate_center(img, (120, 130), 10)
+#
+#     # %%
+#     center2 = image_process.calculate_center_gradient(img, (120, 130), 10)
+#     print("result:",center2)
+
 if __name__ == '__main__':
-
-    import mrcfile
-    from pathlib import Path
-    import numpy as np
-    import image_process
-    import cv2
-
-    mrc_search_path = '/mnt/experiment/TEM diffraction/'
-    mrc_file_paths = [str(i) for i in Path(mrc_search_path).rglob("*.mrc")]
-    random_mrc_files = np.random.choice(mrc_file_paths, 10)
-
-    # %%
-
-    mrc_img = mrcfile.open(random_mrc_files[0])
-    raw_img = mrc_img.data
-    img = np.array(raw_img)
-    center = image_process.calculate_center(img, (120, 130), 10)
-
-    # %%
-    center2 = image_process.calculate_center_gradient(img, (120, 130), 10)
-    print("result:",center2)
+    print(mask)
