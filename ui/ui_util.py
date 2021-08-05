@@ -122,5 +122,6 @@ def update_value(widget:QtWidgets.QWidget, value):
         widget.setValue(value)
     if issubclass(type(widget),QtWidgets.QSpinBox):
         widget.setValue(value)
-
+    if issubclass(type(widget),pg.LinearRegionItem):
+        widget.setRegion(value)
     widget.blockSignals(False)

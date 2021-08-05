@@ -2,7 +2,7 @@
   "intensity_range_1": 100,
   "intensity_range_2": 110,
   "slice_count": 1,
-  "show_center_line": false,
+  "show_center_line": true,
   "show_beam_stopper_mask": true,
   "calibration_factor": 0.00319,
   "calibration_factor_step": "0.001",

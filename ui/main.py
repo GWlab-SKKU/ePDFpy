@@ -141,24 +141,19 @@ class DataViewer(QtWidgets.QMainWindow):
         if len(self.dcs) == 0:
             self.eRDF_analyser = pdf_analyse(DataCube())
             return
-        self.update_datacubes()
         self.eRDF_analyser = pdf_analyse(self.dcs[self.current_page])
-
-    def update_datacubes(self):
-        self.dcs[self.current_page].pixel_start_n = self.graphPanel.spinBox_pixel_range_left.value()
-        self.dcs[self.current_page].pixel_end_n = self.graphPanel.spinBox_pixel_range_right.value()
 
     def btn_range_start_clicked(self):
         left = self.graphPanel.spinBox_pixel_range_left.value()
         right = self.graphPanel.spinBox_pixel_range_right.value()
         l = left
         r = left+int((right-left)/4)
-        print("left {}, right {}".format(l, r))
+        # print("left {}, right {}".format(l, r))
         mx = np.max(self.dcs[self.current_page].azavg[l:r])
         mn = np.min(self.dcs[self.current_page].azavg[l:r])
         self.graphPanel.plot_azav.setXRange(l, r, padding=0.1)
         self.graphPanel.plot_azav.setYRange(mn, mx, padding=0.1)
-        print(self.graphPanel.plot_azav.viewRange())
+        # print(self.graphPanel.plot_azav.viewRange())
 
     def btn_range_all_clicked(self):
         self.graphPanel.plot_azav.autoRange()
@@ -206,19 +201,20 @@ class DataViewer(QtWidgets.QMainWindow):
         if self.dcs[self.current_page].azavg is None:
             return
         self.graphPanel.update_graph(self.dcs[self.current_page].azavg)
+        self.graphPanel.spinBox_pixel_range_right.setMaximum(len(self.dcs[self.current_page].azavg))
+        self.graphPanel.spinBox_pixel_range_left.setMaximum(len(self.dcs[self.current_page].azavg))
 
-        left = pdf_calculator.find_first_peak(self.dcs[self.current_page].azavg)
-        # left = 0
-        # for i in range(len(self.datacubes[self.current_page].azavg)):
-        #     if int(self.datacubes[self.current_page].azavg[i]) != 0 :
-        #         left = i
-        #         break
-
-        if not self.dcs[self.current_page].azavg is None:
-            self.graphPanel.spinBox_pixel_range_right.setMaximum(len(self.dcs[self.current_page].azavg))
-            self.graphPanel.spinBox_pixel_range_left.setMaximum(len(self.dcs[self.current_page].azavg))
-
-        self.graphPanel.region.setRegion([left, len(self.dcs[self.current_page].azavg)-1])
+        print(self.dcs[self.current_page].pixel_start_n)
+        if self.dcs[self.current_page].pixel_start_n is None:
+            left = pdf_calculator.find_first_peak(self.dcs[self.current_page].azavg)
+            # left = 0
+            # for i in range(len(self.datacubes[self.current_page].azavg)):
+            #     if int(self.datacubes[self.current_page].azavg[i]) != 0 :
+            #         left = i
+            #         break
+            self.graphPanel.region.setRegion([left, len(self.dcs[self.current_page].azavg)-1])
+        else:
+            self.graphPanel.region.setRegion([self.dcs[self.current_page].pixel_start_n,self.dcs[self.current_page].pixel_end_n])
 
     def find_center(self):
         i1 = self.controlPanel.settingPanel.spinBox_irange1.value()
@@ -293,7 +289,6 @@ class DataViewer(QtWidgets.QMainWindow):
         self.update_ui_dc(0)
 
     def menu_save_preset(self):
-        self.update_datacubes()
         file.save_preset_default(self.dcs[self.current_page].mrc_file_path, self.dcs[self.current_page], self.imgPanel)
 
     def menu_save_presets(self):
@@ -363,33 +358,27 @@ class DataViewer(QtWidgets.QMainWindow):
         self.imgPanel.update_img(img)
 
     def dialog_to_range(self):
-        self.flag_range_update = True
-        left = self.graphPanel.spinBox_pixel_range_left.value()
-        right = self.graphPanel.spinBox_pixel_range_right.value()
-        self.graphPanel.region.setRegion([left,right])
-        self.flag_range_update = False
+        left = int(self.graphPanel.spinBox_pixel_range_left.value())
+        right = int(self.graphPanel.spinBox_pixel_range_right.value())
+        ui_util.update_value(self.graphPanel.region,[left,right])
+        self.dcs[self.current_page].pixel_start_n = left
+        self.dcs[self.current_page].pixel_end_n = right
         if self.dcs[self.current_page].analyser is not None:
-            print("instant update")
-            self.dcs[self.current_page].pixel_start_n = int(left)
-            self.dcs[self.current_page].pixel_end_n = int(right)
+            # print("instant update")
+            # self.dcs[self.current_page].pixel_start_n = int(left)
+            # self.dcs[self.current_page].pixel_end_n = int(right)
             self.dcs[self.current_page].analyser.instantfit()
 
     def range_to_dialog(self):
-        if self.flag_range_update:
-            return
         left, right = self.graphPanel.region.getRegion()
-        left = np.round(left)
-        right = np.round(right)
-        print("range left",left,"rane right",right)
-        self.graphPanel.region.disconnect()
-        self.graphPanel.region.setRegion([left, right])
-        self.graphPanel.region.sigRegionChangeFinished.connect(self.range_to_dialog)
-        self.graphPanel.spinBox_pixel_range_left.setValue(left)
-        self.graphPanel.spinBox_pixel_range_right.setValue(right)
+        left = int(np.round(left))
+        right = int(np.round(right))
+        ui_util.update_value(self.graphPanel.region,[left, right])
+        ui_util.update_value(self.graphPanel.spinBox_pixel_range_left,left)
+        ui_util.update_value(self.graphPanel.spinBox_pixel_range_right,right)
+        self.dcs[self.current_page].pixel_start_n = left
+        self.dcs[self.current_page].pixel_end_n = right
         if self.dcs[self.current_page].analyser is not None:
-            print("instant update2")
-            self.dcs[self.current_page].pixel_start_n = int(left)
-            self.dcs[self.current_page].pixel_end_n = int(right)
             self.dcs[self.current_page].analyser.instantfit()
 
 
