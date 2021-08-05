@@ -13,9 +13,18 @@ class DataCube:
     except ImportError:
         _use_cupy = False
 
-    def __init__(self, file_path=None):
-        self.mrc_file_path = file_path
+    def __init__(self, file_path=None, file_type=None):
+        self.load_file_path = file_path
+        self.preset_file_path = None
         self.azavg_file_path = None
+        self.mrc_file_path = None
+        if file_type == "preset":
+            self.preset_file_path = self.load_file_path
+        elif file_type == "azavg":
+            self.azavg_file_path = self.load_file_path
+        elif file_type == "image":
+            self.mrc_file_path = self.load_file_path
+
         self.raw_img = None
         self.img = None
         self.center = [None,None]

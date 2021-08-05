@@ -53,7 +53,7 @@ class MainWindow(QtWidgets.QWidget):
         self.isShowCenter=True
         self.flag_range_update = False
         self.dcs: List[DataCube] = []
-        self.setWindowTitle("Main window")
+        self.mainWindow.setWindowTitle("Main window")
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         util.settings["intensity_range_1"] = self.controlPanel.settingPanel.spinBox_irange1.value()
@@ -179,6 +179,8 @@ class MainWindow(QtWidgets.QWidget):
         self.update_setting()
 
     def update_azavg_graph(self):
+        if self.dcs[self.current_page].azavg is None:
+            return
         self.graphPanel.update_graph(self.dcs[self.current_page].azavg)
 
         left = pdf_calculator.find_first_peak(self.dcs[self.current_page].azavg)
@@ -216,7 +218,7 @@ class MainWindow(QtWidgets.QWidget):
             return
         load_paths.extend(path)
         self.dcs.clear()
-        self.dcs.extend([DataCube(path) for path in load_paths])
+        self.dcs.extend([DataCube(path,'image') for path in load_paths])
         self.update_ui_dc(0)
 
     def menu_open_image_folder(self):
@@ -229,7 +231,7 @@ class MainWindow(QtWidgets.QWidget):
             QMessageBox.about("no file found")
             return
         self.dcs.clear()
-        self.dcs.extend([DataCube(path) for path in load_paths])
+        self.dcs.extend([DataCube(path,'image') for path in load_paths])
         self.update_ui_dc(0)
 
     def menu_open_preset_folder(self):
@@ -247,12 +249,15 @@ class MainWindow(QtWidgets.QWidget):
 
     def menu_open_azavg_only(self, azavg=None):  # azavg arguments is for averaging_multiple_gr.py
         if azavg is None or azavg is False:
-            azavg = file.load_azavg_manual()
-            if azavg is None:
+            dc = file.load_azavg_manual()
+            if not dc:
                 return
-        self.dcs.clear()
-        self.dcs.append(DataCube())
-        self.dcs[0].azavg = azavg
+            self.dcs.clear()
+            self.dcs.append(dc)
+        else:
+            self.dcs.clear()
+            self.dcs.append(DataCube())
+            self.dcs[0].azavg = azavg
         self.update_ui_dc(0)
 
     def menu_load_preset(self):
@@ -281,7 +286,8 @@ class MainWindow(QtWidgets.QWidget):
             self.update_ui_dc(self.current_page - 1)
 
     def update_ui_dc(self,i):
-        self.dcs[self.current_page].release()
+        if not len(self.dcs) == 1 :
+            self.dcs[self.current_page].release()
         self.current_page = i
         self.dcs[self.current_page].ready()
 
@@ -292,14 +298,20 @@ class MainWindow(QtWidgets.QWidget):
         self.update_img()
 
         # update graph
-        if not self.dcs[i].azavg is None:
-            self.update_azavg_graph()
+        self.update_azavg_graph()
 
         # update spinbox and settings
         self.update_setting()
 
         # windows title : file name
-        self.setWindowTitle(self.dcs[self.current_page].mrc_file_path)
+        if self.dcs[self.current_page].load_file_path is not None:
+            self.mainWindow.setWindowTitle(self.dcs[self.current_page].load_file_path)
+            fn = os.path.split(self.dcs[self.current_page].load_file_path)[1]
+            max_size = 25
+            if len(fn) > max_size:
+                self.controlPanel.openFilePanel.lbl_file_name.setText("..."+fn[-max_size:])
+            else:
+                self.controlPanel.openFilePanel.lbl_file_name.setText(fn)
 
     def update_setting(self):
         if not self.dcs[self.current_page].img is None:

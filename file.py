@@ -215,7 +215,7 @@ def load_azavg_manual():
     dc = DataCube()
     dc.azavg = azavg
     dc.azavg_file_path = fp
-    return load_azavg(fp)
+    return dc
 
 
 def load_azavg(fp) -> np.ndarray:
@@ -225,6 +225,7 @@ def load_azavg(fp) -> np.ndarray:
         return np.loadtxt(fp, delimiter=",")
     if file_ext == ".txt":
         return np.loadtxt(fp)
+
 
 
 if __name__ == '__main__':
