@@ -29,10 +29,16 @@ class DoubleSpinBox(QtWidgets.QDoubleSpinBox):
     def __init__(self):
         super().__init__()
         self.validator = QRegExpValidator(QRegExp(r"[0-9]+[.][0-9]+"))
+        # self.validator = QRegExpValidator(QRegExp(r"?[0-9]+\.?[0-9]+"))
+        self.validator_int = QRegExpValidator(QRegExp(r"[0-9]+"))
         self.setDecimals(10)
 
     def validate(self, input: str, pos: int):
-        return self.validator.validate(input, pos)
+        if '.' in input:
+            return self.validator.validate(input, pos)
+        else:
+            return self.validator_int.validate(input, pos)
+
 
     def textFromValue(self, v: float) -> str:
         # print("value:",v)
@@ -49,12 +55,10 @@ class DoubleSpinBox(QtWidgets.QDoubleSpinBox):
 
 
 
-
-
 class DoubleLineEdit(QtWidgets.QLineEdit):
     def __init__(self):
         super().__init__()
-        self.validator = QRegExpValidator(QRegExp(r"[0-9]+[.][0-9]+"))
+        self.validator = QRegExpValidator(QRegExp(r"[0-9]+[.]{0,1}[0-9]+"))
 
     def validate(self, input: str, pos: int):
         return self.validator.validate(input, pos)
