@@ -10,8 +10,8 @@ try:
 except ImportError:
     use_cupy = False
 
-# mask = np.loadtxt('./assets/mask_data2.txt',delimiter=',').astype(np.uint8)
-mask = np.loadtxt('./assets/mask_data.txt',delimiter=',').astype(np.uint8)
+mask = np.loadtxt('./assets/mask_data2.txt',delimiter=',').astype(np.uint8)
+# mask = np.loadtxt('./assets/mask_data.txt',delimiter=',').astype(np.uint8)
 colorcube = (np.loadtxt("./assets/colorcube256.csv", delimiter=",", dtype=np.float32) * 255).astype('int')
 
 

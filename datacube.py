@@ -80,6 +80,7 @@ class DataCube:
         folder_path, file_full_name = os.path.split(self.mrc_file_path)
         file_name, ext = os.path.splitext(file_full_name)
 
+        update_img = self.img.copy()
 
         if masking == True:
             update_img = cv2.bitwise_and(self.img, self.img, mask=np.bitwise_not(image_process.mask))

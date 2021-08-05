@@ -1,9 +1,10 @@
+from datacube import DataCube
+
 import mrcfile
 import os
 import numpy as np
 from PyQt5.QtWidgets import QFileDialog
 import json
-from datacube import DataCube
 import copy
 import pandas as pd
 from pathlib import Path
@@ -24,26 +25,12 @@ def load_mrc_img(fp):
     return raw_img, easy_img
 
 
-def get_file_list_from_path2(fp, extension=None):
-    if type(extension) is str:
-        extension = [extension]
-    if not os.path.isdir(fp):
-        return
-    file_list = []
-    for (path, dir, files) in os.walk(fp):
-        for filename in files:
-            ext = os.path.splitext(filename)[-1]
-            if extension is not None:
-                if ext in extension:
-                    file_list.append(os.path.join(path, filename))
-    return file_list
-
-
 def get_file_list_from_path(fp, extension=None):
     files = Path(fp).rglob("*" + extension)
     file_list = []
     for _file in files:
         file_list.append(str(_file.absolute()))
+    file_list.sort()
     return file_list
 
 

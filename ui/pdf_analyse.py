@@ -4,7 +4,7 @@ import file
 from datacube import DataCube
 import pyqtgraph as pg
 import util
-from calculate import rdf_calculator
+from calculate import pdf_calculator
 from PyQt5.QtWidgets import QMessageBox
 import ui.ui_util as ui_util
 from PyQt5 import QtCore, QtWidgets, QtGui
@@ -197,7 +197,7 @@ class pdf_analyse(QtWidgets.QMainWindow):
         if not self.check_condition():
             return
         self.update_parameter()
-        self.datacube.q, self.datacube.r, self.datacube.Iq, self.datacube.Autofit, self.datacube.phiq, self.datacube.phiq_damp, self.datacube.Gr, self.datacube.SS, self.datacube.fit_at_q, self.datacube.N = rdf_calculator.calculation(
+        self.datacube.q, self.datacube.r, self.datacube.Iq, self.datacube.Autofit, self.datacube.phiq, self.datacube.phiq_damp, self.datacube.Gr, self.datacube.SS, self.datacube.fit_at_q, self.datacube.N = pdf_calculator.calculation(
             self.datacube.ds,
             self.datacube.pixel_start_n,
             self.datacube.pixel_end_n,
@@ -219,7 +219,7 @@ class pdf_analyse(QtWidgets.QMainWindow):
         if not self.check_condition():
             return
         self.update_parameter()
-        self.datacube.q, self.datacube.r, self.datacube.Iq, self.datacube.Autofit, self.datacube.phiq, self.datacube.phiq_damp, self.datacube.Gr, self.datacube.SS, self.datacube.fit_at_q, self.datacube.N = rdf_calculator.calculation(
+        self.datacube.q, self.datacube.r, self.datacube.Iq, self.datacube.Autofit, self.datacube.phiq, self.datacube.phiq_damp, self.datacube.Gr, self.datacube.SS, self.datacube.fit_at_q, self.datacube.N = pdf_calculator.calculation(
             self.datacube.ds,
             self.datacube.pixel_start_n,
             self.datacube.pixel_end_n,
@@ -240,7 +240,7 @@ class pdf_analyse(QtWidgets.QMainWindow):
         if not self.controlPanel.fitting_factors.chkbox_instant_update.isChecked():
             # print("not checked")
             return
-        self.datacube.q, self.datacube.r, self.datacube.Iq, self.datacube.Autofit, self.datacube.phiq, self.datacube.phiq_damp, self.datacube.Gr, self.datacube.SS, self.datacube.fit_at_q, self.datacube.N = rdf_calculator.calculation(
+        self.datacube.q, self.datacube.r, self.datacube.Iq, self.datacube.Autofit, self.datacube.phiq, self.datacube.phiq_damp, self.datacube.Gr, self.datacube.SS, self.datacube.fit_at_q, self.datacube.N = pdf_calculator.calculation(
             self.datacube.ds,
             self.datacube.pixel_start_n,
             self.datacube.pixel_end_n,

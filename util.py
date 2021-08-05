@@ -1,4 +1,5 @@
 import file
+
 import numpy as np
 import cv2
 import json
@@ -13,13 +14,13 @@ settings = json.load(open("settings.json"))
 def get_sample_img():
     return file.load_mrc_img("./assets/Camera 230 mm Ceta 20210312 1333_50s_20f_area01.mrc")
 
-def get_mask_data():
-    return np.loadtxt('./assets/mask_data.txt',delimiter=',').astype(np.uint8)
+# def get_mask_data():
+#     return np.loadtxt('./assets/mask_data.txt',delimiter=',').astype(np.uint8)
 
 def get_sample_azimuthal_average():
     return np.loadtxt('./assets/sample_azavg.csv',delimiter=',')
 
-def create_estimated_mask(center=None,radius=None):
+def create_estimated_mask(center=None,radius=None, kernel_size=50):
     raw, img = get_sample_img()
     x1 = 900
     x2 = 1250
@@ -32,7 +33,7 @@ def create_estimated_mask(center=None,radius=None):
     mask = np.zeros(img.shape)
     mask[x1:x2,y1:] = thresh
 
-    kernel = np.ones((50, 50), np.uint8)
+    kernel = np.ones((kernel_size, kernel_size), np.uint8)
     mask = cv2.dilate(mask, kernel, 1)
 
     if center is not None:
@@ -73,36 +74,38 @@ def load_previous_dc_azavg(dc):
     current_file_name, current_ext = os.path.splitext(current_file_full_name)
     analysis_folder = os.path.join(current_folder, file.analysis_folder_name) # todo: temp
 
-    path_save = os.path.join(analysis_folder, current_file_name + " azav")
+    load_save = os.path.join(analysis_folder, current_file_name + " azav")
 
     i_slice = [settings['intensity_range_1'],settings['intensity_range_2'],settings['slice_count']]
     if i_slice:
-        path_save = path_save + " center" + str(i_slice[0]) + "to" + str(i_slice[1]) + "_" + str(i_slice[2])
+        load_save = load_save + " center" + str(i_slice[0]) + "to" + str(i_slice[1]) + "_" + str(i_slice[2])
+        # load_save = load_save + " center" + str(110) + "to" + str(120) + "_" + str(1)
 
     # add extension
-    path_save = path_save + ".txt"
+    load_save = load_save + ".txt"
 
-    if not os.path.isfile(path_save):
-        print('There is no such file:', path_save)
+    if not os.path.isfile(load_save):
+        print('There is no such file:', load_save)
         return
-    dc.azavg = np.loadtxt(path_save)
+    dc.azavg = np.loadtxt(load_save)
     return dc.azavg
 
 def load_previous_tiff(dc):
     current_folder, current_file_full_name = os.path.split(dc.mrc_file_path)
     current_file_name, current_ext = os.path.splitext(current_file_full_name)
-    analysis_folder = os.path.join(current_folder, "Analysis pdf_tools")  # todo: temp
+    analysis_folder = os.path.join(current_folder, file.analysis_folder_name)  # todo: temp
 
-    path_save = os.path.join(analysis_folder, current_file_name + "_img.tiff")
+    load_save = os.path.join(analysis_folder, current_file_name + "_img.tiff")
 
-    if not os.path.isfile(path_save):
-        print('There is no such file:', path_save)
+    if not os.path.isfile(load_save):
+        print('There is no such file:', load_save)
         return
-    dc.display_img = np.array(Image.open(path_save))
+    dc.display_img = np.array(Image.open(load_save))
     return dc.display_img
 
 def get_multiple_dc(folder_path):
     pass
+
 
 if __name__ == '__main__':
     # mask = create_estimated_mask()

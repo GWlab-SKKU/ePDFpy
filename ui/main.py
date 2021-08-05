@@ -7,7 +7,7 @@ import util
 from datacube import DataCube
 from typing import List
 from ui.pdf_analyse import pdf_analyse
-from calculate import rdf_calculator, image_process
+from calculate import pdf_calculator, image_process
 from PyQt5.QtWidgets import QMessageBox
 from ui import ui_util
 
@@ -189,7 +189,7 @@ class MainWindow(QtWidgets.QWidget):
         self.graphPanel.spinBox_pixel_range_right.setMaximum(len(azavg))
         self.graphPanel.spinBox_pixel_range_left.setMaximum(len(azavg))
 
-        left = rdf_calculator.find_first_peak(azavg)
+        left = pdf_calculator.find_first_peak(azavg)
         # left = 0
         # for i in range(len(self.datacubes[self.current_page].azavg)):
         #     if int(self.datacubes[self.current_page].azavg[i]) != 0 :
@@ -263,7 +263,7 @@ class MainWindow(QtWidgets.QWidget):
         self.graphPanel.spinBox_pixel_range_right.setMaximum(len(azavg))
         self.graphPanel.spinBox_pixel_range_left.setMaximum(len(azavg))
 
-        left = rdf_calculator.find_first_peak(azavg)
+        left = pdf_calculator.find_first_peak(azavg)
         self.graphPanel.region.setRegion([left, len(azavg)-1])
 
     def load_preset(self):
