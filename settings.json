@@ -9,7 +9,7 @@
   "fit_at_q_step": "0.1",
   "N_step": "1",
   "dr_step": "0.01",
-  "damping": 0.2,
+  "damping": 0.15,
   "damping_step": "0.1",
   "rmax": 10.0,
   "rmax_step": "1",

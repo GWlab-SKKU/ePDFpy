@@ -11,6 +11,8 @@ from calculate import pdf_calculator, image_process
 from PyQt5.QtWidgets import QMessageBox
 from ui import ui_util
 
+pg.setConfigOptions(antialias=True)
+
 class DataViewer(QtWidgets.QMainWindow):
     def __init__(self):
         QtWidgets.QMainWindow.__init__(self)

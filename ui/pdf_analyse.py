@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QMessageBox
 import ui.ui_util as ui_util
 from PyQt5 import QtCore, QtWidgets, QtGui
 
-
+pg.setConfigOptions(antialias=True)
 
 class pdf_analyse(QtWidgets.QMainWindow):
     def __init__(self, datacube):

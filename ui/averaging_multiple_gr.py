@@ -10,6 +10,7 @@ from PyQt5.QtCore import Qt, QRectF
 import numpy as np
 from ui import ui_util
 
+pg.setConfigOptions(antialias=True)
 
 class Viewer(QtWidgets.QWidget):
 
