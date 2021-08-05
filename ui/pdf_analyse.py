@@ -335,7 +335,7 @@ class ControlPanel(QtWidgets.QWidget):
         QtWidgets.QWidget.__init__(self)
         self.layout = QtWidgets.QVBoxLayout()
         self.load_and_save = self.LoadAndSaveGroup(mainWindow)
-        self.fitting_elements = self.FittingElements()
+        self.fitting_elements = self.FittingElements(mainWindow)
         self.fitting_factors = self.FittingFactors()
         self.one_graph = self.OneGraph()
 
@@ -361,17 +361,54 @@ class ControlPanel(QtWidgets.QWidget):
 
 
     class FittingElements(QtWidgets.QGroupBox):
-        def __init__(self):
+        def __init__(self, mainWindow:QtWidgets.QMainWindow):
             QtWidgets.QGroupBox.__init__(self)
             self.setTitle("Element")
             layout = QtWidgets.QVBoxLayout()
             layout.setSpacing(0)
             layout.setContentsMargins(10, 0, 5, 5)
+            menubar = self.create_menu(mainWindow)
+            layout.addWidget(menubar)
+            layout.addWidget(self.scattering_factors())
+
             self.element_group_widgets = [ControlPanel.element_group("element" + str(num)) for num in range(1, 6)]
             for element_group_widgets in self.element_group_widgets:
                 layout.addWidget(element_group_widgets)
                 element_group_widgets.setContentsMargins(0, 0, 0, 0)
             self.setLayout(layout)
+
+        def scattering_factors(self):
+            widget = QtWidgets.QWidget()
+            layout = QtWidgets.QHBoxLayout()
+            widget.setLayout(layout)
+            self.lbl_scattering_factor = QtWidgets.QLabel("Scattering Factor")
+            layout.addWidget(self.lbl_scattering_factor)
+            self.combo_scattering_factor = QtWidgets.QComboBox()
+            layout.addWidget(self.combo_scattering_factor)
+            return widget
+
+
+
+        def create_menu(self, mainWindow: QtWidgets.QMainWindow):
+            menubar = mainWindow.menuBar()
+            menu_frame_widget = QtWidgets.QWidget()
+            menu_frame_widget_layout = QtWidgets.QHBoxLayout()
+            menu_frame_widget.setLayout(menu_frame_widget_layout)
+
+            load_menu = menubar.addMenu("   &Load   ")
+            self.load_presets = []
+            for i in range(5):
+                self.load_presets.append(QtWidgets.QAction("Preset&"+str(i+1), self))
+                load_menu.addAction(self.load_presets[i])
+
+            save_menu = menubar.addMenu("   &Save   ")
+            self.save_presets = []
+            for i in range(5):
+                self.save_presets.append(QtWidgets.QAction("Preset&"+str(i+1), self))
+                save_menu.addAction(self.save_presets[i])
+
+            menubar.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+            return menubar
 
     class FittingFactors(QtWidgets.QGroupBox):
         def __init__(self):
