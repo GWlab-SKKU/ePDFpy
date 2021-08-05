@@ -256,10 +256,10 @@ class MainWindow(QtWidgets.QWidget):
         self.update_ui_dc(0)
 
     def menu_load_preset(self):
-        self.dcs.clear()
         dc = file.load_preset()
         if not dc:
             return
+        self.dcs.clear()
         self.dcs.append(dc)
         self.update_ui_dc(0)
 
