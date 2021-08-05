@@ -142,6 +142,9 @@ def save_preset_default(dc_file_path, datacube):
         if type(value) in [int, str, float, list, np.float64, np.int64]:
             to_upload2.update({key: value})
 
+    # Don't save
+    to_upload2.pop('load_file_path')
+
     # int64 exception handling
     for key, value in to_upload.items():
         if type(value) == np.int64:
@@ -225,6 +228,16 @@ def load_azavg(fp) -> np.ndarray:
         return np.loadtxt(fp, delimiter=",")
     if file_ext == ".txt":
         return np.loadtxt(fp)
+
+def save_azavg_only(azavg):
+    fp, ext = QFileDialog.getSaveFileName(filter="csv (*.csv);; txt (*.txt)")
+    if fp is '':
+        return
+    if 'csv' in ext:
+        np.savetxt(fp,azavg,delimiter=',')
+    if 'txt' in ext:
+        np.savetxt(fp,azavg)
+
 
 
 

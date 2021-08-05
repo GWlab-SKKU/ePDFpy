@@ -109,9 +109,9 @@ class DataViewer(QtWidgets.QMainWindow):
         self.controlPanel.openFilePanel.open_preset.triggered.connect(self.menu_load_preset)
         self.controlPanel.openFilePanel.save_preset.triggered.connect(self.menu_save_preset)
         self.controlPanel.openFilePanel.open_presets.triggered.connect(self.menu_open_preset_folder)
-        # self.controlPanel.openFilePanel.save_presets.triggered.connect()
+        self.controlPanel.openFilePanel.save_presets.triggered.connect(self.menu_save_presets)
         self.controlPanel.openFilePanel.open_azavg_only.triggered.connect(self.menu_open_azavg_only)
-        # self.controlPanel.openFilePanel.save_azavg_only.triggered.connect()
+        self.controlPanel.openFilePanel.save_azavg_only.triggered.connect(self.menu_save_azavg_only)
 
         self.controlPanel.operationPanel.btn_find_center.clicked.connect(lambda: (self.find_center(),self.update_img()))
         self.imgPanel.btn_left.clicked.connect(self.btn_page_left_clicked)
@@ -295,6 +295,10 @@ class DataViewer(QtWidgets.QMainWindow):
         for i in range(len(self.dcs)):
             self.update_ui_dc(i)
             self.menu_save_preset()
+
+    def menu_save_azavg_only(self):
+        if self.dcs[self.current_page].azavg is not None:
+            file.save_azavg_only(self.dcs[self.current_page].azavg)
 
     def btn_page_right_clicked(self):
         if not self.current_page == len(self.dcs) - 1:
