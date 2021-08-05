@@ -84,7 +84,7 @@ class Viewer(QtWidgets.QWidget):
         analyzer_window = main.DataViewer()
         analyzer_window.show()
         if self.avg_azavg is not None:
-            analyzer_window.main_window.open_azavg_only(self.avg_azavg)
+            analyzer_window.main_window.menu_open_azavg_only(self.avg_azavg)
 
 
     def open_btn_clicked(self):

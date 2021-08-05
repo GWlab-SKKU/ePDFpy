@@ -48,7 +48,8 @@ class DataCube:
         self.element_ratio = None
 
     def ready(self):
-        self.raw_img, self.img = file.load_mrc_img(self.mrc_file_path)
+        if self.mrc_file_path is not None:
+            self.raw_img, self.img = file.load_mrc_img(self.mrc_file_path)
 
     def release(self):
         self.raw_img, self.img = None, None

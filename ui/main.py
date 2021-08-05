@@ -49,10 +49,10 @@ class MainWindow(QtWidgets.QWidget):
         self.upper_layout.setSpacing(0)
         self.upper_layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self.layout)
-        self.btn_binding()
+        self.sig_binding()
         self.isShowCenter=True
         self.flag_range_update = False
-        self.datacubes: List[DataCube] = []
+        self.dcs: List[DataCube] = []
         self.setWindowTitle("Main window")
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
@@ -80,23 +80,23 @@ class MainWindow(QtWidgets.QWidget):
                 self.controlPanel.settingPanel.spinBox_center_y.value()+1
             )
         if e.key() == QtCore.Qt.Key.Key_PageUp:
-            self.btn_left_clicked()
+            self.btn_page_left_clicked()
         if e.key() == QtCore.Qt.Key.Key_PageDown:
-            self.btn_right_clicked()
+            self.btn_page_right_clicked()
 
-    def btn_binding(self):
-        self.controlPanel.openFilePanel.open_img_file.triggered.connect(self.open_image_file)
-        self.controlPanel.openFilePanel.open_img_folder.triggered.connect(self.open_image_folder)
-        self.controlPanel.openFilePanel.open_preset.triggered.connect(self.load_preset)
-        self.controlPanel.openFilePanel.save_preset.triggered.connect(self.save_preset)
-        self.controlPanel.openFilePanel.open_presets.triggered.connect(self.open_preset_folder)
+    def sig_binding(self):
+        self.controlPanel.openFilePanel.open_img_file.triggered.connect(self.menu_open_image_file)
+        self.controlPanel.openFilePanel.open_img_folder.triggered.connect(self.menu_open_image_folder)
+        self.controlPanel.openFilePanel.open_preset.triggered.connect(self.menu_load_preset)
+        self.controlPanel.openFilePanel.save_preset.triggered.connect(self.menu_save_preset)
+        self.controlPanel.openFilePanel.open_presets.triggered.connect(self.menu_open_preset_folder)
         # self.controlPanel.openFilePanel.save_presets.triggered.connect()
-        self.controlPanel.openFilePanel.open_azavg_only.triggered.connect(self.open_azavg_only)
+        self.controlPanel.openFilePanel.open_azavg_only.triggered.connect(self.menu_open_azavg_only)
         # self.controlPanel.openFilePanel.save_azavg_only.triggered.connect()
 
         self.controlPanel.operationPanel.btn_find_center.clicked.connect(lambda: (self.find_center(),self.update_img()))
-        self.imgPanel.btn_left.clicked.connect(self.btn_left_clicked)
-        self.imgPanel.btn_right.clicked.connect(self.btn_right_clicked)
+        self.imgPanel.btn_left.clicked.connect(self.btn_page_left_clicked)
+        self.imgPanel.btn_right.clicked.connect(self.btn_page_right_clicked)
         self.controlPanel.operationPanel.btn_get_azimuthal_avg.clicked.connect(self.get_azimuthal_value)
         self.controlPanel.settingPanel.spinBox_center_x.valueChanged.connect(self.spinbox_changed_event)
         self.controlPanel.settingPanel.spinBox_center_y.valueChanged.connect(self.spinbox_changed_event)
@@ -107,62 +107,55 @@ class MainWindow(QtWidgets.QWidget):
         self.graphPanel.spinBox_pixel_range_left.valueChanged.connect(self.dialog_to_range)
         self.graphPanel.spinBox_pixel_range_right.valueChanged.connect(self.dialog_to_range)
         self.graphPanel.region.sigRegionChangeFinished.connect(self.range_to_dialog)
-        self.graphPanel.button_start.clicked.connect(self.range_start_clicked)
-        self.graphPanel.button_all.clicked.connect(self.range_all_clicked)
-        self.graphPanel.button_end.clicked.connect(self.range_end_clicked)
-        self.controlPanel.operationPanel.btn_open_epdf_analyser.clicked.connect(self.show_erdf_analyser)
-
+        self.graphPanel.button_start.clicked.connect(self.btn_range_start_clicked)
+        self.graphPanel.button_all.clicked.connect(self.btn_range_all_clicked)
+        self.graphPanel.button_end.clicked.connect(self.btn_range_end_clicked)
+        self.controlPanel.operationPanel.btn_open_epdf_analyser.clicked.connect(self.btn_show_erdf_analyser)
 
     def spinbox_changed_event(self):
         x = self.controlPanel.settingPanel.spinBox_center_x.value()
         y = self.controlPanel.settingPanel.spinBox_center_y.value()
-        self.datacubes[self.current_page].center = (x,y)
+        self.dcs[self.current_page].center = (x, y)
         self.update_img()
 
-    def show_erdf_analyser(self):
-        if len(self.datacubes) == 0:
+    def btn_show_erdf_analyser(self):
+        if len(self.dcs) == 0:
             self.eRDF_analyser = pdf_analyse(DataCube())
             return
         self.update_datacubes()
-        self.eRDF_analyser = pdf_analyse(self.datacubes[self.current_page])
+        self.eRDF_analyser = pdf_analyse(self.dcs[self.current_page])
 
     def update_datacubes(self):
-        self.datacubes[self.current_page].pixel_start_n = self.graphPanel.spinBox_pixel_range_left.value()
-        self.datacubes[self.current_page].pixel_end_n = self.graphPanel.spinBox_pixel_range_right.value()
+        self.dcs[self.current_page].pixel_start_n = self.graphPanel.spinBox_pixel_range_left.value()
+        self.dcs[self.current_page].pixel_end_n = self.graphPanel.spinBox_pixel_range_right.value()
 
-    def range_start_clicked(self):
+    def btn_range_start_clicked(self):
         left = self.graphPanel.spinBox_pixel_range_left.value()
         right = self.graphPanel.spinBox_pixel_range_right.value()
         l = left
         r = left+int((right-left)/4)
         print("left {}, right {}".format(l, r))
-        mx = np.max(self.datacubes[self.current_page].azavg[l:r])
-        mn = np.min(self.datacubes[self.current_page].azavg[l:r])
+        mx = np.max(self.dcs[self.current_page].azavg[l:r])
+        mn = np.min(self.dcs[self.current_page].azavg[l:r])
         self.graphPanel.plot_azav.setXRange(l, r, padding=0.1)
         self.graphPanel.plot_azav.setYRange(mn, mx, padding=0.1)
         print(self.graphPanel.plot_azav.viewRange())
 
-    def range_all_clicked(self):
-        # l = self.graphPanel.spinBox_pixel_range_left.value()
-        # r = self.graphPanel.spinBox_pixel_range_right.value()
-        # mx = np.max(self.datacubes[self.current_page].azavg[l:r])
-        # mn = np.min(self.datacubes[self.current_page].azavg[l:r])
-        # self.graphPanel.plot_azav.setXRange(l, r, padding=0.1)
-        # self.graphPanel.plot_azav.setYRange(mn, mx, padding=0.1)
+    def btn_range_all_clicked(self):
         self.graphPanel.plot_azav.autoRange()
 
-    def range_end_clicked(self):
+    def btn_range_end_clicked(self):
         left = self.graphPanel.spinBox_pixel_range_left.value()
         right = self.graphPanel.spinBox_pixel_range_right.value()
         l = right-int((right - left) / 4)
         r = right
-        mx = np.max(self.datacubes[self.current_page].azavg[l:r])
-        mn = np.min(self.datacubes[self.current_page].azavg[l:r])
+        mx = np.max(self.dcs[self.current_page].azavg[l:r])
+        mn = np.min(self.dcs[self.current_page].azavg[l:r])
         self.graphPanel.plot_azav.setXRange(l, r, padding=0.1)
         self.graphPanel.plot_azav.setYRange(mn, mx, padding=0.1)
 
     def save_current_azimuthal(self):
-        self.datacubes[self.current_page]\
+        self.dcs[self.current_page]\
             .save_azimuthal_data(intensity_start=self.controlPanel.settingPanel.spinBox_irange1.value(),
                                  intensity_end=self.controlPanel.settingPanel.spinBox_irange2.value(),
                                  intensity_slice=self.controlPanel.settingPanel.spinBox_slice_count.value(),
@@ -172,57 +165,61 @@ class MainWindow(QtWidgets.QWidget):
                                  )
 
     def save_all_azimuthal(self):
-        for i in range(len(self.datacubes)):
-            print("processing auto_save azimuthal values", self.datacubes[self.current_page].mrc_file_path)
-            self.read_img(i)
+        for i in range(len(self.dcs)):
+            print("processing auto_save azimuthal values", self.dcs[self.current_page].mrc_file_path)
+            self.update_ui_dc(i)
             # self.datacubes[i].save_azimuthal_data()
             self.save_current_azimuthal()
         #     self.controlPanel.operationPanel.progress_bar.setValue((i+1)/len(self.datacubes))
         # self.controlPanel.operationPanel.progress_bar.setValue(0)
 
     def get_azimuthal_value(self):
-        self.datacubes[self.current_page].azavg, self.azvar = self.datacubes[self.current_page].calculate_azimuthal_average()
-        self.update_azavg_graph(self.datacubes[self.current_page].azavg)
+        self.dcs[self.current_page].azavg, self.azvar = self.dcs[self.current_page].calculate_azimuthal_average()
+        self.update_azavg_graph()
+        self.update_setting()
 
-    def update_azavg_graph(self, azavg):
-        self.graphPanel.update_graph(azavg)
-        self.graphPanel.spinBox_pixel_range_right.setMaximum(len(azavg))
-        self.graphPanel.spinBox_pixel_range_left.setMaximum(len(azavg))
+    def update_azavg_graph(self):
+        self.graphPanel.update_graph(self.dcs[self.current_page].azavg)
 
-        left = pdf_calculator.find_first_peak(azavg)
+        left = pdf_calculator.find_first_peak(self.dcs[self.current_page].azavg)
         # left = 0
         # for i in range(len(self.datacubes[self.current_page].azavg)):
         #     if int(self.datacubes[self.current_page].azavg[i]) != 0 :
         #         left = i
         #         break
-        self.graphPanel.region.setRegion([left, len(azavg)-1])
+
+        if not self.dcs[self.current_page].azavg is None:
+            self.graphPanel.spinBox_pixel_range_right.setMaximum(len(self.dcs[self.current_page].azavg))
+            self.graphPanel.spinBox_pixel_range_left.setMaximum(len(self.dcs[self.current_page].azavg))
+
+        self.graphPanel.region.setRegion([left, len(self.dcs[self.current_page].azavg)-1])
 
     def find_center(self):
         i1 = self.controlPanel.settingPanel.spinBox_irange1.value()
         i2 = self.controlPanel.settingPanel.spinBox_irange2.value()
         intensity_range = (i1,i2)
         slice_count = int(self.controlPanel.settingPanel.spinBox_slice_count.value())
-        center = self.datacubes[self.current_page].calculate_center(intensity_range, slice_count)
-        self.put_center_to_spinBoxes(center)
+        self.dcs[self.current_page].center = self.dcs[self.current_page].calculate_center(intensity_range, slice_count)
+        self.update_setting()
         # you must use self.draw_center() after find_center
-        return center
+        return self.dcs[self.current_page].center
 
     def draw_center(self, img): # todo: remove
         lined_img = img.copy()
-        image_process.draw_center_line(lined_img, self.datacubes[self.current_page].center)
+        image_process.draw_center_line(lined_img, self.dcs[self.current_page].center)
         return lined_img
 
-    def open_image_file(self):
+    def menu_open_image_file(self):
         load_paths = []
         path,_ = QtWidgets.QFileDialog.getOpenFileNames(self,'open')
         if len(path) == 0:
             return
         load_paths.extend(path)
-        self.datacubes.clear()
-        self.datacubes.extend([DataCube(path) for path in load_paths])
-        self.read_img(0)
+        self.dcs.clear()
+        self.dcs.extend([DataCube(path) for path in load_paths])
+        self.update_ui_dc(0)
 
-    def open_image_folder(self):
+    def menu_open_image_folder(self):
         load_paths = []
         path = QtWidgets.QFileDialog.getExistingDirectory(self,'open')
         if len(path) == 0:
@@ -231,11 +228,11 @@ class MainWindow(QtWidgets.QWidget):
         if len(load_paths) == 0:
             QMessageBox.about("no file found")
             return
-        self.datacubes.clear()
-        self.datacubes.extend([DataCube(path) for path in load_paths])
-        self.read_img(0)
+        self.dcs.clear()
+        self.dcs.extend([DataCube(path) for path in load_paths])
+        self.update_ui_dc(0)
 
-    def open_preset_folder(self):
+    def menu_open_preset_folder(self):
         load_paths = []
         path = QtWidgets.QFileDialog.getExistingDirectory(self, 'open')
         if len(path) == 0:
@@ -244,100 +241,85 @@ class MainWindow(QtWidgets.QWidget):
         if len(load_paths) == 0:
             QMessageBox.about("no file found")
             return
-        self.datacubes.clear()
-        self.datacubes.extend([file.load_preset(path) for path in load_paths])
-        self.read_img(0)
+        self.dcs.clear()
+        self.dcs.extend([file.load_preset(path) for path in load_paths])
+        self.update_ui_dc(0)
 
-    def open_azavg_only(self, azavg=None):  # for averaging_multiple_gr.py
+    def menu_open_azavg_only(self, azavg=None):  # azavg arguments is for averaging_multiple_gr.py
         if azavg is None or azavg is False:
             azavg = file.load_azavg_manual()
             if azavg is None:
                 return
+        self.dcs.clear()
+        self.dcs.append(DataCube())
+        self.dcs[0].azavg = azavg
+        self.update_ui_dc(0)
 
-
-        self.datacubes.clear()
-        self.datacubes.append(DataCube())
-        self.datacubes[0].azavg = azavg
-
-        self.graphPanel.update_graph(azavg)
-        self.graphPanel.spinBox_pixel_range_right.setMaximum(len(azavg))
-        self.graphPanel.spinBox_pixel_range_left.setMaximum(len(azavg))
-
-        left = pdf_calculator.find_first_peak(azavg)
-        self.graphPanel.region.setRegion([left, len(azavg)-1])
-
-    def load_preset(self):
-        self.datacubes.clear()
+    def menu_load_preset(self):
+        self.dcs.clear()
         dc = file.load_preset()
         if not dc:
             return
-        self.datacubes.append(dc)
-        self.read_img(0)
-        # if dc.azavg is not None:
-        #     self.update_azavg_graph(dc.azavg)
+        self.dcs.append(dc)
+        self.update_ui_dc(0)
 
-    def save_preset(self):
+    def menu_save_preset(self):
         self.update_datacubes()
-        # to_update = {"Calibration_factor":self.datacubes[self.current_page].ds,
-        #  "Fit_at_Q": self.datacubes[self.current_page].fit_at_q,
-        #  "N": self.datacubes[self.current_page].N,
-        #  "Damping": self.datacubes[self.current_page].damping,
-        #  "r(max)": self.datacubes[self.current_page].rmax,
-        #  "dr": self.datacubes[self.current_page].dr,
-        #  "Is_full_Q": self.datacubes[self.current_page].is_full_q,
-        #  "pixel_start_num": self.datacubes[self.current_page].pixel_start_n,
-        #  "pixel_end_num": self.datacubes[self.current_page].pixel_end_n,
-        #  "center_x": self.datacubes[self.current_page].center[0],
-        #  "center_y": self.datacubes[self.current_page].center[1],
-        #  "mrc_file_path": self.datacubes[self.current_page].file_path}
-        file.save_preset_default(self.datacubes[self.current_page].mrc_file_path, self.datacubes[self.current_page])
+        file.save_preset_default(self.dcs[self.current_page].mrc_file_path, self.dcs[self.current_page])
 
-    def save_presets(self):
-        for i in range(len(self.datacubes)):
+    def menu_save_presets(self):
+        for i in range(len(self.dcs)):
+            self.update_ui_dc(i)
+            self.menu_save_preset()
 
-            self.read_img(i)
-            self.save_preset()
+    def btn_page_right_clicked(self):
+        if not self.current_page == len(self.dcs) - 1:
+            self.update_ui_dc(self.current_page + 1)
 
-
-    def btn_right_clicked(self):
-        if not self.current_page == len(self.datacubes) - 1:
-            self.read_img(self.current_page + 1)
-
-    def btn_left_clicked(self):
+    def btn_page_left_clicked(self):
         if not self.current_page == 0:
-            self.read_img(self.current_page - 1)
+            self.update_ui_dc(self.current_page - 1)
 
-    def read_img(self,i):
-        self.datacubes[self.current_page].release()
+    def update_ui_dc(self,i):
+        self.dcs[self.current_page].release()
         self.current_page = i
-        self.imgPanel.lbl_current_num.setText(str(self.current_page+1)+"/"+str(len(self.datacubes)))
-        self.datacubes[i].ready()
+        self.dcs[self.current_page].ready()
+
+        # update number
+        self.imgPanel.lbl_current_num.setText(str(self.current_page + 1) + "/" + str(len(self.dcs)))
+
+        # update img
         self.update_img()
-        self.setWindowTitle(self.datacubes[self.current_page].mrc_file_path)
-        self.controlPanel.settingPanel.spinBox_center_x.setMaximum(self.datacubes[i].img.shape[0])  # todo : confusing x,y
-        self.controlPanel.settingPanel.spinBox_center_y.setMaximum(self.datacubes[i].img.shape[1])
 
-        if not self.datacubes[i].center[0] is None:
-            self.put_center_to_spinBoxes(self.datacubes[i].center)
-        if not self.datacubes[i].azavg is None:
-            self.update_azavg_graph(self.datacubes[i].azavg)
+        # update graph
+        if not self.dcs[i].azavg is None:
+            self.update_azavg_graph()
 
-    def put_center_to_spinBoxes(self, center):
-        self.controlPanel.settingPanel.spinBox_center_x.blockSignals(True)
-        self.controlPanel.settingPanel.spinBox_center_y.blockSignals(True)
-        self.controlPanel.settingPanel.spinBox_center_x.setValue(center[0])
-        self.controlPanel.settingPanel.spinBox_center_y.setValue(center[1])
-        self.controlPanel.settingPanel.spinBox_center_x.blockSignals(False)
-        self.controlPanel.settingPanel.spinBox_center_y.blockSignals(False)
+        # update spinbox and settings
+        self.update_setting()
+
+        # windows title : file name
+        self.setWindowTitle(self.dcs[self.current_page].mrc_file_path)
+
+    def update_setting(self):
+        if not self.dcs[self.current_page].img is None:
+            self.controlPanel.settingPanel.spinBox_center_x.setMaximum(self.dcs[self.current_page].img.shape[0])  # todo : confusing x,y
+            self.controlPanel.settingPanel.spinBox_center_y.setMaximum(self.dcs[self.current_page].img.shape[1])
+
+        if not self.dcs[self.current_page].center[0] is None:
+            ui_util.update_value(self.controlPanel.settingPanel.spinBox_center_x, self.dcs[self.current_page].center[0])
+            ui_util.update_value(self.controlPanel.settingPanel.spinBox_center_y, self.dcs[self.current_page].center[1])
 
     def update_img(self):
-        if self.datacubes[self.current_page].img is None:
+        if self.dcs[self.current_page].img is None:
+            print("debug")
+            self.imgPanel.update_img(np.zeros([1,1]))
             return
-        img = self.datacubes[self.current_page].img.copy()
+        img = self.dcs[self.current_page].img.copy()
         if self.controlPanel.settingPanel.chkBox_show_beam_stopper_mask.isChecked():
             img = cv2.bitwise_and(img, img, mask=np.bitwise_not(image_process.mask))
-        if self.datacubes[self.current_page].center[0] is not None and self.controlPanel.settingPanel.chkBox_show_centerLine.isChecked():
-            img = image_process.draw_center_line(img, self.datacubes[self.current_page].center)
+        if self.dcs[self.current_page].center[0] is not None and self.controlPanel.settingPanel.chkBox_show_centerLine.isChecked():
+            img = image_process.draw_center_line(img, self.dcs[self.current_page].center)
         self.imgPanel.update_img(img)
 
     def dialog_to_range(self):
@@ -346,11 +328,11 @@ class MainWindow(QtWidgets.QWidget):
         right = self.graphPanel.spinBox_pixel_range_right.value()
         self.graphPanel.region.setRegion([left,right])
         self.flag_range_update = False
-        if self.datacubes[self.current_page].analyser is not None:
+        if self.dcs[self.current_page].analyser is not None:
             print("instant update")
-            self.datacubes[self.current_page].pixel_start_n = int(left)
-            self.datacubes[self.current_page].pixel_end_n = int(right)
-            self.datacubes[self.current_page].analyser.instantfit()
+            self.dcs[self.current_page].pixel_start_n = int(left)
+            self.dcs[self.current_page].pixel_end_n = int(right)
+            self.dcs[self.current_page].analyser.instantfit()
 
     def range_to_dialog(self):
         if self.flag_range_update:
@@ -364,11 +346,11 @@ class MainWindow(QtWidgets.QWidget):
         self.graphPanel.region.sigRegionChangeFinished.connect(self.range_to_dialog)
         self.graphPanel.spinBox_pixel_range_left.setValue(left)
         self.graphPanel.spinBox_pixel_range_right.setValue(right)
-        if self.datacubes[self.current_page].analyser is not None:
+        if self.dcs[self.current_page].analyser is not None:
             print("instant update2")
-            self.datacubes[self.current_page].pixel_start_n = int(left)
-            self.datacubes[self.current_page].pixel_end_n = int(right)
-            self.datacubes[self.current_page].analyser.instantfit()
+            self.dcs[self.current_page].pixel_start_n = int(left)
+            self.dcs[self.current_page].pixel_end_n = int(right)
+            self.dcs[self.current_page].analyser.instantfit()
 
 
 class ControlPanel(QtWidgets.QWidget):
