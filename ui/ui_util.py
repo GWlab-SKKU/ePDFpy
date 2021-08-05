@@ -113,6 +113,16 @@ class CoordinatesPlotWidget(pg.PlotWidget):
         self.coor_update_toggle = not self.coor_update_toggle
         return super().mousePressEvent(ev)
 
+    def setYScaling(self, bool):
+        if bool:
+            self.sigXRangeChanged.connect(self.YScaling)
+        else:
+            self.sigXRangeChanged.disconnect()
+
+    def YScaling(self):
+        self.enableAutoRange(axis='y')
+        self.setAutoVisible(y=True)
+
 def update_value(widget:QtWidgets.QWidget, value):
     """ update value without occuring signal """
     widget.blockSignals(True)

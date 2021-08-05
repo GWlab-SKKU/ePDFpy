@@ -149,10 +149,10 @@ class DataViewer(QtWidgets.QMainWindow):
         l = left
         r = left+int((right-left)/4)
         # print("left {}, right {}".format(l, r))
-        mx = np.max(self.dcs[self.current_page].azavg[l:r])
-        mn = np.min(self.dcs[self.current_page].azavg[l:r])
+        # mx = np.max(self.dcs[self.current_page].azavg[l:r])
+        # mn = np.min(self.dcs[self.current_page].azavg[l:r])
         self.graphPanel.plot_azav.setXRange(l, r, padding=0.1)
-        self.graphPanel.plot_azav.setYRange(mn, mx, padding=0.1)
+        # self.graphPanel.plot_azav.setYRange(mn, mx, padding=0.1)
         # print(self.graphPanel.plot_azav.viewRange())
 
     def btn_range_all_clicked(self):
@@ -163,10 +163,10 @@ class DataViewer(QtWidgets.QMainWindow):
         right = self.graphPanel.spinBox_pixel_range_right.value()
         l = right-int((right - left) / 4)
         r = right
-        mx = np.max(self.dcs[self.current_page].azavg[l:r])
-        mn = np.min(self.dcs[self.current_page].azavg[l:r])
+        # mx = np.max(self.dcs[self.current_page].azavg[l:r])
+        # mn = np.min(self.dcs[self.current_page].azavg[l:r])
         self.graphPanel.plot_azav.setXRange(l, r, padding=0.1)
-        self.graphPanel.plot_azav.setYRange(mn, mx, padding=0.1)
+        # self.graphPanel.plot_azav.setYRange(mn, mx, padding=0.1)
 
     def save_current_azimuthal(self):
         self.dcs[self.current_page]\
@@ -204,7 +204,6 @@ class DataViewer(QtWidgets.QMainWindow):
         self.graphPanel.spinBox_pixel_range_right.setMaximum(len(self.dcs[self.current_page].azavg))
         self.graphPanel.spinBox_pixel_range_left.setMaximum(len(self.dcs[self.current_page].azavg))
 
-        print(self.dcs[self.current_page].pixel_start_n)
         if self.dcs[self.current_page].pixel_start_n is None:
             left = pdf_calculator.find_first_peak(self.dcs[self.current_page].azavg)
             # left = 0
@@ -347,7 +346,6 @@ class DataViewer(QtWidgets.QMainWindow):
 
     def update_img(self):
         if self.dcs[self.current_page].img is None:
-            print("debug")
             self.imgPanel.update_img(np.zeros([1,1]))
             return
         img = self.dcs[self.current_page].img.copy()
@@ -364,7 +362,6 @@ class DataViewer(QtWidgets.QMainWindow):
         self.dcs[self.current_page].pixel_start_n = left
         self.dcs[self.current_page].pixel_end_n = right
         if self.dcs[self.current_page].analyser is not None:
-            # print("instant update")
             # self.dcs[self.current_page].pixel_start_n = int(left)
             # self.dcs[self.current_page].pixel_end_n = int(right)
             self.dcs[self.current_page].analyser.instantfit()
@@ -588,6 +585,7 @@ class GraphPanel(QtWidgets.QWidget):
         self.imageView = pg.ImageView()
         # self.plot_azav = pg.PlotWidget(title='azimuthal average')
         self.plot_azav = ui_util.CoordinatesPlotWidget(title='azimuthal average')
+        self.plot_azav.setYScaling(True)
         self.layout = QtWidgets.QHBoxLayout()
         self.layout.addWidget(self.plot_azav)
         
