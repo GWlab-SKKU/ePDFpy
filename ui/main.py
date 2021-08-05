@@ -119,8 +119,8 @@ class DataViewer(QtWidgets.QMainWindow):
         self.controlPanel.operationPanel.btn_get_azimuthal_avg.clicked.connect(self.get_azimuthal_value)
         self.controlPanel.settingPanel.spinBox_center_x.valueChanged.connect(self.spinbox_changed_event)
         self.controlPanel.settingPanel.spinBox_center_y.valueChanged.connect(self.spinbox_changed_event)
-        self.controlPanel.operationPanel.btn_save_current_azimuthal.clicked.connect(self.save_current_azimuthal)
-        self.controlPanel.operationPanel.btn_save_all_azimuthal.clicked.connect(self.save_all_azimuthal)
+        # self.controlPanel.operationPanel.btn_save_current_azimuthal.clicked.connect(self.save_current_azimuthal)
+        self.controlPanel.operationPanel.btn_calculate_all_azimuthal.clicked.connect(self.save_all_azimuthal)
         self.controlPanel.settingPanel.chkBox_show_centerLine.stateChanged.connect(self.update_img)
         self.controlPanel.settingPanel.chkBox_show_beam_stopper_mask.stateChanged.connect(self.update_img)
         self.graphPanel.spinBox_pixel_range_left.valueChanged.connect(self.dialog_to_range)
@@ -187,8 +187,13 @@ class DataViewer(QtWidgets.QMainWindow):
         for i in range(len(self.dcs)):
             print("processing auto_save azimuthal values", self.dcs[self.current_page].mrc_file_path)
             self.update_ui_dc(i)
+            if self.dcs[i].img is not None and self.dcs[i].center[0] is None:
+                self.find_center()
+                self.update_img()
+            if self.dcs[i].azavg is None:
+                self.get_azimuthal_value()
             # self.datacubes[i].save_azimuthal_data()
-            self.save_current_azimuthal()
+            # self.save_current_azimuthal()
         #     self.controlPanel.operationPanel.progress_bar.setValue((i+1)/len(self.datacubes))
         # self.controlPanel.operationPanel.progress_bar.setValue(0)
 
@@ -289,7 +294,7 @@ class DataViewer(QtWidgets.QMainWindow):
 
     def menu_save_preset(self):
         self.update_datacubes()
-        file.save_preset_default(self.dcs[self.current_page].mrc_file_path, self.dcs[self.current_page])
+        file.save_preset_default(self.dcs[self.current_page].mrc_file_path, self.dcs[self.current_page], self.imgPanel)
 
     def menu_save_presets(self):
         for i in range(len(self.dcs)):
@@ -541,16 +546,15 @@ class ControlPanel(QtWidgets.QWidget):
             layout = QtWidgets.QGridLayout()
             self.btn_find_center = QtWidgets.QPushButton("Find center")
             self.btn_get_azimuthal_avg = QtWidgets.QPushButton("Get azimuthal data")
-            self.btn_save_current_azimuthal = QtWidgets.QPushButton("Save current azimuthal data")
-            self.btn_save_all_azimuthal = QtWidgets.QPushButton("Save every azimuthal data")
+            self.btn_calculate_all_azimuthal = QtWidgets.QPushButton("Calculate all data")
             self.progress_bar = QtWidgets.QProgressBar()
             self.progress_bar.setValue(0)
             self.btn_open_epdf_analyser = QtWidgets.QPushButton("Open pdf analyser")
 
             layout.addWidget(self.btn_find_center, 0, 0)
             layout.addWidget(self.btn_get_azimuthal_avg, 0, 1)
-            layout.addWidget(self.btn_save_current_azimuthal, 1, 0,1,2)
-            layout.addWidget(self.btn_save_all_azimuthal, 2, 0,1,2)
+            # layout.addWidget(self.btn_save_current_azimuthal, 1, 0,1,2)
+            layout.addWidget(self.btn_calculate_all_azimuthal, 2, 0, 1, 2)
             layout.addWidget(self.progress_bar,3,0,1,2)
             layout.addWidget(self.btn_open_epdf_analyser,4,0,1,2)
 

@@ -14,6 +14,7 @@ preset_ext = ".preset.json"
 azavg_ext = ".azavg.csv"
 data_q_ext = ".q.csv"
 data_r_ext = ".r.csv"
+image_ext = ".img.tiff"
 
 
 def load_mrc_img(fp):
@@ -87,7 +88,7 @@ def load_preset_manual():
     return json.load(fp)
 
 
-def save_preset_default(dc_file_path, datacube):
+def save_preset_default(dc_file_path, datacube, imgPanel=None):
     if dc_file_path is None and datacube.azavg_file_path is not None:
         # when you load only azavg
         current_folder_path, file_name = os.path.split(datacube.azavg_file_path)
@@ -111,6 +112,7 @@ def save_preset_default(dc_file_path, datacube):
     azavg_path = os.path.join(analysis_folder_path, file_short_name + azavg_ext)
     data_q_path = os.path.join(analysis_folder_path, file_short_name + data_q_ext)
     data_r_path = os.path.join(analysis_folder_path, file_short_name + data_r_ext)
+    img_path = os.path.join(analysis_folder_path, file_short_name + image_ext)
 
     to_upload = vars(copy.copy(datacube))
 
@@ -127,6 +129,9 @@ def save_preset_default(dc_file_path, datacube):
     if to_upload['r'] is not None:
         df = pd.DataFrame({'r': to_upload['r'], 'Gr': to_upload['Gr']})
         df.to_csv(data_r_path, index=None)
+    # save img data
+    if imgPanel is not None and datacube.img is not None:
+        imgPanel.imageView.export(img_path)
 
     # convert to relative path
     if to_upload['mrc_file_path'] is not None:
