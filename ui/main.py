@@ -14,21 +14,23 @@ from ui import ui_util
 class DataViewer(QtWidgets.QMainWindow):
     def __init__(self):
         QtWidgets.QMainWindow.__init__(self)
-        self.main_window = MainWindow(self)
-        self.setCentralWidget(self.main_window)
-        self.resize(1080,600)
+        self.init_ui()
+        self.isShowCenter=True
+        self.flag_range_update = False
+        self.load_default()
+        self.sig_binding()
+        self.dcs: List[DataCube] = []
+        self.resize(1000,600)
 
-
-class MainWindow(QtWidgets.QWidget):
-    def __init__(self, mainWindow):
+    def init_ui(self):
         QtWidgets.QWidget.__init__(self)
         self.plotWindow = None
-        self.mainWindow = mainWindow
+        self.eRDF_analyser = None
         self.current_page = 0
         self.upper = QtWidgets.QFrame(self)
         self.lower = QtWidgets.QFrame(self)
         self.splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
-        self.controlPanel = ControlPanel(self.mainWindow)
+        self.controlPanel = ControlPanel(self)
         self.controlPanel.setMaximumWidth(300)
         self.imgPanel = ImgPanel()
         self.graphPanel = GraphPanel()
@@ -48,19 +50,34 @@ class MainWindow(QtWidgets.QWidget):
         self.lower_layout.setContentsMargins(0,0,0,0)
         self.upper_layout.setSpacing(0)
         self.upper_layout.setContentsMargins(0, 0, 0, 0)
-        self.setLayout(self.layout)
-        self.sig_binding()
-        self.isShowCenter=True
-        self.flag_range_update = False
-        self.dcs: List[DataCube] = []
-        self.mainWindow.setWindowTitle("Main window")
+
+        self.setWindowTitle("Main window")
+        self.default_setting = util.DefaultSetting()
+
+        centralWidget = QtWidgets.QWidget()
+        centralWidget.setLayout(self.layout)
+        self.setCentralWidget(centralWidget)
+
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
-        util.settings["intensity_range_1"] = self.controlPanel.settingPanel.spinBox_irange1.value()
-        util.settings["intensity_range_2"] = self.controlPanel.settingPanel.spinBox_irange2.value()
-        util.settings["slice_count"] = self.controlPanel.settingPanel.spinBox_slice_count.value()
-        util.settings["show_center_line"] = self.controlPanel.settingPanel.chkBox_show_centerLine.isChecked()
-        util.save_settings(util.settings)
+        util.default_setting.intensity_range_1 = self.controlPanel.settingPanel.spinBox_irange1.value()
+        util.default_setting.intensity_range_2 = self.controlPanel.settingPanel.spinBox_irange2.value()
+        util.default_setting.slice_count = self.controlPanel.settingPanel.spinBox_slice_count.value()
+        util.default_setting.show_center_line = self.controlPanel.settingPanel.chkBox_show_centerLine.isChecked()
+        util.default_setting.save_settings()
+        super().closeEvent(a0)
+
+    def load_default(self):
+        if util.default_setting.intensity_range_1 is not None:
+            self.controlPanel.settingPanel.spinBox_irange1.setValue(util.default_setting.intensity_range_1)
+        if util.default_setting.intensity_range_2 is not None:
+            self.controlPanel.settingPanel.spinBox_irange2.setValue(util.default_setting.intensity_range_2)
+        if util.default_setting.slice_count is not None:
+            self.controlPanel.settingPanel.spinBox_slice_count.setValue(util.default_setting.slice_count)
+        if util.default_setting.show_center_line is not None:
+            self.controlPanel.settingPanel.chkBox_show_centerLine.setChecked(util.default_setting.show_center_line)
+        if util.default_setting.show_beam_stopper_mask is not None:
+            self.controlPanel.settingPanel.chkBox_show_beam_stopper_mask.setChecked(util.default_setting.show_beam_stopper_mask)
 
     def keyPressEvent(self, e: QtGui.QKeyEvent) -> None:
         if e.key() == QtCore.Qt.Key.Key_Right:
@@ -305,7 +322,7 @@ class MainWindow(QtWidgets.QWidget):
 
         # windows title : file name
         if self.dcs[self.current_page].load_file_path is not None:
-            self.mainWindow.setWindowTitle(self.dcs[self.current_page].load_file_path)
+            self.setWindowTitle(self.dcs[self.current_page].load_file_path)
             fn = os.path.split(self.dcs[self.current_page].load_file_path)[1]
             max_size = 25
             if len(fn) > max_size:
@@ -469,11 +486,7 @@ class ControlPanel(QtWidgets.QWidget):
             self.spinBox_irange1.setMaximum(255)
             self.spinBox_irange2.setMaximum(255)
             self.spinBox_slice_count.setMaximum(255)
-            self.spinBox_irange1.setValue(util.settings["intensity_range_1"])
-            self.spinBox_irange2.setValue(util.settings["intensity_range_2"])
-            self.spinBox_slice_count.setValue(util.settings["slice_count"])
-            self.chkBox_show_centerLine.setChecked(util.settings["show_center_line"])
-            self.chkBox_show_beam_stopper_mask.setChecked(util.settings["show_beam_stopper_mask"])
+
             # self.spinBox_irange1.setFixedHeight(ControlPanel.text_fixed_height)
             # self.spinBox_irange2.setFixedHeight(ControlPanel.text_fixed_height)
             # self.spinBox_slice_count.setFixedHeight(ControlPanel.text_fixed_height)

@@ -66,9 +66,44 @@ class pdf_analyse(QtWidgets.QMainWindow):
         centralWidget.setLayout(self.layout)
         self.setCentralWidget(centralWidget)
 
+        self.load_default_setting()
+
         self.put_data_to_ui()
         if self.datacube.Gr is not None:
             self.update_graph()
+
+    def load_default_setting(self):
+        if util.default_setting.calibration_factor is not None:
+            self.controlPanel.fitting_factors.spinbox_ds.setValue(util.default_setting.calibration_factor)
+        if util.default_setting.calibration_factor_step is not None:
+            self.controlPanel.fitting_factors.spinbox_ds_step.setText(util.default_setting.calibration_factor_step)
+        if util.default_setting.fit_at_q_step is not None:
+            self.controlPanel.fitting_factors.spinbox_fit_at_q_step.setText(util.default_setting.fit_at_q_step)
+        if util.default_setting.N_step is not None:
+            self.controlPanel.fitting_factors.spinbox_N_step.setText(util.default_setting.N_step)
+        if util.default_setting.dr_step is not None:
+            self.controlPanel.fitting_factors.spinbox_dr_step.setText(util.default_setting.dr_step)
+        if util.default_setting.damping is not None:
+            self.controlPanel.fitting_factors.spinbox_damping.setValue(util.default_setting.damping)
+        if util.default_setting.damping_step is not None:
+            self.controlPanel.fitting_factors.spinbox_damping_step.setText(util.default_setting.damping_step)
+        if util.default_setting.rmax is not None:
+            self.controlPanel.fitting_factors.spinbox_rmax.setValue(util.default_setting.rmax)
+        if util.default_setting.rmax_step is not None:
+            self.controlPanel.fitting_factors.spinbox_rmax_step.setText(util.default_setting.rmax_step)
+
+    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
+        util.default_setting.calibration_factor = self.controlPanel.fitting_factors.spinbox_ds.value()
+        util.default_setting.calibration_factor_step = self.controlPanel.fitting_factors.spinbox_ds_step.text()
+        util.default_setting.fit_at_q_step = self.controlPanel.fitting_factors.spinbox_fit_at_q_step.text()
+        util.default_setting.N_step = self.controlPanel.fitting_factors.spinbox_N_step.text()
+        util.default_setting.dr_step = self.controlPanel.fitting_factors.spinbox_dr_step.text()
+        util.default_setting.damping = self.controlPanel.fitting_factors.spinbox_damping.value()
+        util.default_setting.damping_step = self.controlPanel.fitting_factors.spinbox_damping_step.text()
+        util.default_setting.rmax = self.controlPanel.fitting_factors.spinbox_rmax.value()
+        util.default_setting.rmax_step = self.controlPanel.fitting_factors.spinbox_rmax_step.text()
+        util.default_setting.save_settings()
+        super().closeEvent(a0)
 
     def put_data_to_ui(self):
         # elements
