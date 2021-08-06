@@ -83,6 +83,8 @@ class pdf_analyse(QtWidgets.QMainWindow):
             self.controlPanel.fitting_factors.spinbox_fit_at_q_step.setText(util.default_setting.fit_at_q_step)
         if util.default_setting.N_step is not None:
             self.controlPanel.fitting_factors.spinbox_N_step.setText(util.default_setting.N_step)
+        if util.default_setting.dr is not None:
+            self.controlPanel.fitting_factors.spinbox_dr.setValue(util.default_setting.dr)
         if util.default_setting.dr_step is not None:
             self.controlPanel.fitting_factors.spinbox_dr_step.setText(util.default_setting.dr_step)
         if util.default_setting.damping is not None:
@@ -99,11 +101,13 @@ class pdf_analyse(QtWidgets.QMainWindow):
         util.default_setting.calibration_factor_step = self.controlPanel.fitting_factors.spinbox_ds_step.text()
         util.default_setting.fit_at_q_step = self.controlPanel.fitting_factors.spinbox_fit_at_q_step.text()
         util.default_setting.N_step = self.controlPanel.fitting_factors.spinbox_N_step.text()
+        util.default_setting.dr = self.controlPanel.fitting_factors.spinbox_dr.value()
         util.default_setting.dr_step = self.controlPanel.fitting_factors.spinbox_dr_step.text()
         util.default_setting.damping = self.controlPanel.fitting_factors.spinbox_damping.value()
         util.default_setting.damping_step = self.controlPanel.fitting_factors.spinbox_damping_step.text()
         util.default_setting.rmax = self.controlPanel.fitting_factors.spinbox_rmax.value()
         util.default_setting.rmax_step = self.controlPanel.fitting_factors.spinbox_rmax_step.text()
+        # util.default_setting.
         util.default_setting.save_settings()
         super().closeEvent(a0)
 
@@ -141,9 +145,6 @@ class pdf_analyse(QtWidgets.QMainWindow):
                 action.setDisabled(False)
             else:
                 action.setDisabled(True)
-
-
-
 
     def put_data_to_ui(self):
         # elements
@@ -533,7 +534,6 @@ class ControlPanel(QtWidgets.QWidget):
             self.spinbox_dr_step.textChanged.connect(
                 lambda: self.spinbox_dr.setSingleStep(float(self.spinbox_dr_step.text())))
             self.spinbox_dr.setRange(0, 1e+10)
-            self.spinbox_dr_step.setText("0.01")
 
 
             self.btn_manual_fit = QtWidgets.QPushButton("Manual Fit")

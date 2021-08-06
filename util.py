@@ -130,6 +130,7 @@ class DefaultSetting:
         self.calibration_factor_step = None
         self.fit_at_q_step = None
         self.N_step = None
+        self.dr = None
         self.dr_step = None
         self.damping = None
         self.damping_step = None
