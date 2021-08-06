@@ -149,6 +149,8 @@ class DefaultSetting:
         json.dump(vars(self), open(setting_path, 'w'), indent=2)
 
 
+
+
 default_setting = DefaultSetting()
 
 if __name__ == '__main__':

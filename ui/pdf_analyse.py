@@ -24,6 +24,8 @@ class pdf_analyse(QtWidgets.QMainWindow):
         self.binding()
         self.pdf_setting = {}
         self.setWindowTitle("pdf analyzer")
+        self.element_presets = file.load_element_preset()
+        self.update_load_preset_enable()
 
     def initui(self):
         self.setMinimumSize(800, 600)
@@ -105,6 +107,44 @@ class pdf_analyse(QtWidgets.QMainWindow):
         util.default_setting.save_settings()
         super().closeEvent(a0)
 
+    def save_element(self, preset_num):
+        data = {}
+        for idx, widget in enumerate(self.controlPanel.fitting_elements.element_group_widgets):
+            data.update({"element" + str(idx):[widget.combobox.currentIndex(), widget.element_ratio.value()]})
+        self.element_presets.update({'preset' + str(preset_num):data})
+        file.save_element_preset(self.element_presets)
+        self.update_load_preset_enable()
+
+    def load_element(self, preset_num):
+        data = self.element_presets["preset"+str(preset_num)]
+        for idx, widget in enumerate(self.controlPanel.fitting_elements.element_group_widgets):
+            if "element"+str(idx) in data.keys():
+                widget.combobox.setCurrentIndex(data["element"+str(idx)][0])
+                widget.element_ratio.setValue(data["element"+str(idx)][1])
+            else:
+                widget.combobox.setCurrentIndex(0)
+                widget.element_ratio.setValue(0)
+
+    def del_element(self, preset_num):
+        self.element_presets.pop('preset'+str(preset_num))
+        file.save_element_preset(self.element_presets)
+        self.update_load_preset_enable()
+
+    def update_load_preset_enable(self):
+        for idx, action in enumerate(self.controlPanel.fitting_elements.actions_load_preset):
+            if "preset"+str(idx) in self.element_presets.keys():
+                action.setDisabled(False)
+            else:
+                action.setDisabled(True)
+        for idx, action in enumerate(self.controlPanel.fitting_elements.actions_del_preset):
+            if "preset"+str(idx) in self.element_presets.keys():
+                action.setDisabled(False)
+            else:
+                action.setDisabled(True)
+
+
+
+
     def put_data_to_ui(self):
         # elements
         print(self.datacube.element_nums)
@@ -162,6 +202,13 @@ class pdf_analyse(QtWidgets.QMainWindow):
         self.controlPanel.load_and_save.save_pdf_setting_as.triggered.connect(self.save_pdf_setting_as)
         self.controlPanel.load_and_save.load_azavg_from_file.triggered.connect(self.load_azavg_from_file)
         self.controlPanel.load_and_save.load_azavg_from_main_window.triggered.connect(self.load_azavg_from_main_window)
+
+        for idx, action in enumerate(self.controlPanel.fitting_elements.actions_load_preset):
+            action.triggered.connect(lambda state, x=idx: self.load_element(x))
+        for idx, action in enumerate(self.controlPanel.fitting_elements.actions_save_preset):
+            action.triggered.connect(lambda state, x=idx: self.save_element(x))
+        for idx, action in enumerate(self.controlPanel.fitting_elements.actions_del_preset):
+            action.triggered.connect(lambda state, x=idx: self.del_element(x))
 
     def load_pdf_setting(self):
         rs = file.load_preset_default()
@@ -392,27 +439,36 @@ class ControlPanel(QtWidgets.QWidget):
         def create_menu(self, mainWindow: QtWidgets.QMainWindow):
             menubar1 = mainWindow.menuBar()
             menubar2 = mainWindow.menuBar()
+            menubar3 = mainWindow.menuBar()
             menu_frame_widget = QtWidgets.QWidget()
             menu_frame_widget_layout = QtWidgets.QHBoxLayout()
             menu_frame_widget.setLayout(menu_frame_widget_layout)
 
             menu_frame_widget_layout.addWidget(menubar1)
             menu_frame_widget_layout.addWidget(menubar2)
+            menu_frame_widget_layout.addWidget(menubar3)
 
-            load_menu = menubar1.addMenu("    &Load    ")
-            self.load_presets = []
+            load_menu = menubar1.addMenu("  &Load  ")
+            self.actions_load_preset = []
             for i in range(5):
-                self.load_presets.append(QtWidgets.QAction("Preset&"+str(i+1), self))
-                load_menu.addAction(self.load_presets[i])
+                self.actions_load_preset.append(QtWidgets.QAction("Preset&" + str(i + 1), self))
+                load_menu.addAction(self.actions_load_preset[i])
 
-            save_menu = menubar2.addMenu("    &Save    ")
-            self.save_presets = []
+            save_menu = menubar2.addMenu("  &Save  ")
+            self.actions_save_preset = []
             for i in range(5):
-                self.save_presets.append(QtWidgets.QAction("Preset&"+str(i+1), self))
-                save_menu.addAction(self.save_presets[i])
+                self.actions_save_preset.append(QtWidgets.QAction("Preset&" + str(i + 1), self))
+                save_menu.addAction(self.actions_save_preset[i])
+
+            del_menu = menubar3.addMenu("  &Del  ")
+            self.actions_del_preset = []
+            for i in range(5):
+                self.actions_del_preset.append(QtWidgets.QAction("Preset&" + str(i + 1), self))
+                del_menu.addAction(self.actions_del_preset[i])
 
             menubar1.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
             menubar2.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+            menubar3.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
 
             return menu_frame_widget
 

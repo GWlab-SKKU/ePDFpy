@@ -15,6 +15,7 @@ azavg_ext = ".azavg.csv"
 data_q_ext = ".q.csv"
 data_r_ext = ".r.csv"
 image_ext = ".img.tiff"
+element_preset_path = "settings/element_presets.json"
 
 
 def load_mrc_img(fp):
@@ -210,6 +211,15 @@ def save_pdf_setting_manual(dc_file_path):
     json.dump(fp, open(fp, 'w'), indent=2)
     return True
 
+def load_element_preset():
+    if not os.path.isfile(element_preset_path):
+        element_preset = {}
+        json.dump(element_preset, open(element_preset_path, 'w'), indent=2)
+        return element_preset
+    return json.load(open(element_preset_path))
+
+def save_element_preset(data):
+    json.dump(data, open(element_preset_path,'w'), indent=2)
 
 # def load_azavg_from_preset(preset_path:str):
 #     preset_path.rfind(preset_ext)
