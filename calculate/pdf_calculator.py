@@ -3,9 +3,9 @@ from scipy.ndimage.filters import gaussian_filter1d
 from scipy.signal import find_peaks
 
 paramK = np.loadtxt("./assets/Parameter_files/Kirkland_2010.txt")
+paramL = np.loadtxt("./assets/Parameter_files/Lobato_2014.txt")
 
-
-def calculation(ds, q_start_num, q_end_num, element_nums, ratio, azavg, is_full_q, damping, rmax, dr, fit_at_q=None, N=None):
+def calculation(ds, q_start_num, q_end_num, element_nums, ratio, azavg, is_full_q, damping, rmax, dr, fit_at_q=None, N=None, scattering_factor_type="kirkland"):
     element_nums = np.array(element_nums)
     for idx, element in enumerate(element_nums):
         if element == 0:
@@ -23,13 +23,19 @@ def calculation(ds, q_start_num, q_end_num, element_nums, ratio, azavg, is_full_
 
     s = q / 2 / np.pi
     s2 = s ** 2
-    L = np.uint16(len(q))
-    paramK_elems = paramK[element_nums, :]
-    f = np.array([KirklandFactors(s2, paramK_elem) for paramK_elem in paramK_elems])
+
+    if scattering_factor_type == "kirkland":
+        paramK_elems = paramK[element_nums, :]
+        f = np.array([KirklandFactors(s2, paramK_elem) for paramK_elem in paramK_elems])
+    elif scattering_factor_type == "lobato":
+        paramL_elems = paramL[element_nums, :]
+        f = np.array([LobatoFactors(s2, paramL_elem) for paramL_elem in paramL_elems])
+
     fq = np.sum(f * e_ratio[:, None], axis=0)  # fq.shape = 2366,
     fq_sq = fq ** 2
     gq = np.sum(f ** 2 * e_ratio[:, None], axis=0)
 
+    L = np.uint16(len(q))
     if is_full_q:
         AFrange = 0
     else:
@@ -141,13 +147,18 @@ def _calculation_with_q(ds, q, Iq, element_nums, ratio, is_full_q, damping, rmax
 
     return q, r, Iq, Autofit, phiq, phiq_damp, Gr, SS, fit_at_q, N
 
-
-
+def LobatoFactors(s2, paramL_element):
+    A1, A2, A3, A4, A5, B1, B2, B3, B4, B5 = paramL_element
+    f = (A1 * (s2 * B1 + 2))/((s2 * B1 + 1)**2) + (A2 * (s2 * B2 + 2))/((s2 * B2 + 1)**2) + \
+         (A3 * (s2 * B3 + 2))/((s2 * B3 + 1)**2) + (A4 * (s2 * B4 + 2))/((s2 * B4 + 1)**2) + \
+         (A5 * (s2 * B5 + 2))/((s2 * B5 + 1)**2)
+    return np.array(f)
 
 def KirklandFactors(s2, paramK_element):
     a1, b1, a2, b2, a3, b3, c1, d1, c2, d2, c3, d3 = paramK_element
     f = (a1 / (s2 + b1)) + (a2 / (s2 + b2)) + (a3 / (s2 + b3)) + (np.exp(-s2 * d1) * c1) + (np.exp(-s2 * d2) * c2) + (
                 np.exp(-s2 * d3) * c3)
+    # f1 = ((s2+b1_1).\a1_1)+((s2+b2_1).\a2_1)+((s2+b3_1).\a3_1)+(exp(-s2.*d1_1).*c1_1)+(exp(-s2.*d2_1).*c2_1)+(exp(-s2.*d3_1).*c3_1);
     return np.array(f)
 
 def find_first_peak(azavg, derivative=0):

@@ -74,7 +74,7 @@ np_kirkland = None
 def get_kirkland_2010():
     global np_kirkland
     if np_kirkland is None:
-        np_kirkland = np.loadtxt("assets/Parameter_files/Kirkland_2010.txt")
+        np_kirkland = np.loadtxt("assets/Parameter_files/scattering_factor/Kirkland_2010.txt")
     return np_kirkland
 
 
