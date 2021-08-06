@@ -390,25 +390,31 @@ class ControlPanel(QtWidgets.QWidget):
 
 
         def create_menu(self, mainWindow: QtWidgets.QMainWindow):
-            menubar = mainWindow.menuBar()
+            menubar1 = mainWindow.menuBar()
+            menubar2 = mainWindow.menuBar()
             menu_frame_widget = QtWidgets.QWidget()
             menu_frame_widget_layout = QtWidgets.QHBoxLayout()
             menu_frame_widget.setLayout(menu_frame_widget_layout)
 
-            load_menu = menubar.addMenu("   &Load   ")
+            menu_frame_widget_layout.addWidget(menubar1)
+            menu_frame_widget_layout.addWidget(menubar2)
+
+            load_menu = menubar1.addMenu("    &Load    ")
             self.load_presets = []
             for i in range(5):
                 self.load_presets.append(QtWidgets.QAction("Preset&"+str(i+1), self))
                 load_menu.addAction(self.load_presets[i])
 
-            save_menu = menubar.addMenu("   &Save   ")
+            save_menu = menubar2.addMenu("    &Save    ")
             self.save_presets = []
             for i in range(5):
                 self.save_presets.append(QtWidgets.QAction("Preset&"+str(i+1), self))
                 save_menu.addAction(self.save_presets[i])
 
-            menubar.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-            return menubar
+            menubar1.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+            menubar2.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+
+            return menu_frame_widget
 
     class FittingFactors(QtWidgets.QGroupBox):
         def __init__(self):
@@ -535,9 +541,9 @@ class ControlPanel(QtWidgets.QWidget):
         def create_menu(self, mainWindow: QtWidgets.QMainWindow):
             menubar = mainWindow.menuBar()
 
-            self.load_pdf_setting = QtWidgets.QAction("&Load pdf setting", self)
-            self.save_pdf_setting = QtWidgets.QAction("&Save pdf setting", self)
-            self.save_pdf_setting_as = QtWidgets.QAction("&Save pdf setting as", self)
+            self.load_pdf_setting = QtWidgets.QAction("&Load pdf settings", self)
+            self.save_pdf_setting = QtWidgets.QAction("&Save pdf settings", self)
+            self.save_pdf_setting_as = QtWidgets.QAction("&Save pdf settings as", self)
             self.load_azavg_from_file = QtWidgets.QAction("&Load azavg from file", self)
             self.load_azavg_from_main_window = QtWidgets.QAction("&Load azavg from main window", self)
 
