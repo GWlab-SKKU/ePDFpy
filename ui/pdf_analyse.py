@@ -432,6 +432,7 @@ class ControlPanel(QtWidgets.QWidget):
             self.lbl_scattering_factor = QtWidgets.QLabel("Scattering Factor")
             layout.addWidget(self.lbl_scattering_factor)
             self.combo_scattering_factor = QtWidgets.QComboBox()
+            self.combo_scattering_factor.addItems(["kirkland","lobato"])
             layout.addWidget(self.combo_scattering_factor)
             return widget
 
