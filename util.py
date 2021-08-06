@@ -9,9 +9,7 @@ from pathlib import Path
 import pandas as pd
 from PIL import Image
 
-setting_path = "settings.json"
-settings = json.load(open("settings.json"))
-
+setting_path = "settings/default.json"
 
 def get_sample_img():
     return file.load_mrc_img("./assets/Camera 230 mm Ceta 20210312 1333_50s_20f_area01.mrc")
@@ -55,7 +53,7 @@ def create_estimated_mask(center=None, radius=None, kernel_size=50):
 
 
 def save_settings(settings_to_save):
-    json.dump(settings_to_save, open("settings.json", 'w'), indent=2)
+    json.dump(settings_to_save, open("settings/default.json", 'w'), indent=2)
 
 
 lst_atomic_number_symbol = None
@@ -87,7 +85,7 @@ def load_previous_dc_azavg(dc):
 
     load_save = os.path.join(analysis_folder, current_file_name + " azav")
 
-    i_slice = [settings['intensity_range_1'], settings['intensity_range_2'], settings['slice_count']]
+    i_slice = [default_setting.intensity_range_1, default_setting.intensity_range_2, default_setting.slice_count]
     if i_slice:
         load_save = load_save + " center" + str(i_slice[0]) + "to" + str(i_slice[1]) + "_" + str(i_slice[2])
         # load_save = load_save + " center" + str(110) + "to" + str(120) + "_" + str(1)

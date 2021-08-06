@@ -486,11 +486,6 @@ class ControlPanel(QtWidgets.QWidget):
             lbl_instant_update = QtWidgets.QLabel("instant update")
             self.chkbox_instant_update = QtWidgets.QCheckBox()
 
-            self.spinbox_dr.setValue(float(util.settings["default_dr"]))
-            self.spinbox_rmax.setValue(float(util.settings["default_rmax"]))
-            self.spinbox_damping.setValue(float(util.settings["default_damping"]))
-
-
             layout.addWidget(lbl_calibration_factor, 0, 0)
             layout.addWidget(self.spinbox_ds, 0, 2, 1, 1)
             layout.addWidget(self.spinbox_ds_step, 0, 3, 1, 1)
