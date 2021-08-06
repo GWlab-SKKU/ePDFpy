@@ -5,7 +5,8 @@ from scipy.signal import find_peaks
 paramK = np.loadtxt("./assets/Parameter_files/Kirkland_2010.txt")
 paramL = np.loadtxt("./assets/Parameter_files/Lobato_2014.txt")
 
-def calculation(ds, q_start_num, q_end_num, element_nums, ratio, azavg, is_full_q, damping, rmax, dr, fit_at_q=None, N=None, scattering_factor_type="kirkland"):
+def calculation(ds, q_start_num, q_end_num, element_nums, ratio, azavg, is_full_q, damping, rmax, dr, fit_at_q=None, N=None, scattering_factor_type="Kirkland"):
+    print("scattering factor:",scattering_factor_type)
     element_nums = np.array(element_nums)
     for idx, element in enumerate(element_nums):
         if element == 0:
@@ -24,10 +25,10 @@ def calculation(ds, q_start_num, q_end_num, element_nums, ratio, azavg, is_full_
     s = q / 2 / np.pi
     s2 = s ** 2
 
-    if scattering_factor_type == "kirkland":
+    if scattering_factor_type == "Kirkland":
         paramK_elems = paramK[element_nums, :]
         f = np.array([KirklandFactors(s2, paramK_elem) for paramK_elem in paramK_elems])
-    elif scattering_factor_type == "lobato":
+    elif scattering_factor_type == "Lobato":
         paramL_elems = paramL[element_nums, :]
         f = np.array([LobatoFactors(s2, paramL_elem) for paramL_elem in paramL_elems])
 

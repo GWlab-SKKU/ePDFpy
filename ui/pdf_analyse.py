@@ -107,7 +107,6 @@ class pdf_analyse(QtWidgets.QMainWindow):
         util.default_setting.damping_step = self.controlPanel.fitting_factors.spinbox_damping_step.text()
         util.default_setting.rmax = self.controlPanel.fitting_factors.spinbox_rmax.value()
         util.default_setting.rmax_step = self.controlPanel.fitting_factors.spinbox_rmax_step.text()
-        # util.default_setting.
         util.default_setting.save_settings()
         super().closeEvent(a0)
 
@@ -197,6 +196,7 @@ class pdf_analyse(QtWidgets.QMainWindow):
         for widget in self.controlPanel.fitting_elements.element_group_widgets:
             widget.combobox.currentIndexChanged.connect(self.instantfit)
             widget.element_ratio.valueChanged.connect(self.instantfit)
+        self.controlPanel.fitting_elements.combo_scattering_factor.currentIndexChanged.connect(self.instantfit)
 
         self.controlPanel.load_and_save.load_pdf_setting.triggered.connect(self.load_pdf_setting)
         self.controlPanel.load_and_save.save_pdf_setting.triggered.connect(self.save_pdf_setting)
@@ -275,6 +275,7 @@ class pdf_analyse(QtWidgets.QMainWindow):
         self.datacube.dr = self.controlPanel.fitting_factors.spinbox_dr.value()
         self.datacube.ds = self.controlPanel.fitting_factors.spinbox_ds.value()
         self.datacube.is_full_q = self.controlPanel.fitting_factors.radio_full_range.isChecked()
+        self.datacube.scattering_factor = self.controlPanel.fitting_elements.combo_scattering_factor.currentText()
 
     def autofit(self):
         if not self.check_condition():
@@ -290,7 +291,8 @@ class pdf_analyse(QtWidgets.QMainWindow):
             self.datacube.is_full_q,
             self.datacube.damping,
             self.datacube.rmax,
-            self.datacube.dr
+            self.datacube.dr,
+            scattering_factor_type=self.datacube.scattering_factor
         )
         print(self.datacube.N)
         ui_util.update_value(self.controlPanel.fitting_factors.spinbox_fit_at_q,self.datacube.fit_at_q)
@@ -314,7 +316,8 @@ class pdf_analyse(QtWidgets.QMainWindow):
             self.datacube.rmax,
             self.datacube.dr,
             self.datacube.fit_at_q,
-            self.datacube.N
+            self.datacube.N,
+            self.datacube.scattering_factor
         )
         self.update_graph()
 
@@ -335,7 +338,8 @@ class pdf_analyse(QtWidgets.QMainWindow):
             self.datacube.rmax,
             self.datacube.dr,
             self.datacube.fit_at_q,
-            self.datacube.N
+            self.datacube.N,
+            self.datacube.scattering_factor
         )
         self.update_graph()
 
@@ -417,7 +421,7 @@ class ControlPanel(QtWidgets.QWidget):
             layout.setContentsMargins(10, 0, 5, 5)
             menubar = self.create_menu(mainWindow)
             layout.addWidget(menubar)
-            layout.addWidget(self.scattering_factors())
+            layout.addWidget(self.scattering_factors_widget())
 
             self.element_group_widgets = [ControlPanel.element_group("element" + str(num)) for num in range(1, 6)]
             for element_group_widgets in self.element_group_widgets:
@@ -425,14 +429,14 @@ class ControlPanel(QtWidgets.QWidget):
                 element_group_widgets.setContentsMargins(0, 0, 0, 0)
             self.setLayout(layout)
 
-        def scattering_factors(self):
+        def scattering_factors_widget(self):
             widget = QtWidgets.QWidget()
             layout = QtWidgets.QHBoxLayout()
             widget.setLayout(layout)
             self.lbl_scattering_factor = QtWidgets.QLabel("Scattering Factor")
             layout.addWidget(self.lbl_scattering_factor)
             self.combo_scattering_factor = QtWidgets.QComboBox()
-            self.combo_scattering_factor.addItems(["kirkland","lobato"])
+            self.combo_scattering_factor.addItems(["Kirkland","Lobato"])
             layout.addWidget(self.combo_scattering_factor)
             return widget
 

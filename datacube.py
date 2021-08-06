@@ -55,6 +55,7 @@ class DataCube:
         self.analyser = None
         self.element_nums = None
         self.element_ratio = None
+        self.scattering_factor = None
 
     def ready(self):
         if self.mrc_file_path is not None:
