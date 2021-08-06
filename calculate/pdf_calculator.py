@@ -6,7 +6,6 @@ paramK = np.loadtxt("./assets/Parameter_files/Kirkland_2010.txt")
 paramL = np.loadtxt("./assets/Parameter_files/Lobato_2014.txt")
 
 def calculation(ds, q_start_num, q_end_num, element_nums, ratio, azavg, is_full_q, damping, rmax, dr, fit_at_q=None, N=None, scattering_factor_type="Kirkland"):
-    print("scattering factor:",scattering_factor_type)
     element_nums = np.array(element_nums)
     for idx, element in enumerate(element_nums):
         if element == 0:

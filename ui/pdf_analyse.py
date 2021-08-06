@@ -147,7 +147,6 @@ class pdf_analyse(QtWidgets.QMainWindow):
 
     def put_data_to_ui(self):
         # elements
-        print(self.datacube.element_nums)
         if self.datacube.element_nums is not None:
             for i in range(len(self.datacube.element_nums)):
                 self.controlPanel.fitting_elements.element_group_widgets[i].combobox.setCurrentIndex(self.datacube.element_nums[i])
@@ -294,7 +293,6 @@ class pdf_analyse(QtWidgets.QMainWindow):
             self.datacube.dr,
             scattering_factor_type=self.datacube.scattering_factor
         )
-        print(self.datacube.N)
         ui_util.update_value(self.controlPanel.fitting_factors.spinbox_fit_at_q,self.datacube.fit_at_q)
         ui_util.update_value(self.controlPanel.fitting_factors.spinbox_N,self.datacube.N)
         # todo: add SS

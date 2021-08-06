@@ -138,7 +138,6 @@ def save_preset_default(dc_file_path, datacube, imgPanel=None):
     if to_upload['mrc_file_path'] is not None:
         to_upload['mrc_file_path'] = os.path.relpath(dc_file_path, os.path.split(preset_path)[0])
 
-    print(to_upload['fit_at_q'])
     print("type:{}".format(type(to_upload['fit_at_q'])))
 
     to_upload2 = {}
