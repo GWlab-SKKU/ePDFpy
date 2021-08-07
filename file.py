@@ -133,6 +133,7 @@ def save_preset_default(datacube, imgPanel=None):
     # convert to relative path
     if presets['mrc_file_path'] is not None:
         presets['mrc_file_path'] = os.path.relpath(datacube.mrc_file_path, os.path.split(preset_path)[0])
+        presets['mrc_file_path'] = presets['mrc_file_path'].replace('\\', '/')  # compatibility between windows and linux
 
     # remove data that not support to save as json
     for key, value in dict(presets).items():
@@ -190,7 +191,6 @@ def load_preset(fp:str=None, dc:DataCube=None) -> DataCube:
         dc.phiq = df_q['phiq']
         dc.phiq_damp = df_q['phiq_damp']
         dc.Autofit = df_q['Autofit']
-
 
     # convert relative path to absolute path
     content['mrc_file_path'] = os.path.abspath(os.path.join(fp, "..", content['mrc_file_path']))
