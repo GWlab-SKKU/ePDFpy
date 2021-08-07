@@ -86,13 +86,7 @@ def load_preset_default(dc_file_path):
         return False
 
 
-def load_preset_manual():
-    fp, _ = QFileDialog.getOpenFileName()
-    return json.load(fp)
-
-
 def save_preset_default(datacube, imgPanel=None):
-
     if datacube.preset_file_path is not None:
         # When you load preset files
         current_folder_path, file_name = os.path.split(datacube.preset_file_path)
@@ -166,13 +160,14 @@ def save_preset_default(datacube, imgPanel=None):
     return True
 
 
-def load_preset(fp: str = None) -> DataCube:
+def load_preset(fp:str=None, dc:DataCube=None) -> DataCube:
     if fp is None:
         fp, _ = QFileDialog.getOpenFileName(filter="preset Files (*.preset.json)")
     if fp == '':
         return
 
-    dc = DataCube()
+    if dc is None:
+        dc = DataCube()
     content = json.load(open(fp))
 
     azavg_path = os.path.join(os.path.split(fp)[0], fp[:fp.rfind(preset_ext)] + azavg_ext)
@@ -213,6 +208,7 @@ def save_pdf_setting_manual(dc_file_path):
     json.dump(fp, open(fp, 'w'), indent=2)
     return True
 
+
 def load_element_preset():
     if not os.path.isfile(definitions.ELEMENT_PRESETS_PATH):
         element_preset = {}
@@ -220,22 +216,12 @@ def load_element_preset():
         return element_preset
     return json.load(open(definitions.ELEMENT_PRESETS_PATH))
 
+
 def save_element_preset(data):
     json.dump(data, open(definitions.ELEMENT_PRESETS_PATH,'w'), indent=2)
 
 # def load_azavg_from_preset(preset_path:str):
 #     preset_path.rfind(preset_ext)
-
-
-def load_azavg_manual():
-    fp, _ = QFileDialog.getOpenFileName()
-    if fp is '':
-        return
-    azavg = load_azavg(fp)
-    dc = DataCube()
-    dc.azavg = azavg
-    dc.azavg_file_path = fp
-    return dc
 
 
 def load_azavg(fp) -> np.ndarray:
@@ -245,6 +231,7 @@ def load_azavg(fp) -> np.ndarray:
         return np.loadtxt(fp, delimiter=",")
     if file_ext == ".txt":
         return np.loadtxt(fp)
+
 
 def save_azavg_only(azavg):
     fp, ext = QFileDialog.getSaveFileName(filter="csv (*.csv);; txt (*.txt)")

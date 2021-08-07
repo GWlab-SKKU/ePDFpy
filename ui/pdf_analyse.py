@@ -197,39 +197,12 @@ class pdf_analyse(QtWidgets.QMainWindow):
             widget.element_ratio.valueChanged.connect(self.instantfit)
         self.controlPanel.fitting_elements.combo_scattering_factor.currentIndexChanged.connect(self.instantfit)
 
-        self.controlPanel.load_and_save.load_pdf_setting.triggered.connect(self.load_pdf_setting)
-        self.controlPanel.load_and_save.save_pdf_setting.triggered.connect(self.save_pdf_setting)
-        self.controlPanel.load_and_save.save_pdf_setting_as.triggered.connect(self.save_pdf_setting_as)
-        self.controlPanel.load_and_save.load_azavg_from_file.triggered.connect(self.load_azavg_from_file)
-        self.controlPanel.load_and_save.load_azavg_from_main_window.triggered.connect(self.load_azavg_from_main_window)
-
         for idx, action in enumerate(self.controlPanel.fitting_elements.actions_load_preset):
             action.triggered.connect(lambda state, x=idx: self.load_element(x))
         for idx, action in enumerate(self.controlPanel.fitting_elements.actions_save_preset):
             action.triggered.connect(lambda state, x=idx: self.save_element(x))
         for idx, action in enumerate(self.controlPanel.fitting_elements.actions_del_preset):
             action.triggered.connect(lambda state, x=idx: self.del_element(x))
-
-    def load_pdf_setting(self):
-        rs = file.load_preset_default()
-        if not rs:
-            rs = file.load_preset_manual()
-        self.pdf_setting = rs
-        self.set_pdf_setting()
-
-    def save_pdf_setting(self):
-        file.save_preset_default()
-        pass
-
-    def save_pdf_setting_as(self):
-        pass
-
-    def load_azavg_from_file(self):
-        self.datacube = DataCube()
-        self.datacube.azavg = file.load_azavg_manual()
-
-    def load_azavg_from_main_window(self):
-        pass
 
     def get_pdf_setting(self):
         for i, widget in enumerate(self.controlPanel.fitting_elements.element_group_widgets):
@@ -631,6 +604,6 @@ class ControlPanel(QtWidgets.QWidget):
 if __name__ == "__main__":
     qtapp = QtWidgets.QApplication([])
     # QtWidgets.QMainWindow().show()
-    window = pdf_analyse(DataCube("../assets/Camera 230 mm Ceta 20210312 1333_50s_20f_area01.mrc"))
+    window = pdf_analyse(DataCube())
     window.show()
     qtapp.exec()
