@@ -8,6 +8,7 @@ import json
 import copy
 import pandas as pd
 from pathlib import Path
+import definitions
 
 analysis_folder_name = "Analysis ePDFpy"
 preset_ext = ".preset.json"
@@ -15,8 +16,6 @@ azavg_ext = ".azavg.csv"
 data_q_ext = ".q.csv"
 data_r_ext = ".r.csv"
 image_ext = ".img.tiff"
-element_preset_path = "settings/element_presets.json"
-
 
 def load_mrc_img(fp):
     with mrcfile.open(fp) as mrc:
@@ -37,8 +36,11 @@ def get_file_list_from_path(fp, extension=None):
 
 
 def make_analyse_folder(dc_filepath):
-    current_folder, current_file_full_name = os.path.split(dc_filepath)
-    analysis_folder = os.path.join(current_folder, analysis_folder_name)
+    if os.path.isdir(dc_filepath):
+        analysis_folder = os.path.join(dc_filepath, analysis_folder_name)
+    else:
+        current_folder, current_file_full_name = os.path.split(dc_filepath)
+        analysis_folder = os.path.join(current_folder, analysis_folder_name)
     if not os.path.isdir(analysis_folder):
         try:
             os.makedirs(analysis_folder)
@@ -89,25 +91,24 @@ def load_preset_manual():
     return json.load(fp)
 
 
-def save_preset_default(dc_file_path, datacube, imgPanel=None):
-    if dc_file_path is None and datacube.azavg_file_path is not None:
-        # when you load only azavg
-        current_folder_path, file_name = os.path.split(datacube.azavg_file_path)
-        file_short_name, file_ext = os.path.splitext(file_name)
-        analysis_folder_path = make_analyse_folder(dc_file_path)
+def save_preset_default(datacube, imgPanel=None):
 
-    elif dc_file_path is None and datacube.azavg_file_path is None:
-        # if come from averaging multiple
-        fp, _ = QFileDialog.getSaveFileName(filter="preset Files (*.preset.json)")
-        current_folder_path, file_name = os.path.split(fp)
-        file_short_name, file_ext = os.path.splitext(file_name)
+    if datacube.preset_file_path is not None:
+        # When you load preset files
+        current_folder_path, file_name = os.path.split(datacube.preset_file_path)
+        file_short_name = str(file_name)[:str(file_name).find(preset_ext)]
         analysis_folder_path = current_folder_path
-
+    elif datacube.load_file_path is None:
+        # When there is no source ( when load from other program )
+        fp, _ = QFileDialog.getSaveFileName(filter="preset Files (*.preset.json)")
+        current_folder_path = file_name = os.path.split(fp)
+        file_short_name = str(file_name)[:str(file_name).find(preset_ext)]
+        analysis_folder_path = current_folder_path
     else:
-        current_folder_path, file_name = os.path.split(dc_file_path)
+        # When you load only azavg or img files
+        current_folder_path, file_name = os.path.split(datacube.load_file_path)
         file_short_name, file_ext = os.path.splitext(file_name)
-        analysis_folder_path = make_analyse_folder(dc_file_path)
-
+        analysis_folder_path = make_analyse_folder(datacube.load_file_path)
 
     preset_path = os.path.join(analysis_folder_path, file_short_name + preset_ext)
     azavg_path = os.path.join(analysis_folder_path, file_short_name + azavg_ext)
@@ -115,58 +116,57 @@ def save_preset_default(dc_file_path, datacube, imgPanel=None):
     data_r_path = os.path.join(analysis_folder_path, file_short_name + data_r_ext)
     img_path = os.path.join(analysis_folder_path, file_short_name + image_ext)
 
-    to_upload = vars(copy.copy(datacube))
-
     # save azavg
-    if to_upload['azavg'] is not None:
-        np.savetxt(azavg_path, to_upload['azavg'])
+    if datacube.azavg is not None:
+        np.savetxt(azavg_path, datacube.azavg)
     # save q data
-    if to_upload['q'] is not None:
+    if datacube.q is not None:
         df = pd.DataFrame(
-            {'q': to_upload['q'], 'Iq': to_upload['Iq'], 'Autofit': to_upload['Autofit'], 'phiq': to_upload['phiq'],
-             'phiq_damp': to_upload['phiq_damp']})
+            {'q': datacube.q, 'Iq': datacube.Iq, 'Autofit': datacube.Autofit, 'phiq': datacube.phiq,
+             'phiq_damp': datacube.phiq_damp})
         df.to_csv(data_q_path, index=None)
     # save r data
-    if to_upload['r'] is not None:
-        df = pd.DataFrame({'r': to_upload['r'], 'Gr': to_upload['Gr']})
+    if datacube.r is not None:
+        df = pd.DataFrame({'r': datacube.r, 'Gr': datacube.Gr})
         df.to_csv(data_r_path, index=None)
     # save img data
     if imgPanel is not None and datacube.img is not None:
         imgPanel.imageView.export(img_path)
 
+    ################ save preset #################
+    presets = vars(copy.copy(datacube))
+
     # convert to relative path
-    if to_upload['mrc_file_path'] is not None:
-        to_upload['mrc_file_path'] = os.path.relpath(dc_file_path, os.path.split(preset_path)[0])
-
-    print("type:{}".format(type(to_upload['fit_at_q'])))
-
-    to_upload2 = {}
+    if presets['mrc_file_path'] is not None:
+        presets['mrc_file_path'] = os.path.relpath(datacube.mrc_file_path, os.path.split(preset_path)[0])
 
     # remove data that not support to save as json
-    for key, value in to_upload.items():
-        if type(value) in [int, str, float, list, np.float64, np.int64]:
-            to_upload2.update({key: value})
+    for key, value in dict(presets).items():
+        if type(value) not in [int, str, float, list, np.float64, np.int64]:
+            del presets[key]
 
-    # Don't save
-    to_upload2.pop('load_file_path')
+    # Don't save in preset file
+    remove_list = ['load_file_path','preset_file_path']
+    for remove_item in remove_list:
+        if remove_item in dict(presets).keys():
+            del presets[remove_item]
 
     # int64 exception handling
-    for key, value in to_upload.items():
+    for key, value in presets.items():
         if type(value) == np.int64:
-            to_upload2[key] = int(value)
+            presets[key] = int(value)
         if type(value) == np.float64:
-            to_upload2[key] = float(value)
+            presets[key] = float(value)
 
-    if to_upload2['center'][0] is not None:
-        to_upload2['center'] = [int(to_upload2['center'][0]), int(to_upload2['center'][1])]
+    if presets['center'][0] is not None:
+        presets['center'] = [int(presets['center'][0]), int(presets['center'][1])]
 
-    print("save data:", to_upload2)
-
-    json.dump(to_upload2, open(preset_path, 'w'), indent=2)
+    print("save data:", presets)
+    json.dump(presets, open(preset_path, 'w'), indent=2)
     return True
 
 
-def load_preset(fp: str = None):
+def load_preset(fp: str = None) -> DataCube:
     if fp is None:
         fp, _ = QFileDialog.getOpenFileName(filter="preset Files (*.preset.json)")
     if fp == '':
@@ -179,6 +179,8 @@ def load_preset(fp: str = None):
     data_r_path = os.path.join(os.path.split(fp)[0], fp[:fp.rfind(preset_ext)] + data_r_ext)
     data_q_path = os.path.join(os.path.split(fp)[0], fp[:fp.rfind(preset_ext)] + data_q_ext)
 
+    dc.load_file_path = fp
+    dc.preset_file_path = fp
     if os.path.isfile(azavg_path):
         df_azavg = np.loadtxt(azavg_path)
         dc.azavg = df_azavg
@@ -193,6 +195,7 @@ def load_preset(fp: str = None):
         dc.phiq = df_q['phiq']
         dc.phiq_damp = df_q['phiq_damp']
         dc.Autofit = df_q['Autofit']
+
 
     # convert relative path to absolute path
     content['mrc_file_path'] = os.path.abspath(os.path.join(fp, "..", content['mrc_file_path']))
@@ -211,14 +214,14 @@ def save_pdf_setting_manual(dc_file_path):
     return True
 
 def load_element_preset():
-    if not os.path.isfile(element_preset_path):
+    if not os.path.isfile(definitions.ELEMENT_PRESETS_PATH):
         element_preset = {}
-        json.dump(element_preset, open(element_preset_path, 'w'), indent=2)
+        json.dump(element_preset, open(definitions.ELEMENT_PRESETS_PATH, 'w'), indent=2)
         return element_preset
-    return json.load(open(element_preset_path))
+    return json.load(open(definitions.ELEMENT_PRESETS_PATH))
 
 def save_element_preset(data):
-    json.dump(data, open(element_preset_path,'w'), indent=2)
+    json.dump(data, open(definitions.ELEMENT_PRESETS_PATH,'w'), indent=2)
 
 # def load_azavg_from_preset(preset_path:str):
 #     preset_path.rfind(preset_ext)

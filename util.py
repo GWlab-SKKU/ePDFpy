@@ -8,8 +8,9 @@ import os
 from pathlib import Path
 import pandas as pd
 from PIL import Image
+import definitions
 
-setting_path = "settings/default.json"
+setting_path = definitions.DEFAULT_JSON_PATH
 
 def get_sample_img():
     return file.load_mrc_img("./assets/Camera 230 mm Ceta 20210312 1333_50s_20f_area01.mrc")
@@ -53,7 +54,7 @@ def create_estimated_mask(center=None, radius=None, kernel_size=50):
 
 
 def save_settings(settings_to_save):
-    json.dump(settings_to_save, open("settings/default.json", 'w'), indent=2)
+    json.dump(settings_to_save, open(definitions.DEFAULT_JSON_PATH, 'w'), indent=2)
 
 
 lst_atomic_number_symbol = None
@@ -62,7 +63,7 @@ lst_atomic_number_symbol = None
 def get_atomic_number_symbol():
     global lst_atomic_number_symbol
     if lst_atomic_number_symbol is None:
-        df_atomic_number_symbol = pd.read_csv("assets/Parameter_files/atomicNumber-symbol.csv")
+        df_atomic_number_symbol = pd.read_csv(definitions.ATOMIC_SYMBOL_PATH)
         lst_atomic_number_symbol = df_atomic_number_symbol['title'].tolist()
         lst_atomic_number_symbol.insert(0, "None")
     return lst_atomic_number_symbol
@@ -74,7 +75,7 @@ np_kirkland = None
 def get_kirkland_2010():
     global np_kirkland
     if np_kirkland is None:
-        np_kirkland = np.loadtxt("assets/Parameter_files/scattering_factor/Kirkland_2010.txt")
+        np_kirkland = np.loadtxt(definitions.KIRKLAND_PATH)
     return np_kirkland
 
 

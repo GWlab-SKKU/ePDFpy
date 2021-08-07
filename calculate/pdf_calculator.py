@@ -1,9 +1,10 @@
 import numpy as np
 from scipy.ndimage.filters import gaussian_filter1d
 from scipy.signal import find_peaks
+import definitions
 
-paramK = np.loadtxt("./assets/Parameter_files/Kirkland_2010.txt")
-paramL = np.loadtxt("./assets/Parameter_files/Lobato_2014.txt")
+paramK = np.loadtxt(definitions.KIRKLAND_PATH)
+paramL = np.loadtxt(definitions.LOBATO_PATH)
 
 def calculation(ds, q_start_num, q_end_num, element_nums, ratio, azavg, is_full_q, damping, rmax, dr, fit_at_q=None, N=None, scattering_factor_type="Kirkland"):
     element_nums = np.array(element_nums)

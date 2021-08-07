@@ -288,7 +288,7 @@ class DataViewer(QtWidgets.QMainWindow):
         self.update_ui_dc(0)
 
     def menu_save_preset(self):
-        file.save_preset_default(self.dcs[self.current_page].mrc_file_path, self.dcs[self.current_page], self.imgPanel)
+        file.save_preset_default(self.dcs[self.current_page], self.imgPanel)
 
     def menu_save_presets(self):
         for i in range(len(self.dcs)):
