@@ -8,6 +8,7 @@ from calculate import pdf_calculator
 from PyQt5.QtWidgets import QMessageBox
 import ui.ui_util as ui_util
 from PyQt5 import QtCore, QtWidgets, QtGui
+import os
 
 pg.setConfigOptions(antialias=True)
 
@@ -26,7 +27,8 @@ class pdf_analyse(QtWidgets.QMainWindow):
 
         # set title
         if datacube is not None and datacube.load_file_path is not None:
-            self.setWindowTitle(datacube.load_file_path)
+            # self.setWindowTitle(datacube.load_file_path)
+            self.setWindowTitle(os.path.split(datacube.load_file_path)[1])
         else:
             self.setWindowTitle("pdf analyzer")
 
