@@ -86,6 +86,8 @@ def calculation(ds, q_start_num, q_end_num, element_nums, ratio, azavg, is_full_
 
 
 def calculate_relativistic(voltage):
+    if voltage == '':
+        voltage = 0.0
     voltage = float(voltage)
     c = 2.998e8
     relvelocity = c * (1 - 1 / (1 + voltage/511)**2 ) ** 0.5
