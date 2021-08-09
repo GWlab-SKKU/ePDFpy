@@ -8,6 +8,7 @@ from calculate import pdf_calculator
 from PyQt5.QtWidgets import QMessageBox
 import ui.ui_util as ui_util
 from PyQt5 import QtCore, QtWidgets, QtGui
+import os
 
 pg.setConfigOptions(antialias=True)
 
@@ -23,7 +24,14 @@ class pdf_analyse(QtWidgets.QMainWindow):
         self.initui()
         self.binding()
         self.pdf_setting = {}
-        self.setWindowTitle("pdf analyzer")
+
+        # set title
+        if datacube is not None and datacube.load_file_path is not None:
+            # self.setWindowTitle(datacube.load_file_path)
+            self.setWindowTitle(os.path.split(datacube.load_file_path)[1])
+        else:
+            self.setWindowTitle("pdf analyzer")
+
         self.element_presets = file.load_element_preset()
         self.update_load_preset_enable()
 
@@ -95,10 +103,13 @@ class pdf_analyse(QtWidgets.QMainWindow):
             self.controlPanel.fitting_factors.spinbox_rmax.setValue(util.default_setting.rmax)
         if util.default_setting.rmax_step is not None:
             self.controlPanel.fitting_factors.spinbox_rmax_step.setText(util.default_setting.rmax_step)
+        if util.default_setting.electron_voltage is not None:
+            self.controlPanel.fitting_factors.spinbox_electron_voltage.setText(util.default_setting.electron_voltage)
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         util.default_setting.calibration_factor = self.controlPanel.fitting_factors.spinbox_ds.value()
         util.default_setting.calibration_factor_step = self.controlPanel.fitting_factors.spinbox_ds_step.text()
+        util.default_setting.electron_voltage = self.controlPanel.fitting_factors.spinbox_electron_voltage.text()
         util.default_setting.fit_at_q_step = self.controlPanel.fitting_factors.spinbox_fit_at_q_step.text()
         util.default_setting.N_step = self.controlPanel.fitting_factors.spinbox_N_step.text()
         util.default_setting.dr = self.controlPanel.fitting_factors.spinbox_dr.value()
@@ -196,6 +207,7 @@ class pdf_analyse(QtWidgets.QMainWindow):
             widget.combobox.currentIndexChanged.connect(self.instantfit)
             widget.element_ratio.valueChanged.connect(self.instantfit)
         self.controlPanel.fitting_elements.combo_scattering_factor.currentIndexChanged.connect(self.instantfit)
+        self.controlPanel.fitting_factors.spinbox_electron_voltage.textChanged.connect(self.instantfit)
 
         for idx, action in enumerate(self.controlPanel.fitting_elements.actions_load_preset):
             action.triggered.connect(lambda state, x=idx: self.load_element(x))
@@ -248,6 +260,7 @@ class pdf_analyse(QtWidgets.QMainWindow):
         self.datacube.ds = self.controlPanel.fitting_factors.spinbox_ds.value()
         self.datacube.is_full_q = self.controlPanel.fitting_factors.radio_full_range.isChecked()
         self.datacube.scattering_factor = self.controlPanel.fitting_elements.combo_scattering_factor.currentText()
+        self.datacube.electron_voltage = self.controlPanel.fitting_factors.spinbox_electron_voltage.text()
 
     def autofit(self):
         if not self.check_condition():
@@ -264,6 +277,7 @@ class pdf_analyse(QtWidgets.QMainWindow):
             self.datacube.damping,
             self.datacube.rmax,
             self.datacube.dr,
+            self.datacube.electron_voltage,
             scattering_factor_type=self.datacube.scattering_factor
         )
         ui_util.update_value(self.controlPanel.fitting_factors.spinbox_fit_at_q,self.datacube.fit_at_q)
@@ -286,6 +300,7 @@ class pdf_analyse(QtWidgets.QMainWindow):
             self.datacube.damping,
             self.datacube.rmax,
             self.datacube.dr,
+            self.datacube.electron_voltage,
             self.datacube.fit_at_q,
             self.datacube.N,
             self.datacube.scattering_factor
@@ -308,6 +323,7 @@ class pdf_analyse(QtWidgets.QMainWindow):
             self.datacube.damping,
             self.datacube.rmax,
             self.datacube.dr,
+            self.datacube.electron_voltage,
             self.datacube.fit_at_q,
             self.datacube.N,
             self.datacube.scattering_factor
@@ -511,6 +527,9 @@ class ControlPanel(QtWidgets.QWidget):
                 lambda: self.spinbox_dr.setSingleStep(float(self.spinbox_dr_step.text())))
             self.spinbox_dr.setRange(0, 1e+10)
 
+            lbl_electron_voltage = QtWidgets.QLabel("EV / kW")
+            self.spinbox_electron_voltage = ui_util.DoubleLineEdit()
+
 
             self.btn_manual_fit = QtWidgets.QPushButton("Manual Fit")
             layout.addWidget(self.btn_manual_fit, 8, 0, 1, 4)
@@ -550,6 +569,9 @@ class ControlPanel(QtWidgets.QWidget):
 
             layout.addWidget(lbl_instant_update, 9, 0)
             layout.addWidget(self.chkbox_instant_update, 9, 1)
+
+            layout.addWidget(lbl_electron_voltage, 10, 0)
+            layout.addWidget(self.spinbox_electron_voltage, 10, 1)
 
 
             self.setLayout(layout)
