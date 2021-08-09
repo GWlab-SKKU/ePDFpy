@@ -45,6 +45,7 @@ class DataCube:
         self.element_nums = None
         self.element_ratio = None
         self.scattering_factor = None
+        self.electron_voltage = None
 
 
         self.load_file_path = file_path
