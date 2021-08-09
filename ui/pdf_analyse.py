@@ -23,7 +23,13 @@ class pdf_analyse(QtWidgets.QMainWindow):
         self.initui()
         self.binding()
         self.pdf_setting = {}
-        self.setWindowTitle("pdf analyzer")
+
+        # set title
+        if datacube is not None and datacube.load_file_path is not None:
+            self.setWindowTitle(datacube.load_file_path)
+        else:
+            self.setWindowTitle("pdf analyzer")
+
         self.element_presets = file.load_element_preset()
         self.update_load_preset_enable()
 
