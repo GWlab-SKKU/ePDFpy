@@ -205,6 +205,7 @@ class pdf_analyse(QtWidgets.QMainWindow):
             widget.combobox.currentIndexChanged.connect(self.instantfit)
             widget.element_ratio.valueChanged.connect(self.instantfit)
         self.controlPanel.fitting_elements.combo_scattering_factor.currentIndexChanged.connect(self.instantfit)
+        self.controlPanel.fitting_factors.spinbox_electron_voltage.textChanged.connect(self.instantfit)
 
         for idx, action in enumerate(self.controlPanel.fitting_elements.actions_load_preset):
             action.triggered.connect(lambda state, x=idx: self.load_element(x))
