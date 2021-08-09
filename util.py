@@ -126,6 +126,7 @@ class DefaultSetting:
         self.slice_count = None
         self.show_center_line = None
         self.show_beam_stopper_mask = None
+        self.electron_voltage = None
 
         self.calibration_factor = None
         self.calibration_factor_step = None
@@ -149,8 +150,6 @@ class DefaultSetting:
 
     def save_settings(self):
         json.dump(vars(self), open(setting_path, 'w'), indent=2)
-
-
 
 
 default_setting = DefaultSetting()

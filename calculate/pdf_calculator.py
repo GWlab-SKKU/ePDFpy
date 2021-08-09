@@ -6,7 +6,8 @@ import definitions
 paramK = np.loadtxt(definitions.KIRKLAND_PATH)
 paramL = np.loadtxt(definitions.LOBATO_PATH)
 
-def calculation(ds, q_start_num, q_end_num, element_nums, ratio, azavg, is_full_q, damping, rmax, dr, fit_at_q=None, N=None, scattering_factor_type="Kirkland"):
+
+def calculation(ds, q_start_num, q_end_num, element_nums, ratio, azavg, is_full_q, damping, rmax, dr, electron_voltage, fit_at_q=None, N=None, scattering_factor_type="Kirkland"):
     element_nums = np.array(element_nums)
     for idx, element in enumerate(element_nums):
         if element == 0:
@@ -31,6 +32,7 @@ def calculation(ds, q_start_num, q_end_num, element_nums, ratio, azavg, is_full_
     elif scattering_factor_type == "Lobato":
         paramL_elems = paramL[element_nums, :]
         f = np.array([LobatoFactors(s2, paramL_elem) for paramL_elem in paramL_elems])
+    f = f * calculate_relativistic(electron_voltage)
 
     fq = np.sum(f * e_ratio[:, None], axis=0)  # fq.shape = 2366,
     fq_sq = fq ** 2
@@ -81,6 +83,15 @@ def calculation(ds, q_start_num, q_end_num, element_nums, ratio, azavg, is_full_
     Gr = 8 * np.pi * phiq_damp @ np.sin(q[:, None] * r) * ds
 
     return q, r, Iq, Autofit, phiq, phiq_damp, Gr, SS, fit_at_q, N
+
+
+def calculate_relativistic(voltage):
+    voltage = float(voltage)
+    c = 2.998e8
+    relvelocity = c * (1 - 1 / (1 + voltage/511)**2 ) ** 0.5
+    mass_e_relative = 1 / (1-(relvelocity**2/c**2)) ** 0.5
+    print(mass_e_relative)
+    return mass_e_relative
 
 
 def _calculation_with_q(ds, q, Iq, element_nums, ratio, is_full_q, damping, rmax, dr, fit_at_q=None, N=None):
