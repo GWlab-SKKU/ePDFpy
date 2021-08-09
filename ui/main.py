@@ -10,7 +10,6 @@ from ui.pdf_analyse import pdf_analyse
 from calculate import pdf_calculator, image_process
 from PyQt5.QtWidgets import QMessageBox
 from ui import ui_util
-
 pg.setConfigOptions(antialias=True)
 
 class DataViewer(QtWidgets.QMainWindow):
@@ -268,9 +267,10 @@ class DataViewer(QtWidgets.QMainWindow):
 
     def menu_open_azavg_only(self, azavg=None):  # azavg arguments is for averaging_multiple_gr.py
         if azavg is None or azavg is False:
-            dc = file.load_azavg_manual()
-            if not dc:
+            fp, _ = QtWidgets.QFileDialog.getOpenFileName()
+            if fp is '':
                 return
+            dc = DataCube(file_path=fp,file_type='azavg')
             self.dcs.clear()
             self.dcs.append(dc)
         else:
@@ -311,7 +311,7 @@ class DataViewer(QtWidgets.QMainWindow):
         if not len(self.dcs) == 1 :
             self.dcs[self.current_page].release()
         self.current_page = i
-        self.dcs[self.current_page].ready()
+        self.dcs[self.current_page].image_ready()
 
         # update number
         self.imgPanel.lbl_current_num.setText(str(self.current_page + 1) + "/" + str(len(self.dcs)))

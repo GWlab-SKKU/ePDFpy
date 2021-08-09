@@ -14,17 +14,6 @@ class DataCube:
         _use_cupy = False
 
     def __init__(self, file_path=None, file_type=None):
-        self.load_file_path = file_path
-        self.preset_file_path = None
-        self.azavg_file_path = None
-        self.mrc_file_path = None
-        if file_type == "preset":
-            self.preset_file_path = self.load_file_path
-        elif file_type == "azavg":
-            self.azavg_file_path = self.load_file_path
-        elif file_type == "image":
-            self.mrc_file_path = self.load_file_path
-
         self.raw_img = None
         self.img = None
         self.center = [None,None]
@@ -57,7 +46,23 @@ class DataCube:
         self.element_ratio = None
         self.scattering_factor = None
 
-    def ready(self):
+
+        self.load_file_path = file_path
+        self.preset_file_path = None
+        self.azavg_file_path = None
+        self.mrc_file_path = None
+        if file_type == "preset":
+            self.preset_file_path = self.load_file_path
+            file.load_preset(self,self.preset_file_path)
+        elif file_type == "azavg":
+            self.azavg_file_path = self.load_file_path
+            self.azavg = file.load_azavg(self.azavg_file_path)
+        elif file_type == "image":
+            self.mrc_file_path = self.load_file_path
+            # file.load_mrc_img(self,self.mrc_file_path)
+
+
+    def image_ready(self):
         if self.mrc_file_path is not None:
             self.raw_img, self.img = file.load_mrc_img(self.mrc_file_path)
 
