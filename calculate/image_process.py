@@ -74,8 +74,6 @@ def calculate_center_gradient(img, intensity_range, step_size):
     return calculate_center(img, intensity_range, step_size)
 
 
-
-
 def _calculate_initial_center(img):
     if not len(img.shape) == 2:
         raise ValueError()
@@ -92,9 +90,14 @@ def _calculate_initial_center(img):
     # thresh = cv2.erode(thresh,kernel, iterations=3)
     thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
     thresh = np.uint8(thresh / 255)
-    mesh = np.meshgrid(np.arange(thresh.shape[0]), np.arange(thresh.shape[1]))
-    center_x = np.sum(mesh[0] * thresh) / np.sum(thresh)
-    center_y = np.sum(mesh[1] * thresh) / np.sum(thresh)
+    center_x, center_y = get_CoM(thresh)
+    return center_x, center_y
+
+
+def get_CoM(img):
+    grid_x, grid_y = np.meshgrid(np.arange(img.shape[0]), np.arange(img.shape[1]))
+    center_x = np.sum(img * grid_x) / np.sum(img)
+    center_y = np.sum(img * grid_y) / np.sum(img)
     return center_x, center_y
 
 
