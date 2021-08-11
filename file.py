@@ -12,7 +12,7 @@ import definitions
 
 analysis_folder_name = "Analysis ePDFpy"
 preset_ext = ".preset.json"
-azavg_ext = ".azavg.csv"
+azavg_ext = ".azavg.txt"
 data_q_ext = ".q.csv"
 data_r_ext = ".r.csv"
 image_ext = ".img.tiff"
