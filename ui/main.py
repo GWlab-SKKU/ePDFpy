@@ -250,6 +250,7 @@ class DataViewer(QtWidgets.QMainWindow):
             return
         self.dcs.clear()
         self.dcs.extend([DataCube(path,'image') for path in load_paths])
+        self.current_page = 0
         self.update_ui_dc(0)
 
     def menu_open_preset_folder(self):
@@ -263,6 +264,7 @@ class DataViewer(QtWidgets.QMainWindow):
             return
         self.dcs.clear()
         self.dcs.extend([file.load_preset(path) for path in load_paths])
+        self.current_page = 0
         self.update_ui_dc(0)
 
     def menu_open_azavg_only(self, azavg=None):  # azavg arguments is for averaging_multiple_gr.py
