@@ -114,25 +114,22 @@ class CoordinatesPlotWidget(pg.PlotWidget):
         modifiers = QtGui.QApplication.keyboardModifiers()
 
         if modifiers == QtCore.Qt.ShiftModifier:
-            print('Shift+Click')
+            # shift click
             self.coor_update_toggle = not self.coor_update_toggle
         elif modifiers == QtCore.Qt.ControlModifier:
+            # ctrl click
             if hasattr(self, 'crosshair_plot') and self.crosshair_plot is not None:
                 self.removeItem(self.crosshair_plot)
                 self.crosshair_plot = None
             else:
                 self.crosshair_curve_dataItem, self.crosshair_idx = self.find_closest_coor(qp.x(), qp.y())
                 self.create_cross_hair()
-            print('Control+Click')
-        elif modifiers == (QtCore.Qt.ControlModifier |
-                           QtCore.Qt.ShiftModifier):
-            print('Control+Shift+Click')
+        elif modifiers == (QtCore.Qt.ControlModifier | QtCore.Qt.ShiftModifier):
+            # shift + ctrl click
+            pass
         else:
-            print('Click')
-        self.find_closest_coor(qp.x(),qp.y())
-
+            pass
         # print(self.getPlotItem().dataItems[0].xDisp) # xData, yData, xDisp, yDisp
-
         return super().mousePressEvent(ev)
 
     def keyPressEvent(self, ev):
@@ -185,13 +182,6 @@ class CoordinatesPlotWidget(pg.PlotWidget):
             if distance < cloest_dataItem[2]:
                 cloest_dataItem = [dataItem, idx, distance]
         return cloest_dataItem[0],cloest_dataItem[1]
-
-
-
-    def find_nearest(self, arr, value):
-        arr = np.asarray(arr)
-        idx = (np.abs(arr - value)).argmin()
-        return arr[idx] , idx
 
     def setYScaling(self, bool):
         if bool:
