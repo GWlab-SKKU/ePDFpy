@@ -13,7 +13,7 @@ import definitions
 setting_path = definitions.DEFAULT_JSON_PATH
 
 def get_sample_img():
-    return file.load_mrc_img("./assets/Camera 230 mm Ceta 20210312 1333_50s_20f_area01.mrc")
+    return file.load_mrc_img(definitions.SAMPLE_IMG_PATH)
 
 
 # def get_mask_data():

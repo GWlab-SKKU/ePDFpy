@@ -226,6 +226,7 @@ def calculate_azimuthal_average_cuda(raw_image, center):
 
     azav = np.nan_to_num(azav.get(), 0)
     azvar = np.nan_to_num(azvar.get(), 0)
+
     return azav, azvar
 
 
