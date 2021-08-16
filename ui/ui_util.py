@@ -176,7 +176,6 @@ class CoordinatesPlotWidget(pg.PlotWidget):
             distance = (x_data[idx]-x)**2 + (y_data[idx]-y)**2
             dataitem_idx_distance.append([dataItem,idx,distance])
 
-        print("whole dataitem idx distance",dataitem_idx_distance)
         cloest_dataItem = dataitem_idx_distance[0]
         for dataItem, idx, distance in dataitem_idx_distance[1:]:
             if distance < cloest_dataItem[2]:
