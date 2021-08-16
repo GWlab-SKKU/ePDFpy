@@ -14,6 +14,10 @@ class DataCube:
         _use_cupy = False
 
     def __init__(self, file_path=None, file_type=None):
+        """
+        :param file_path: str
+        :param file_type: preset, azavg, image
+        """
         self.raw_img = None
         self.img = None
         self.center = [None,None]
@@ -71,17 +75,21 @@ class DataCube:
         self.raw_img, self.img = None, None
 
     def calculate_center(self, intensity_range, step_size):
+        if self.img is None:
+            return
         self.center = list(image_process.calculate_center_gradient(self.img, intensity_range, step_size))
+        print("selected center: ", self.center)
         return self.center
 
-    def calculate_azimuthal_average(self):
+    def calculate_azimuthal_average(self, intensity_range=None, step_size=None):
+        if self.img is None:
+            raise Exception("You don't have img data")
         if self.center[0] is None:
-            raise Exception("You need to calculate center first")
-
-        if DataCube._use_cupy:
-            self.azavg, self.azvar = image_process.calculate_azimuthal_average_cuda(self.raw_img, self.center)
-        else:
-            self.azavg, self.azvar = image_process.calculate_azimuthal_average(self.raw_img, self.center)
+            if (intensity_range is not None) and (step_size is not None):
+                self.calculate_center(intensity_range, step_size)
+            else:
+                raise Exception("You need to calculate center first")
+        self.azavg, self.azvar = image_process.calculate_azimuthal_average(self.raw_img, self.center)
         return self.azavg, self.azvar
 
     def save_azimuthal_data(self, intensity_start, intensity_end, intensity_slice, imgPanel=None, draw_center_line=False, masking=False):

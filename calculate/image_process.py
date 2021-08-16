@@ -3,6 +3,7 @@ import cv2
 import time
 import util
 import definitions
+from scipy import ndimage
 
 try:
     import cupy as cp
@@ -172,9 +173,9 @@ def _evaluate_center_slice_range(image, center, rect, value_range, step_size):
     return std_sum
 
 
-def calculate_azimuthal_average(raw_image, center):
-    if use_cupy:
-        return calculate_azimuthal_average_cuda(raw_image, center)
+def _calculate_azimuthal_average_deprecated(raw_image, center):
+    # if use_cupy:
+    #     return calculate_azimuthal_average_cuda(raw_image, center)
     center_x, center_y = center
     mesh = np.meshgrid(range(raw_image.shape[1]), range(raw_image.shape[0]))
     mesh_x = mesh[0] - center_x
@@ -196,7 +197,20 @@ def calculate_azimuthal_average(raw_image, center):
     return mean, var
 
 
-def calculate_azimuthal_average_cuda(raw_image, center):
+def calculate_azimuthal_average(raw_image, center):
+    mesh = np.meshgrid(range(raw_image.shape[1]), range(raw_image.shape[0]))
+    mesh_x = mesh[0] - center[0]
+    mesh_y = mesh[1] - center[1]
+    rr = np.power(np.square(mesh_x) + np.square(mesh_y), 0.5)
+    rr = cv2.bitwise_and(rr, rr, mask=np.bitwise_not(mask))
+    rr = np.rint(rr).astype('uint16')
+    n_rr = np.uint16(rr.max())
+    radial_mean = ndimage.mean(raw_image, labels=rr, index=np.arange(1, n_rr + 1))
+    radial_mean = np.nan_to_num(radial_mean, 0)
+    return radial_mean, None
+
+
+def _calculate_azimuthal_average_cuda_deprecated(raw_image, center):
     img = cp.array(raw_image)
     beam = cp.array(mask)
     center_x, center_y = center

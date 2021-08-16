@@ -192,9 +192,14 @@ class DataViewer(QtWidgets.QMainWindow):
         # self.controlPanel.operationPanel.progress_bar.setValue(0)
 
     def get_azimuthal_value(self):
-        self.dcs[self.current_page].azavg, self.azvar = self.dcs[self.current_page].calculate_azimuthal_average()
+        i1 = self.controlPanel.settingPanel.spinBox_irange1.value()
+        i2 = self.controlPanel.settingPanel.spinBox_irange2.value()
+        intensity_range = (i1,i2)
+        slice_count = int(self.controlPanel.settingPanel.spinBox_slice_count.value())
+        self.dcs[self.current_page].calculate_azimuthal_average(intensity_range,slice_count)
         self.update_azavg_graph()
-        self.update_setting()
+        self.update_center_spinBox()
+        self.update_img()
 
     def update_azavg_graph(self):
         if self.dcs[self.current_page].azavg is None:
@@ -219,15 +224,10 @@ class DataViewer(QtWidgets.QMainWindow):
         i2 = self.controlPanel.settingPanel.spinBox_irange2.value()
         intensity_range = (i1,i2)
         slice_count = int(self.controlPanel.settingPanel.spinBox_slice_count.value())
-        self.dcs[self.current_page].center = self.dcs[self.current_page].calculate_center(intensity_range, slice_count)
-        self.update_setting()
+        self.dcs[self.current_page].calculate_center(intensity_range, slice_count)
+        self.update_center_spinBox()
         # you must use self.draw_center() after find_center
         return self.dcs[self.current_page].center
-
-    def draw_center(self, img): # todo: remove
-        lined_img = img.copy()
-        image_process.draw_center_line(lined_img, self.dcs[self.current_page].center)
-        return lined_img
 
     def menu_open_image_file(self):
         load_paths = []
@@ -325,7 +325,7 @@ class DataViewer(QtWidgets.QMainWindow):
         self.update_azavg_graph()
 
         # update spinbox and settings
-        self.update_setting()
+        self.update_center_spinBox()
 
         # windows title : file name
         if self.dcs[self.current_page].load_file_path is not None:
@@ -337,7 +337,7 @@ class DataViewer(QtWidgets.QMainWindow):
             else:
                 self.controlPanel.openFilePanel.lbl_file_name.setText(fn)
 
-    def update_setting(self):
+    def update_center_spinBox(self):
         if not self.dcs[self.current_page].img is None:
             self.controlPanel.settingPanel.spinBox_center_x.setMaximum(self.dcs[self.current_page].img.shape[0])  # todo : confusing x,y
             self.controlPanel.settingPanel.spinBox_center_y.setMaximum(self.dcs[self.current_page].img.shape[1])
