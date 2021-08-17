@@ -617,6 +617,7 @@ class ControlPanel(QtWidgets.QWidget):
             self.combobox.addItems(util.get_atomic_number_symbol())
             # todo: combobox
             self.element_ratio = QtWidgets.QSpinBox()
+            self.element_ratio.setMaximum(1000000)
             layout.addWidget(lbl)
             layout.addWidget(self.combobox)
             layout.addWidget(self.element_ratio)
