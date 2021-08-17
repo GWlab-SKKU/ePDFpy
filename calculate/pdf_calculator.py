@@ -44,7 +44,7 @@ def calculation(ds, q_start_num, q_end_num, element_nums, ratio, azavg, is_full_
     else:
         AFrange = int(2 / 3 * L)
 
-    wi = np.ones((L, 1))
+    wi = np.ones((L))
     wi[0:AFrange] = 0
 
     # added code
