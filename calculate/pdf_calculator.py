@@ -210,3 +210,7 @@ def find_first_peak(azavg, derivative=0):
             return low_peaks[0]
         else:
             return None
+
+def find_peaks(azavg, derivative=0):
+    pass
+

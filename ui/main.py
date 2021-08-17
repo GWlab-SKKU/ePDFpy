@@ -22,6 +22,9 @@ class DataViewer(QtWidgets.QMainWindow):
         self.sig_binding()
         self.dcs: List[DataCube] = []
         self.resize(1000,600)
+        # for text
+        self.menu_open_azavg_only(np.loadtxt("/mnt/experiment/TEM diffraction/201126 (test)/sample38_TiTa_annealed/Analysis ePDFpy/Camera 230 mm Ceta 20201126 1649_40s_20f_area01.azavg.txt"))
+        ##
 
     def init_ui(self):
         QtWidgets.QWidget.__init__(self)
@@ -128,7 +131,17 @@ class DataViewer(QtWidgets.QMainWindow):
         self.graphPanel.button_start.clicked.connect(self.btn_range_start_clicked)
         self.graphPanel.button_all.clicked.connect(self.btn_range_all_clicked)
         self.graphPanel.button_end.clicked.connect(self.btn_range_end_clicked)
+        self.graphPanel.button_select.clicked.connect(self.btn_select_clicked)
         self.controlPanel.operationPanel.btn_open_epdf_analyser.clicked.connect(self.btn_show_erdf_analyser)
+
+    def btn_select_clicked(self):
+        left1 = pdf_calculator.find_first_peak(self.dcs[self.current_page].azavg,1)
+        left1_ = self.dcs[self.current_page].azavg[left1]
+        print(left1, left1_)
+        left2 = pdf_calculator.find_first_peak(self.dcs[self.current_page].azavg,2)
+        left2_ = self.dcs[self.current_page].azavg[left2]
+        self.graphPanel.plot_azav.create_circle([left1,left1_],[left2,left2_])
+        pass
 
     def spinbox_changed_event(self):
         x = self.controlPanel.settingPanel.spinBox_center_x.value()
@@ -586,7 +599,7 @@ class GraphPanel(QtWidgets.QWidget):
         QtWidgets.QWidget.__init__(self)
         self.imageView = pg.ImageView()
         # self.plot_azav = pg.PlotWidget(title='azimuthal average')
-        self.plot_azav = ui_util.CoordinatesPlotWidget(title='azimuthal average')
+        self.plot_azav = ui_util.IntensityPlotWidget(title='azimuthal average')
         self.plot_azav.setYScaling(True)
         self.layout = QtWidgets.QHBoxLayout()
         self.layout.addWidget(self.plot_azav)
@@ -615,9 +628,11 @@ class GraphPanel(QtWidgets.QWidget):
         self.button_start = QtWidgets.QPushButton("Start")
         self.button_all = QtWidgets.QPushButton("All")
         self.button_end = QtWidgets.QPushButton("End")
+        self.button_select = QtWidgets.QPushButton("Select")
         self.button_grp_widget.layout.addWidget(self.button_start)
         self.button_grp_widget.layout.addWidget(self.button_all)
         self.button_grp_widget.layout.addWidget(self.button_end)
+        self.button_grp_widget.layout.addWidget(self.button_select)
         self.button_grp_widget.layout.addStretch(1)
 
         self.layout.addWidget(self.button_grp_widget)

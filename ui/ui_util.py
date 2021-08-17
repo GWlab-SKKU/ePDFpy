@@ -133,10 +133,11 @@ class CoordinatesPlotWidget(pg.PlotWidget):
         return super().mousePressEvent(ev)
 
     def keyPressEvent(self, ev):
-        if ev.key() == QtCore.Qt.Key.Key_Right:
-            self.move_cross_hair(+1)
-        elif ev.key() == QtCore.Qt.Key.Key_Left:
-            self.move_cross_hair(-1)
+        if self.crosshair_plot is not None:
+            if ev.key() == QtCore.Qt.Key.Key_Right:
+                self.move_cross_hair(+1)
+            elif ev.key() == QtCore.Qt.Key.Key_Left:
+                self.move_cross_hair(-1)
         super().keyPressEvent(ev)
 
     def create_cross_hair(self):
@@ -191,6 +192,27 @@ class CoordinatesPlotWidget(pg.PlotWidget):
     def YScaling(self):
         self.enableAutoRange(axis='y')
         self.setAutoVisible(y=True)
+
+class IntensityPlotWidget(CoordinatesPlotWidget):
+    def mousePressEvent(self, ev):
+        qp = self.plotItem.vb.mapSceneToView(ev.localPos())
+        modifiers = QtGui.QApplication.keyboardModifiers()
+
+        if modifiers == (QtCore.Qt.ControlModifier | QtCore.Qt.ShiftModifier):
+            pass
+        # print(self.getPlotItem().dataItems[0].xDisp) # xData, yData, xDisp, yDisp
+        return super().mousePressEvent(ev)
+
+    def create_circle(self,first_dev,second_dev):
+        if not hasattr(self,'first_dev_plot'):
+            self.first_dev_plot = self.plot(symbol='o', symbolSize=10, pen='b', symbolPen=pg.mkPen(width=1),
+                                            symbolBrush=('y'), name="first derivative")
+            self.second_dev_plot = self.plot(symbol='o', symbolSize=10, pen='b', symbolPen=pg.mkPen(width=1),
+                                            symbolBrush=('g'), name="second derivative")
+        self.first_dev_plot.setData([first_dev[0]], [first_dev[1]])
+        self.second_dev_plot.setData([second_dev[0]],[second_dev[1]])
+        self.setXRange()
+        pass
 
 
 

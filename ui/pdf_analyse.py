@@ -12,6 +12,7 @@ import os
 
 pg.setConfigOptions(antialias=True)
 
+
 class pdf_analyse(QtWidgets.QMainWindow):
     def __init__(self, datacube):
         super().__init__()
