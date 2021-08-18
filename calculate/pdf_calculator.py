@@ -211,6 +211,39 @@ def find_first_peak(azavg, derivative=0):
         else:
             return None
 
-def find_peaks(azavg, derivative=0):
-    pass
+def find_multiple_peaks(azav):
+    azavg = azav.copy()
+    azavg = azavg[:int(len(azavg)/2)]
+
+    gaussian_sigma = 3
+
+    # find first non-zero idx
+    for i in range(len(azavg)):
+        if azavg[i] != 0:
+            first_nonzero_idx = i
+            break
+
+    # smoothing
+    azavg[first_nonzero_idx:] = gaussian_filter1d(azavg[first_nonzero_idx:],gaussian_sigma)
+
+    # find first derivative peaks
+    f_low_peaks, _ = find_peaks(-azavg, distance=10)
+    f_high_peaks, _ = find_peaks(azavg, distance=10)
+    f_mixed_peaks = np.concatenate([f_low_peaks,f_high_peaks])
+    # plt.plot(azavg)
+    # plt.scatter(f_mixed_peaks,azavg[f_mixed_peaks])
+
+    # calculate derivative
+    first_derivative = np.zeros(len(azavg))
+    first_derivative[first_nonzero_idx:] = np.gradient(azavg[first_nonzero_idx:])
+    # plt.plot(first_derivative)
+
+    # smoothing
+    # first_derivative[first_nonzero_idx:] = gaussian_filter1d(first_derivative[first_nonzero_idx:],gaussian_sigma)
+
+    # find second derivative peaks
+    s_low_peaks, _ = find_peaks(-first_derivative, distance=10)
+    s_high_peaks, _ = find_peaks(first_derivative, distance=10)
+    s_mixed_peaks = np.concatenate([s_low_peaks,s_high_peaks])
+    return f_mixed_peaks,s_mixed_peaks
 

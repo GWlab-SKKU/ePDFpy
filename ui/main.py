@@ -23,7 +23,8 @@ class DataViewer(QtWidgets.QMainWindow):
         self.dcs: List[DataCube] = []
         self.resize(1000,600)
         # for text
-        self.menu_open_azavg_only(np.loadtxt("/mnt/experiment/TEM diffraction/201126 (test)/sample38_TiTa_annealed/Analysis ePDFpy/Camera 230 mm Ceta 20201126 1649_40s_20f_area01.azavg.txt"))
+        # self.menu_open_azavg_only(np.loadtxt("/mnt/experiment/TEM diffraction/201126 (test)/sample38_TiTa_annealed/Analysis ePDFpy/Camera 230 mm Ceta 20201126 1649_40s_20f_area01.azavg.txt"))
+        self.menu_open_azavg_only(np.loadtxt(r"Y:\experiment\TEM diffraction\201126 (test)\sample38_TiTa_annealed\Analysis ePDFpy\Camera 230 mm Ceta 20201126 1649_40s_20f_area01.azavg.txt"))
         ##
 
     def init_ui(self):
@@ -135,13 +136,19 @@ class DataViewer(QtWidgets.QMainWindow):
         self.controlPanel.operationPanel.btn_open_epdf_analyser.clicked.connect(self.btn_show_erdf_analyser)
 
     def btn_select_clicked(self):
-        left1 = pdf_calculator.find_first_peak(self.dcs[self.current_page].azavg,1)
-        left1_ = self.dcs[self.current_page].azavg[left1]
-        print(left1, left1_)
-        left2 = pdf_calculator.find_first_peak(self.dcs[self.current_page].azavg,2)
-        left2_ = self.dcs[self.current_page].azavg[left2]
-        self.graphPanel.plot_azav.create_circle([left1,left1_],[left2,left2_])
-        pass
+        azavg = self.dcs[self.current_page].azavg
+        if self.dcs[self.current_page].azavg is None:
+            return
+        first_peak_idx, second_peak_idx = pdf_calculator.find_multiple_peaks(self.dcs[self.current_page].azavg)
+        self.graphPanel.plot_azav.create_circle([first_peak_idx,azavg[first_peak_idx]],[second_peak_idx,azavg[second_peak_idx]])
+
+        #
+        self.upper.hide()
+        self.btn_range_start_clicked()
+        self.graphPanel.plot_azav.select_mode = True
+        #
+        # self.upper.show()
+
 
     def spinbox_changed_event(self):
         x = self.controlPanel.settingPanel.spinBox_center_x.value()
@@ -608,6 +615,7 @@ class GraphPanel(QtWidgets.QWidget):
         self.setLayout(self.layout)
         self.setMinimumHeight(200)
         self.region = pg.LinearRegionItem([0, 100])
+        self.plot_azav.region = self.region
         self.plot_azav.addItem(self.region)
 
         self.legend = self.plot_azav.addLegend(offset=(-30,30))
