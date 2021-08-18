@@ -92,7 +92,6 @@ def calculate_relativistic(voltage):
     c = 2.998e8
     relvelocity = c * (1 - 1 / (1 + voltage/511)**2 ) ** 0.5
     mass_e_relative = 1 / (1-(relvelocity**2/c**2)) ** 0.5
-    print(mass_e_relative)
     return mass_e_relative
 
 
