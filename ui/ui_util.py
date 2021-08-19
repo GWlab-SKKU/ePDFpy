@@ -199,7 +199,7 @@ class CoordinatesPlotWidget(pg.PlotWidget):
 
 class IntensityPlotWidget(CoordinatesPlotWidget):
     def mousePressEvent(self, ev):
-
+        # todo : only accept mouse left click
         if hasattr(self,'select_mode') and self.select_mode is True:
             qp = self.plotItem.vb.mapSceneToView(ev.localPos())
             data = np.concatenate([self.first_dev_plot.getData()[0],self.second_dev_plot.getData()[0]])
@@ -208,12 +208,13 @@ class IntensityPlotWidget(CoordinatesPlotWidget):
             print(data[idx])
             left, right = self.region.getRegion()
             self.region.setRegion([data[idx],right])
+            self.select_event()
 
         # print(self.getPlotItem().dataItems[0].xDisp) # xData, yData, xDisp, yDisp
         return super().mousePressEvent(ev)
 
     def create_circle(self,first_dev,second_dev):
-        if not hasattr(self,'first_dev_plot'):
+        if not hasattr(self,'first_dev_plot') or self.first_dev_plot is None:
 
             self.first_dev_plot = pg.ScatterPlotItem(size=10, brush='y')
             self.second_dev_plot = pg.ScatterPlotItem(size=10, brush='b')

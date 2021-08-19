@@ -23,8 +23,8 @@ class DataViewer(QtWidgets.QMainWindow):
         self.dcs: List[DataCube] = []
         self.resize(1000,600)
         # for text
-        # self.menu_open_azavg_only(np.loadtxt("/mnt/experiment/TEM diffraction/201126 (test)/sample38_TiTa_annealed/Analysis ePDFpy/Camera 230 mm Ceta 20201126 1649_40s_20f_area01.azavg.txt"))
-        self.menu_open_azavg_only(np.loadtxt(r"Y:\experiment\TEM diffraction\201126 (test)\sample38_TiTa_annealed\Analysis ePDFpy\Camera 230 mm Ceta 20201126 1649_40s_20f_area01.azavg.txt"))
+        self.menu_open_azavg_only(np.loadtxt("/mnt/experiment/TEM diffraction/201126 (test)/sample38_TiTa_annealed/Analysis ePDFpy/Camera 230 mm Ceta 20201126 1649_40s_20f_area01.azavg.txt"))
+        # self.menu_open_azavg_only(np.loadtxt(r"Y:\experiment\TEM diffraction\201126 (test)\sample38_TiTa_annealed\Analysis ePDFpy\Camera 230 mm Ceta 20201126 1649_40s_20f_area01.azavg.txt"))
         ##
 
     def init_ui(self):
@@ -146,9 +146,17 @@ class DataViewer(QtWidgets.QMainWindow):
         self.upper.hide()
         self.btn_range_start_clicked()
         self.graphPanel.plot_azav.select_mode = True
+        self.graphPanel.plot_azav.select_event = self.azav_select_event
         #
         # self.upper.show()
 
+    def azav_select_event(self):
+        self.upper.show()
+        self.graphPanel.plot_azav.select_mode = False
+        self.graphPanel.plot_azav.first_dev_plot.clear()
+        self.graphPanel.plot_azav.first_dev_plot = None
+        self.graphPanel.plot_azav.second_dev_plot.clear()
+        self.graphPanel.plot_azav.second_dev_plot = None
 
     def spinbox_changed_event(self):
         x = self.controlPanel.settingPanel.spinBox_center_x.value()

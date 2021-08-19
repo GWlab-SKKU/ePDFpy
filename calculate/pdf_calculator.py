@@ -213,7 +213,7 @@ def find_first_peak(azavg, derivative=0):
 
 def find_multiple_peaks(azav):
     azavg = azav.copy()
-    azavg = azavg[:int(len(azavg)/2)]
+    azavg = azavg[:int(len(azavg)/3)]
 
     gaussian_sigma = 3
 
