@@ -123,15 +123,19 @@ class pdf_analyse(QtWidgets.QMainWindow):
         super().closeEvent(a0)
 
     def save_element(self, preset_num):
+        text, ok = QtWidgets.QInputDialog.getText(self, 'Input Dialog', 'Enter preset name:')
+        if ok is False:
+            return
         data = {}
         for idx, widget in enumerate(self.controlPanel.fitting_elements.element_group_widgets):
             data.update({"element" + str(idx):[widget.combobox.currentIndex(), widget.element_ratio.value()]})
-        self.element_presets.update({'preset' + str(preset_num):data})
+        self.element_presets[preset_num] = [text, data]
         file.save_element_preset(self.element_presets)
         self.update_load_preset_enable()
 
     def load_element(self, preset_num):
-        data = self.element_presets["preset"+str(preset_num)]
+        print(self.element_presets[preset_num][1])
+        data = self.element_presets[preset_num][1]
         for idx, widget in enumerate(self.controlPanel.fitting_elements.element_group_widgets):
             if "element"+str(idx) in data.keys():
                 widget.combobox.setCurrentIndex(data["element"+str(idx)][0])
@@ -141,21 +145,30 @@ class pdf_analyse(QtWidgets.QMainWindow):
                 widget.element_ratio.setValue(0)
 
     def del_element(self, preset_num):
-        self.element_presets.pop('preset'+str(preset_num))
+        self.element_presets[preset_num] = None
         file.save_element_preset(self.element_presets)
         self.update_load_preset_enable()
 
     def update_load_preset_enable(self):
         for idx, action in enumerate(self.controlPanel.fitting_elements.actions_load_preset):
-            if "preset"+str(idx) in self.element_presets.keys():
+            if self.element_presets[idx] is not None:
                 action.setDisabled(False)
+                action.setText(self.element_presets[idx][0])
             else:
                 action.setDisabled(True)
+                action.setText('None')
         for idx, action in enumerate(self.controlPanel.fitting_elements.actions_del_preset):
-            if "preset"+str(idx) in self.element_presets.keys():
+            if self.element_presets[idx] is not None:
                 action.setDisabled(False)
+                action.setText(self.element_presets[idx][0])
             else:
                 action.setDisabled(True)
+                action.setText('None')
+        for idx, action in enumerate(self.controlPanel.fitting_elements.actions_save_preset):
+            if self.element_presets[idx] is not None:
+                action.setText(self.element_presets[idx][0])
+            else:
+                action.setText('None')
 
     def put_data_to_ui(self):
         # elements
@@ -444,20 +457,21 @@ class ControlPanel(QtWidgets.QWidget):
 
             load_menu = menubar1.addMenu("  &Load  ")
             self.actions_load_preset = []
-            for i in range(5):
-                self.actions_load_preset.append(QtWidgets.QAction("Preset&" + str(i + 1), self))
+            preset_num = 5
+            for i in range(preset_num):
+                self.actions_load_preset.append(QtWidgets.QAction("None", self))
                 load_menu.addAction(self.actions_load_preset[i])
 
             save_menu = menubar2.addMenu("  &Save  ")
             self.actions_save_preset = []
-            for i in range(5):
-                self.actions_save_preset.append(QtWidgets.QAction("Preset&" + str(i + 1), self))
+            for i in range(preset_num):
+                self.actions_save_preset.append(QtWidgets.QAction("None", self))
                 save_menu.addAction(self.actions_save_preset[i])
 
             del_menu = menubar3.addMenu("  &Del  ")
             self.actions_del_preset = []
-            for i in range(5):
-                self.actions_del_preset.append(QtWidgets.QAction("Preset&" + str(i + 1), self))
+            for i in range(preset_num):
+                self.actions_del_preset.append(QtWidgets.QAction("None", self))
                 del_menu.addAction(self.actions_del_preset[i])
 
             menubar1.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
