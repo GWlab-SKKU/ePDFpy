@@ -442,7 +442,6 @@ class ControlPanel(QtWidgets.QWidget):
             return widget
 
 
-
         def create_menu(self, mainWindow: QtWidgets.QMainWindow):
             menubar1 = mainWindow.menuBar()
             menubar2 = mainWindow.menuBar()
@@ -632,6 +631,7 @@ class ControlPanel(QtWidgets.QWidget):
             self.combobox.addItems(util.get_atomic_number_symbol())
             # todo: combobox
             self.element_ratio = QtWidgets.QSpinBox()
+            self.element_ratio.setMaximum(10000000)
             layout.addWidget(lbl)
             layout.addWidget(self.combobox)
             layout.addWidget(self.element_ratio)
