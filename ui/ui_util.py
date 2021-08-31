@@ -199,8 +199,7 @@ class CoordinatesPlotWidget(pg.PlotWidget):
 
 class IntensityPlotWidget(CoordinatesPlotWidget):
     def mousePressEvent(self, ev):
-        # todo : only accept mouse left click
-        if hasattr(self,'select_mode') and self.select_mode is True:
+        if hasattr(self,'select_mode') and self.select_mode is True and ev.button() == QtCore.Qt.LeftButton:
             qp = self.plotItem.vb.mapSceneToView(ev.localPos())
             data = np.concatenate([self.first_dev_plot.getData()[0],self.second_dev_plot.getData()[0]])
             distance = np.abs(data - qp.x())
@@ -227,9 +226,6 @@ class IntensityPlotWidget(CoordinatesPlotWidget):
         self.first_dev_plot.setData(first_dev[0], first_dev[1])
         self.second_dev_plot.setData(second_dev[0],second_dev[1])
         pass
-
-
-
 
 
 def update_value(widget:QtWidgets.QWidget, value):

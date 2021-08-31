@@ -7,7 +7,7 @@ import util
 from datacube import DataCube
 from typing import List
 from ui.pdf_analyse import pdf_analyse
-from calculate import pdf_calculator, image_process
+from calculate import pdf_calculator, image_process, q_range_selector
 from PyQt5.QtWidgets import QMessageBox
 from ui import ui_util
 pg.setConfigOptions(antialias=True)
@@ -139,12 +139,16 @@ class DataViewer(QtWidgets.QMainWindow):
         azavg = self.dcs[self.current_page].azavg
         if self.dcs[self.current_page].azavg is None:
             return
-        first_peak_idx, second_peak_idx = pdf_calculator.find_multiple_peaks(self.dcs[self.current_page].azavg)
+        first_peak_idx, second_peak_idx = q_range_selector.find_multiple_peaks(self.dcs[self.current_page].azavg)
         self.graphPanel.plot_azav.create_circle([first_peak_idx,azavg[first_peak_idx]],[second_peak_idx,azavg[second_peak_idx]])
 
         #
         self.upper.hide()
-        self.btn_range_start_clicked()
+
+        l = q_range_selector.find_first_nonzero_idx(self.dcs[self.current_page].azavg)
+        r = l + int((len(self.dcs[self.current_page].azavg) - l) / 4)
+        self.graphPanel.plot_azav.setXRange(l, r, padding=0.1)
+        
         self.graphPanel.plot_azav.select_mode = True
         self.graphPanel.plot_azav.select_event = self.azav_select_event
         #
@@ -171,10 +175,13 @@ class DataViewer(QtWidgets.QMainWindow):
         self.eRDF_analyser = pdf_analyse(self.dcs[self.current_page])
 
     def btn_range_start_clicked(self):
+        # left = q_range_selector.find_first_nonzero_idx(self.dcs[self.current_page].azavg)
         left = self.graphPanel.spinBox_pixel_range_left.value()
         right = self.graphPanel.spinBox_pixel_range_right.value()
+
         l = left
-        r = left+int((right-left)/4)
+        r = left + int((right - left) / 4)
+        # r = left + int((len(self.dcs[self.current_page].azavg) - left) / 4)
         # print("left {}, right {}".format(l, r))
         # mx = np.max(self.dcs[self.current_page].azavg[l:r])
         # mn = np.min(self.dcs[self.current_page].azavg[l:r])
@@ -237,7 +244,7 @@ class DataViewer(QtWidgets.QMainWindow):
         self.graphPanel.spinBox_pixel_range_left.setMaximum(len(self.dcs[self.current_page].azavg))
 
         if self.dcs[self.current_page].pixel_start_n is None:
-            left = pdf_calculator.find_first_peak(self.dcs[self.current_page].azavg)
+            left = q_range_selector.find_first_peak(self.dcs[self.current_page].azavg)
             # left = 0
             # for i in range(len(self.datacubes[self.current_page].azavg)):
             #     if int(self.datacubes[self.current_page].azavg[i]) != 0 :
@@ -400,6 +407,10 @@ class DataViewer(QtWidgets.QMainWindow):
         left, right = self.graphPanel.region.getRegion()
         left = int(np.round(left))
         right = int(np.round(right))
+        if right > len(self.dcs[self.current_page].azavg)-1:
+            right = len(self.dcs[self.current_page].azavg)-1
+        if left < 0:
+            left = 0
         ui_util.update_value(self.graphPanel.region,[left, right])
         ui_util.update_value(self.graphPanel.spinBox_pixel_range_left,left)
         ui_util.update_value(self.graphPanel.spinBox_pixel_range_right,right)
@@ -618,8 +629,7 @@ class GraphPanel(QtWidgets.QWidget):
         self.plot_azav.setYScaling(True)
         self.layout = QtWidgets.QHBoxLayout()
         self.layout.addWidget(self.plot_azav)
-        
-        
+
         self.setLayout(self.layout)
         self.setMinimumHeight(200)
         self.region = pg.LinearRegionItem([0, 100])
