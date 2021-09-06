@@ -5,7 +5,7 @@
   "show_center_line": true,
   "show_beam_stopper_mask": true,
   "electron_voltage": "0",
-  "calibration_factor": 0.00319,
+  "calibration_factor": 0.00328,
   "calibration_factor_step": "0.001",
   "fit_at_q_step": "1",
   "N_step": "1",

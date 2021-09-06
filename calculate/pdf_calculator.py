@@ -5,7 +5,7 @@ paramK = np.loadtxt(definitions.KIRKLAND_PATH)
 paramL = np.loadtxt(definitions.LOBATO_PATH)
 
 
-def calculation(ds, q_start_num, q_end_num, element_nums, ratio, azavg, is_full_q, damping, rmax, dr, electron_voltage, fit_at_q=None, N=None, scattering_factor_type="Kirkland"):
+def calculation(ds, q_start_num, q_end_num, element_nums, ratio, azavg, is_full_q, damping, rmax, dr, electron_voltage, fit_at_q=None, N=None, scattering_factor_type="Kirkland", fitting_range=None):
     element_nums = np.array(element_nums)
     for idx, element in enumerate(element_nums):
         if element == 0:
@@ -37,13 +37,20 @@ def calculation(ds, q_start_num, q_end_num, element_nums, ratio, azavg, is_full_
     gq = np.sum(f ** 2 * e_ratio[:, None], axis=0)
 
     L = np.uint16(len(q))
-    if is_full_q:
-        AFrange = 0
-    else:
-        AFrange = int(2 / 3 * L)
+    # if is_full_q:
+    #     AFrange = 0
+    # else:
+    #     AFrange = int(2 / 3 * L)
 
-    wi = np.ones((L, 1))
-    wi[0:AFrange] = 0
+    wi = np.ones((L))
+    if fitting_range is not None:
+        # wi = np.ones((L, 1))
+        wi = np.zeros((L))
+        # wi[0:AFrange] = 0
+        q_to_x_factor = 1 / (ds * 2 * np.pi)
+        l = np.int(np.round(q_to_x_factor * fitting_range[0]))
+        r = np.int(np.round(q_to_x_factor * fitting_range[1]))
+        wi[l:r] = 1
 
     # added code
     if fit_at_q is not None:
