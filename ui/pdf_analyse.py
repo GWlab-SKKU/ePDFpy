@@ -37,6 +37,22 @@ class pdf_analyse(QtWidgets.QMainWindow):
         self.element_presets = file.load_element_preset()
         self.update_load_preset_enable()
 
+        self.update_parameter()
+        self.update_initial_iq()
+
+    def update_initial_iq(self):
+        if self.datacube.q is not None:
+            return
+        self.datacube.q, self.datacube.Iq = pdf_calculator.rescaling_Iq(
+            self.datacube.pixel_start_n,
+            self.datacube.pixel_end_n,
+            self.datacube.azavg,
+            self.datacube.ds,
+        )
+        self.datacube.fit_at_q = self.datacube.q[-1]
+        self.graph_Iq_Iq.setData(self.datacube.q, self.datacube.Iq)
+
+
     def initui(self):
         self.setMinimumSize(800, 650)
         self.layout = QtWidgets.QHBoxLayout()
@@ -194,6 +210,7 @@ class pdf_analyse(QtWidgets.QMainWindow):
                 ui_util.update_value(self.controlPanel.fitting_factors.radio_full_range,True)
             else:
                 ui_util.update_value(self.controlPanel.fitting_factors.radio_tail,True)
+                self.btn_radiotail_clicked()
 
     def update_graph(self):
         self.graph_Iq_half_tail_Iq.setData(self.datacube.q, self.datacube.Iq)
@@ -399,6 +416,7 @@ class pdf_analyse(QtWidgets.QMainWindow):
 
     def range_fit(self):
         self.update_parameter()
+        print(self.datacube.q_fitting_range_l,self.datacube.q_fitting_range_r)
         self.datacube.q, self.datacube.r, self.datacube.Iq, self.datacube.Autofit, self.datacube.phiq, self.datacube.phiq_damp, self.datacube.Gr, self.datacube.SS, self.datacube.fit_at_q, self.datacube.N = pdf_calculator.calculation(
             self.datacube.ds,
             self.datacube.pixel_start_n,

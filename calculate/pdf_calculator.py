@@ -100,6 +100,12 @@ def calculate_relativistic(voltage):
     print(mass_e_relative)
     return mass_e_relative
 
+def rescaling_Iq(q_start_num, q_end_num, azavg, ds):
+    x = np.arange(q_start_num, q_end_num + 1)  # selected x ranges, end point = end point(eRDF) + 1
+    Iq = azavg[q_start_num - 1:q_end_num]
+
+    q = x * ds * 2 * np.pi
+    return q, Iq
 
 def _calculation_with_q(ds, q, Iq, element_nums, ratio, is_full_q, damping, rmax, dr, fit_at_q=None, N=None):
     element_nums = np.array(element_nums)

@@ -13,7 +13,7 @@
   "dr_step": "0.01",
   "damping": 0.15,
   "damping_step": "0.1",
-  "rmax": 10.0,
+  "rmax": 16.0,
   "rmax_step": "1",
   "recent_file1": "",
   "recent_file2": "",
