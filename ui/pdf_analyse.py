@@ -23,7 +23,14 @@ class pdf_analyse(QtWidgets.QMainWindow):
             self.datacube.element_nums = []
             self.datacube.element_ratio = []
         self.instant_update = False
+
         self.initui()
+
+        self.load_default_setting()
+        self.update_initial_iq()
+        self.put_data_to_ui()
+        self.update_graph()
+
         self.binding()
         self.pdf_setting = {}
 
@@ -36,9 +43,10 @@ class pdf_analyse(QtWidgets.QMainWindow):
 
         self.element_presets = file.load_element_preset()
         self.update_load_preset_enable()
-
         self.update_parameter()
-        self.update_initial_iq()
+
+        self.update_graph()
+
 
     def update_initial_iq(self):
         if self.datacube.q is not None:
@@ -49,8 +57,7 @@ class pdf_analyse(QtWidgets.QMainWindow):
             self.datacube.azavg,
             self.datacube.ds,
         )
-        self.datacube.fit_at_q = self.datacube.q[-1]
-        self.graph_Iq_Iq.setData(self.datacube.q, self.datacube.Iq)
+
 
 
     def initui(self):
@@ -94,35 +101,38 @@ class pdf_analyse(QtWidgets.QMainWindow):
         centralWidget.setLayout(self.layout)
         self.setCentralWidget(centralWidget)
 
-        self.load_default_setting()
-
-        self.put_data_to_ui()
-        if self.datacube.Gr is not None:
-            self.update_graph()
 
     def load_default_setting(self):
-        if util.default_setting.calibration_factor is not None:
-            self.controlPanel.fitting_factors.spinbox_ds.setValue(util.default_setting.calibration_factor)
+        if util.default_setting.calibration_factor is not None and self.datacube.ds is None:
+            # self.controlPanel.fitting_factors.spinbox_ds.setValue(util.default_setting.calibration_factor)
+            self.datacube.ds = util.default_setting.calibration_factor
+        if util.default_setting.dr is not None and self.datacube.dr is None:
+            # self.controlPanel.fitting_factors.spinbox_dr.setValue(util.default_setting.dr)
+            self.datacube.dr = util.default_setting.dr
+        if util.default_setting.damping is not None and self.datacube.damping is None:
+            # self.controlPanel.fitting_factors.spinbox_damping.setValue(util.default_setting.damping)
+            self.datacube.damping = util.default_setting.damping
+        if util.default_setting.rmax is not None and self.datacube.rmax is None:
+            # self.controlPanel.fitting_factors.spinbox_rmax.setValue(util.default_setting.rmax)
+            self.datacube.rmax = util.default_setting.rmax
+        if util.default_setting.electron_voltage is not None and self.datacube.electron_voltage is None:
+            # self.controlPanel.fitting_factors.spinbox_electron_voltage.setText(util.default_setting.electron_voltage)
+            self.datacube.electron_voltage = util.default_setting.electron_voltage
+
+        # steps
         if util.default_setting.calibration_factor_step is not None:
             self.controlPanel.fitting_factors.spinbox_ds_step.setText(util.default_setting.calibration_factor_step)
         if util.default_setting.fit_at_q_step is not None:
             self.controlPanel.fitting_factors.spinbox_fit_at_q_step.setText(util.default_setting.fit_at_q_step)
         if util.default_setting.N_step is not None:
             self.controlPanel.fitting_factors.spinbox_N_step.setText(util.default_setting.N_step)
-        if util.default_setting.dr is not None:
-            self.controlPanel.fitting_factors.spinbox_dr.setValue(util.default_setting.dr)
         if util.default_setting.dr_step is not None:
             self.controlPanel.fitting_factors.spinbox_dr_step.setText(util.default_setting.dr_step)
-        if util.default_setting.damping is not None:
-            self.controlPanel.fitting_factors.spinbox_damping.setValue(util.default_setting.damping)
         if util.default_setting.damping_step is not None:
             self.controlPanel.fitting_factors.spinbox_damping_step.setText(util.default_setting.damping_step)
-        if util.default_setting.rmax is not None:
-            self.controlPanel.fitting_factors.spinbox_rmax.setValue(util.default_setting.rmax)
         if util.default_setting.rmax_step is not None:
             self.controlPanel.fitting_factors.spinbox_rmax_step.setText(util.default_setting.rmax_step)
-        if util.default_setting.electron_voltage is not None:
-            self.controlPanel.fitting_factors.spinbox_electron_voltage.setText(util.default_setting.electron_voltage)
+
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         util.default_setting.calibration_factor = self.controlPanel.fitting_factors.spinbox_ds.value()
@@ -197,6 +207,8 @@ class pdf_analyse(QtWidgets.QMainWindow):
         # factors
         if self.datacube.fit_at_q is not None:
             ui_util.update_value(self.controlPanel.fitting_factors.spinbox_fit_at_q,self.datacube.fit_at_q)
+        else:
+            ui_util.update_value(self.controlPanel.fitting_factors.spinbox_fit_at_q, self.datacube.q[-1])
         if self.datacube.ds is not None:
             ui_util.update_value(self.controlPanel.fitting_factors.spinbox_ds,self.datacube.ds)
         if self.datacube.N is not None:
@@ -211,18 +223,24 @@ class pdf_analyse(QtWidgets.QMainWindow):
             else:
                 ui_util.update_value(self.controlPanel.fitting_factors.radio_tail,True)
                 self.btn_radiotail_clicked()
+        if self.datacube.rmax is not None:
+            ui_util.update_value(self.controlPanel.fitting_factors.spinbox_rmax, self.datacube.rmax)
 
     def update_graph(self):
-        self.graph_Iq_half_tail_Iq.setData(self.datacube.q, self.datacube.Iq)
-        self.graph_Iq_half_tail_AutoFit.setData(self.datacube.q, self.datacube.Autofit)
-        self.graph_Iq_half_tail.setXRange(self.datacube.q.max()/2,self.datacube.q.max())
-        self.graph_Iq_half_tail.YScaling()
+        if self.datacube.q is not None:
+            self.graph_Iq_half_tail_Iq.setData(self.datacube.q, self.datacube.Iq)
+            self.graph_Iq_Iq.setData(self.datacube.q, self.datacube.Iq)
+        if self.datacube.Autofit is not None:
+            self.graph_Iq_half_tail_AutoFit.setData(self.datacube.q, self.datacube.Autofit)
+            self.graph_Iq_half_tail.setXRange(self.datacube.q.max()/2,self.datacube.q.max())
+            self.graph_Iq_half_tail.YScaling()
+            self.graph_Iq_AutoFit.setData(self.datacube.q, self.datacube.Autofit)
         # self.graph_Iq_half_tail.autoRange()
-        self.graph_Iq_Iq.setData(self.datacube.q, self.datacube.Iq)
-        self.graph_Iq_AutoFit.setData(self.datacube.q, self.datacube.Autofit)
-        self.graph_phiq_phiq.setData(self.datacube.q, self.datacube.phiq)
-        self.graph_phiq_damp.setData(self.datacube.q, self.datacube.phiq_damp)
-        self.graph_Gr_Gr.setData(self.datacube.r, self.datacube.Gr)
+        if self.datacube.phiq is not None:
+            self.graph_phiq_phiq.setData(self.datacube.q, self.datacube.phiq)
+            self.graph_phiq_damp.setData(self.datacube.q, self.datacube.phiq_damp)
+        if self.datacube.Gr is not None:
+            self.graph_Gr_Gr.setData(self.datacube.r, self.datacube.Gr)
 
     def binding(self):
         self.controlPanel.fitting_factors.btn_auto_fit.clicked.connect(self.autofit)
@@ -299,34 +317,6 @@ class pdf_analyse(QtWidgets.QMainWindow):
 
 
 
-    def get_pdf_setting(self):
-        for i, widget in enumerate(self.controlPanel.fitting_elements.element_group_widgets):
-            self.pdf_setting.update({
-                "element" + str(i): widget.combobox.currentText()
-            })
-            self.pdf_setting.update({
-                "element_ratio" + str(i): widget.element_ratio.value()
-            })
-        self.pdf_setting.update({
-            "Calibration_factor":   self.controlPanel.fitting_factors.spinbox_ds.value(),
-            "Fit_at_Q":             self.controlPanel.fitting_factors.spinbox_fit_at_q.value(),
-            "N":                    self.controlPanel.fitting_factors.spinbox_N.value(),
-            "Damping":              self.controlPanel.fitting_factors.spinbox_damping.value(),
-            "r(max)":               self.controlPanel.fitting_factors.spinbox_rmax.value(),
-            "dr":                   self.controlPanel.fitting_factors.spinbox_dr.value()
-        })
-        return self.pdf_setting
-
-    def set_pdf_setting(self):
-        for i, widget in enumerate(self.controlPanel.fitting_elements.element_group_widgets):
-            widget.combobox.setCurrentText(self.pdf_setting.get("element" + str(i))) # todo
-            widget.element_ratio.setValue(self.pdf_setting.get("element_ratio" + str(i))) # todo
-        self.controlPanel.fitting_factors.spinbox_ds.setValue(self.pdf_setting["Calibration_factor"])
-        self.controlPanel.fitting_factors.spinbox_fit_at_q.setValue(self.pdf_setting["Fit_at_Q"])
-        self.controlPanel.fitting_factors.spinbox_N.setValue(self.pdf_setting["N"])
-        self.controlPanel.fitting_factors.spinbox_damping.setValue(self.pdf_setting["Damping"])
-        self.controlPanel.fitting_factors.spinbox_rmax.setValue(self.pdf_setting["r(max)"])
-        self.controlPanel.fitting_factors.spinbox_dr.setValue(self.pdf_setting["dr"])
 
     def update_parameter(self):
         # elements
@@ -348,6 +338,9 @@ class pdf_analyse(QtWidgets.QMainWindow):
 
     def autofit(self):
         if not self.check_condition():
+            return
+        if self.controlPanel.fitting_factors.radio_tail.isChecked():
+            self.range_fit()
             return
         self.update_parameter()
         self.datacube.q, self.datacube.r, self.datacube.Iq, self.datacube.Autofit, self.datacube.phiq, self.datacube.phiq_damp, self.datacube.Gr, self.datacube.SS, self.datacube.fit_at_q, self.datacube.N = pdf_calculator.calculation(
