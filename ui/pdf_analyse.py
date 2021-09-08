@@ -275,10 +275,12 @@ class pdf_analyse(QtWidgets.QMainWindow):
             action.triggered.connect(lambda state, x=idx: self.del_element(x))
 
     def btn_radiotail_clicked(self):
+        if hasattr(self.graphPanel.graph_Iq, "region") and self.graphPanel.graph_Iq.region is not None:
+            return
         self.controlPanel.fitting_factors.spinbox_q_range_left.setEnabled(True)
         self.controlPanel.fitting_factors.spinbox_q_range_right.setEnabled(True)
-        self.controlPanel.fitting_factors.spinbox_q_range_left.setValue(6.28)
-        self.controlPanel.fitting_factors.spinbox_q_range_right.setValue(self.datacube.q[-1])
+        ui_util.update_value(self.controlPanel.fitting_factors.spinbox_q_range_left,6.28)
+        ui_util.update_value(self.controlPanel.fitting_factors.spinbox_q_range_right,self.datacube.q[-1])
         self.datacube.q_fitting_range_l = self.controlPanel.fitting_factors.spinbox_q_range_left.value()
         self.datacube.q_fitting_range_r = self.controlPanel.fitting_factors.spinbox_q_range_right.value()
         self.graphPanel.graph_Iq.region = pg.LinearRegionItem([self.datacube.q_fitting_range_l,self.datacube.q_fitting_range_r])
@@ -293,7 +295,6 @@ class pdf_analyse(QtWidgets.QMainWindow):
         self.controlPanel.fitting_factors.spinbox_q_range_left.setEnabled(False)
         self.controlPanel.fitting_factors.spinbox_q_range_right.setEnabled(False)
         self.graphPanel.graph_Iq.removeItem(self.graphPanel.graph_Iq.region)
-        self.graphPanel.graph_Iq.region.sigRegionChangeFinished.disconnect()
         self.graphPanel.graph_Iq.region = None
         self.autofit()
 
