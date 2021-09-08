@@ -49,8 +49,6 @@ class DoubleSpinBox(QtWidgets.QDoubleSpinBox):
     def valueFromText(self, text: str) -> float:
         # print("text:",text)
         # print("value:",super().valueFromText(text))
-        print("input:",str)
-        print("output:", np.round(float(text),self.decimals()))
         return np.round(float(text),self.decimals())
 
 
@@ -111,7 +109,11 @@ class CoordinatesPlotWidget(pg.PlotWidget):
 
     def mousePressEvent(self, ev):
         qp = self.plotItem.vb.mapSceneToView(ev.localPos())
-        modifiers = QtGui.QApplication.keyboardModifiers()
+
+        try:  # some qt version use different path
+            modifiers = QtGui.QApplication.keyboardModifiers()
+        except:
+            modifiers = QtWidgets.QApplication.keyboardModifiers()
 
         if modifiers == QtCore.Qt.ShiftModifier:
             # shift click
@@ -133,10 +135,11 @@ class CoordinatesPlotWidget(pg.PlotWidget):
         return super().mousePressEvent(ev)
 
     def keyPressEvent(self, ev):
-        if ev.key() == QtCore.Qt.Key.Key_Right:
-            self.move_cross_hair(+1)
-        elif ev.key() == QtCore.Qt.Key.Key_Left:
-            self.move_cross_hair(-1)
+        if hasattr(self,'crosshair_plot') and self.crosshair_plot is not None:
+            if ev.key() == QtCore.Qt.Key.Key_Right:
+                self.move_cross_hair(+1)
+            elif ev.key() == QtCore.Qt.Key.Key_Left:
+                self.move_cross_hair(-1)
         super().keyPressEvent(ev)
 
     def create_cross_hair(self):
@@ -192,8 +195,35 @@ class CoordinatesPlotWidget(pg.PlotWidget):
         self.enableAutoRange(axis='y')
         self.setAutoVisible(y=True)
 
+class IntensityPlotWidget(CoordinatesPlotWidget):
+    def mousePressEvent(self, ev):
+        if hasattr(self,'select_mode') and self.select_mode is True and ev.button() == QtCore.Qt.LeftButton:
+            qp = self.plotItem.vb.mapSceneToView(ev.localPos())
+            data = np.concatenate([self.first_dev_plot.getData()[0],self.second_dev_plot.getData()[0]])
+            distance = np.abs(data - qp.x())
+            idx = np.argmin(distance)
+            print(data[idx])
+            left, right = self.region.getRegion()
+            self.region.setRegion([data[idx],right])
+            self.select_event()
 
+        # print(self.getPlotItem().dataItems[0].xDisp) # xData, yData, xDisp, yDisp
+        return super().mousePressEvent(ev)
 
+    def create_circle(self,first_dev,second_dev):
+        if not hasattr(self,'first_dev_plot') or self.first_dev_plot is None:
+
+            self.first_dev_plot = pg.ScatterPlotItem(size=10, brush='y')
+            self.second_dev_plot = pg.ScatterPlotItem(size=10, brush='b')
+            self.addItem(self.first_dev_plot)
+            self.addItem(self.second_dev_plot)
+            # self.first_dev_plot = self.plot(symbol='o', symbolSize=10, pen='b', symbolPen=pg.mkPen(width=1),
+            #                                 symbolBrush=('y'), name="first derivative")
+            # self.second_dev_plot = self.plot(symbol='o', symbolSize=10, pen='b', symbolPen=pg.mkPen(width=1),
+            #                                 symbolBrush=('g'), name="second derivative")
+        self.first_dev_plot.setData(first_dev[0], first_dev[1])
+        self.second_dev_plot.setData(second_dev[0],second_dev[1])
+        pass
 
 
 def update_value(widget:QtWidgets.QWidget, value):

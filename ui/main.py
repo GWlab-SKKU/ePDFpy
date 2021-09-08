@@ -7,7 +7,7 @@ import util
 from datacube import DataCube
 from typing import List
 from ui.pdf_analyse import pdf_analyse
-from calculate import pdf_calculator, image_process
+from calculate import pdf_calculator, image_process, q_range_selector
 from PyQt5.QtWidgets import QMessageBox
 from ui import ui_util
 pg.setConfigOptions(antialias=True)
@@ -22,6 +22,10 @@ class DataViewer(QtWidgets.QMainWindow):
         self.sig_binding()
         self.dcs: List[DataCube] = []
         self.resize(1000,600)
+        # for text
+        # self.menu_open_azavg_only(np.loadtxt("/mnt/experiment/TEM diffraction/201126 (test)/sample38_TiTa_annealed/Analysis ePDFpy/Camera 230 mm Ceta 20201126 1649_40s_20f_area01.azavg.txt"))
+        # self.menu_open_azavg_only(np.loadtxt(r"V:\experiment\TEM diffraction\201126 (test)\sample38_TiTa_annealed\Analysis ePDFpy\Camera 230 mm Ceta 20201126 1649_40s_20f_area01.azavg.txt"))
+        ##
 
     def init_ui(self):
         QtWidgets.QWidget.__init__(self)
@@ -128,7 +132,35 @@ class DataViewer(QtWidgets.QMainWindow):
         self.graphPanel.button_start.clicked.connect(self.btn_range_start_clicked)
         self.graphPanel.button_all.clicked.connect(self.btn_range_all_clicked)
         self.graphPanel.button_end.clicked.connect(self.btn_range_end_clicked)
+        self.graphPanel.button_select.clicked.connect(self.btn_select_clicked)
         self.controlPanel.operationPanel.btn_open_epdf_analyser.clicked.connect(self.btn_show_erdf_analyser)
+
+    def btn_select_clicked(self):
+        azavg = self.dcs[self.current_page].azavg
+        if self.dcs[self.current_page].azavg is None:
+            return
+        first_peak_idx, second_peak_idx = q_range_selector.find_multiple_peaks(self.dcs[self.current_page].azavg)
+        self.graphPanel.plot_azav.create_circle([first_peak_idx,azavg[first_peak_idx]],[second_peak_idx,azavg[second_peak_idx]])
+
+        #
+        self.upper.hide()
+
+        l = q_range_selector.find_first_nonzero_idx(self.dcs[self.current_page].azavg)
+        r = l + int((len(self.dcs[self.current_page].azavg) - l) / 4)
+        self.graphPanel.plot_azav.setXRange(l, r, padding=0.1)
+        
+        self.graphPanel.plot_azav.select_mode = True
+        self.graphPanel.plot_azav.select_event = self.azav_select_event
+        #
+        # self.upper.show()
+
+    def azav_select_event(self):
+        self.upper.show()
+        self.graphPanel.plot_azav.select_mode = False
+        self.graphPanel.plot_azav.first_dev_plot.clear()
+        self.graphPanel.plot_azav.first_dev_plot = None
+        self.graphPanel.plot_azav.second_dev_plot.clear()
+        self.graphPanel.plot_azav.second_dev_plot = None
 
     def spinbox_changed_event(self):
         x = self.controlPanel.settingPanel.spinBox_center_x.value()
@@ -143,10 +175,13 @@ class DataViewer(QtWidgets.QMainWindow):
         self.eRDF_analyser = pdf_analyse(self.dcs[self.current_page])
 
     def btn_range_start_clicked(self):
+        # left = q_range_selector.find_first_nonzero_idx(self.dcs[self.current_page].azavg)
         left = self.graphPanel.spinBox_pixel_range_left.value()
         right = self.graphPanel.spinBox_pixel_range_right.value()
+
         l = left
-        r = left+int((right-left)/4)
+        r = left + int((right - left) / 4)
+        # r = left + int((len(self.dcs[self.current_page].azavg) - left) / 4)
         # print("left {}, right {}".format(l, r))
         # mx = np.max(self.dcs[self.current_page].azavg[l:r])
         # mn = np.min(self.dcs[self.current_page].azavg[l:r])
@@ -209,7 +244,7 @@ class DataViewer(QtWidgets.QMainWindow):
         self.graphPanel.spinBox_pixel_range_left.setMaximum(len(self.dcs[self.current_page].azavg))
 
         if self.dcs[self.current_page].pixel_start_n is None:
-            left = pdf_calculator.find_first_peak(self.dcs[self.current_page].azavg)
+            left = q_range_selector.find_first_peak(self.dcs[self.current_page].azavg)
             # left = 0
             # for i in range(len(self.datacubes[self.current_page].azavg)):
             #     if int(self.datacubes[self.current_page].azavg[i]) != 0 :
@@ -372,6 +407,10 @@ class DataViewer(QtWidgets.QMainWindow):
         left, right = self.graphPanel.region.getRegion()
         left = int(np.round(left))
         right = int(np.round(right))
+        if right > len(self.dcs[self.current_page].azavg)-1:
+            right = len(self.dcs[self.current_page].azavg)-1
+        if left < 0:
+            left = 0
         ui_util.update_value(self.graphPanel.region,[left, right])
         ui_util.update_value(self.graphPanel.spinBox_pixel_range_left,left)
         ui_util.update_value(self.graphPanel.spinBox_pixel_range_right,right)
@@ -586,15 +625,15 @@ class GraphPanel(QtWidgets.QWidget):
         QtWidgets.QWidget.__init__(self)
         self.imageView = pg.ImageView()
         # self.plot_azav = pg.PlotWidget(title='azimuthal average')
-        self.plot_azav = ui_util.CoordinatesPlotWidget(title='azimuthal average')
+        self.plot_azav = ui_util.IntensityPlotWidget(title='azimuthal average')
         self.plot_azav.setYScaling(True)
         self.layout = QtWidgets.QHBoxLayout()
         self.layout.addWidget(self.plot_azav)
-        
-        
+
         self.setLayout(self.layout)
         self.setMinimumHeight(200)
         self.region = pg.LinearRegionItem([0, 100])
+        self.plot_azav.region = self.region
         self.plot_azav.addItem(self.region)
 
         self.legend = self.plot_azav.addLegend(offset=(-30,30))
@@ -615,9 +654,11 @@ class GraphPanel(QtWidgets.QWidget):
         self.button_start = QtWidgets.QPushButton("Start")
         self.button_all = QtWidgets.QPushButton("All")
         self.button_end = QtWidgets.QPushButton("End")
+        self.button_select = QtWidgets.QPushButton("Select")
         self.button_grp_widget.layout.addWidget(self.button_start)
         self.button_grp_widget.layout.addWidget(self.button_all)
         self.button_grp_widget.layout.addWidget(self.button_end)
+        self.button_grp_widget.layout.addWidget(self.button_select)
         self.button_grp_widget.layout.addStretch(1)
 
         self.layout.addWidget(self.button_grp_widget)

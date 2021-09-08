@@ -1,13 +1,11 @@
 import numpy as np
-from scipy.ndimage.filters import gaussian_filter1d
-from scipy.signal import find_peaks
 import definitions
 
 paramK = np.loadtxt(definitions.KIRKLAND_PATH)
 paramL = np.loadtxt(definitions.LOBATO_PATH)
 
 
-def calculation(ds, q_start_num, q_end_num, element_nums, ratio, azavg, is_full_q, damping, rmax, dr, electron_voltage, fit_at_q=None, N=None, scattering_factor_type="Kirkland"):
+def calculation(ds, q_start_num, q_end_num, element_nums, ratio, azavg, is_full_q, damping, rmax, dr, electron_voltage, fit_at_q=None, N=None, scattering_factor_type="Kirkland", fitting_range=None):
     element_nums = np.array(element_nums)
     for idx, element in enumerate(element_nums):
         if element == 0:
@@ -39,13 +37,20 @@ def calculation(ds, q_start_num, q_end_num, element_nums, ratio, azavg, is_full_
     gq = np.sum(f ** 2 * e_ratio[:, None], axis=0)
 
     L = np.uint16(len(q))
-    if is_full_q:
-        AFrange = 0
-    else:
-        AFrange = int(2 / 3 * L)
+    # if is_full_q:
+    #     AFrange = 0
+    # else:
+    #     AFrange = int(2 / 3 * L)
 
     wi = np.ones((L))
-    wi[0:AFrange] = 0
+    if fitting_range is not None:
+        # wi = np.ones((L, 1))
+        wi = np.zeros((L))
+        # wi[0:AFrange] = 0
+        q_to_x_factor = 1 / (ds * 2 * np.pi)
+        l = np.int(np.round(q_to_x_factor * fitting_range[0]))
+        r = np.int(np.round(q_to_x_factor * fitting_range[1]))
+        wi[l:r] = 1
 
     # added code
     if fit_at_q is not None:
@@ -92,8 +97,15 @@ def calculate_relativistic(voltage):
     c = 2.998e8
     relvelocity = c * (1 - 1 / (1 + voltage/511)**2 ) ** 0.5
     mass_e_relative = 1 / (1-(relvelocity**2/c**2)) ** 0.5
+    print(mass_e_relative)
     return mass_e_relative
 
+def rescaling_Iq(q_start_num, q_end_num, azavg, ds):
+    x = np.arange(q_start_num, q_end_num + 1)  # selected x ranges, end point = end point(eRDF) + 1
+    Iq = azavg[q_start_num - 1:q_end_num]
+
+    q = x * ds * 2 * np.pi
+    return q, Iq
 
 def _calculation_with_q(ds, q, Iq, element_nums, ratio, is_full_q, damping, rmax, dr, fit_at_q=None, N=None):
     element_nums = np.array(element_nums)
@@ -173,39 +185,3 @@ def KirklandFactors(s2, paramK_element):
                 np.exp(-s2 * d3) * c3)
     # f1 = ((s2+b1_1).\a1_1)+((s2+b2_1).\a2_1)+((s2+b3_1).\a3_1)+(exp(-s2.*d1_1).*c1_1)+(exp(-s2.*d2_1).*c2_1)+(exp(-s2.*d3_1).*c3_1);
     return np.array(f)
-
-def find_first_peak(azavg, derivative=0):
-    # flattening
-    first_peak_idx = 1
-    for i in range(len(azavg)):
-        if azavg[i] != 0:
-            first_peak_idx = i
-            break
-
-    range_slice = slice(first_peak_idx, first_peak_idx + int(len(azavg) * 0.3))
-    filtered_part = gaussian_filter1d(azavg[first_peak_idx:first_peak_idx + int(len(azavg) * 0.3)], sigma=2)
-    azavg2 = azavg.copy()
-    azavg2[range_slice] = filtered_part
-
-    # first order
-    x = azavg2[0:int(len(azavg) * 0.3)]
-    low_peaks, _ = find_peaks(-x, distance=20)
-
-    if len(low_peaks) > 0 and (derivative is not 2):
-        return low_peaks[0]
-    if derivative == 1:
-        return None
-
-    # second order
-    else:
-        x = np.gradient(azavg2, 0.1)
-        # peaks, _ = find_peaks(x, distance=20)
-        low_peaks, _ = find_peaks(-x, distance=20)
-
-        # peaks = peaks[azavg2[peaks] != 0]
-        low_peaks = low_peaks[azavg2[low_peaks] != 0]
-
-        if len(low_peaks) > 0:
-            return low_peaks[0]
-        else:
-            return None
