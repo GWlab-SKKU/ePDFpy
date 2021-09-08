@@ -51,6 +51,8 @@ class pdf_analyse(QtWidgets.QMainWindow):
     def update_initial_iq(self):
         if self.datacube.q is not None:
             return
+        if self.datacube.azavg is None:
+            return
         self.datacube.q, self.datacube.Iq = pdf_calculator.rescaling_Iq(
             self.datacube.pixel_start_n,
             self.datacube.pixel_end_n,
@@ -146,6 +148,7 @@ class pdf_analyse(QtWidgets.QMainWindow):
         util.default_setting.damping_step = self.controlPanel.fitting_factors.spinbox_damping_step.text()
         util.default_setting.rmax = self.controlPanel.fitting_factors.spinbox_rmax.value()
         util.default_setting.rmax_step = self.controlPanel.fitting_factors.spinbox_rmax_step.text()
+
         util.default_setting.save_settings()
         super().closeEvent(a0)
 
@@ -207,7 +210,7 @@ class pdf_analyse(QtWidgets.QMainWindow):
         # factors
         if self.datacube.fit_at_q is not None:
             ui_util.update_value(self.controlPanel.fitting_factors.spinbox_fit_at_q,self.datacube.fit_at_q)
-        else:
+        elif self.datacube.q is not None:
             ui_util.update_value(self.controlPanel.fitting_factors.spinbox_fit_at_q, self.datacube.q[-1])
         if self.datacube.ds is not None:
             ui_util.update_value(self.controlPanel.fitting_factors.spinbox_ds,self.datacube.ds)
@@ -217,14 +220,15 @@ class pdf_analyse(QtWidgets.QMainWindow):
             ui_util.update_value(self.controlPanel.fitting_factors.spinbox_damping,self.datacube.damping)
         if self.datacube.dr is not None:
             ui_util.update_value(self.controlPanel.fitting_factors.spinbox_dr,self.datacube.dr)
+        if self.datacube.rmax is not None:
+            ui_util.update_value(self.controlPanel.fitting_factors.spinbox_rmax, self.datacube.rmax)
         if self.datacube.is_full_q is not None:
             if self.datacube.is_full_q:
                 ui_util.update_value(self.controlPanel.fitting_factors.radio_full_range,True)
             else:
                 ui_util.update_value(self.controlPanel.fitting_factors.radio_tail,True)
                 self.btn_radiotail_clicked()
-        if self.datacube.rmax is not None:
-            ui_util.update_value(self.controlPanel.fitting_factors.spinbox_rmax, self.datacube.rmax)
+
 
     def update_graph(self):
         if self.datacube.q is not None:
@@ -289,7 +293,9 @@ class pdf_analyse(QtWidgets.QMainWindow):
         self.controlPanel.fitting_factors.spinbox_q_range_left.setEnabled(False)
         self.controlPanel.fitting_factors.spinbox_q_range_right.setEnabled(False)
         self.graphPanel.graph_Iq.removeItem(self.graphPanel.graph_Iq.region)
+        self.graphPanel.graph_Iq.region.sigRegionChangeFinished.disconnect()
         self.graphPanel.graph_Iq.region = None
+        self.autofit()
 
 
     def dialog_to_range(self):
@@ -389,6 +395,8 @@ class pdf_analyse(QtWidgets.QMainWindow):
         if not self.controlPanel.fitting_factors.chkbox_instant_update.isChecked():
             # print("not checked")
             return
+        if not self.check_condition():
+            return
         self.datacube.q, self.datacube.r, self.datacube.Iq, self.datacube.Autofit, self.datacube.phiq, self.datacube.phiq_damp, self.datacube.Gr, self.datacube.SS, self.datacube.fit_at_q, self.datacube.N = pdf_calculator.calculation(
             self.datacube.ds,
             self.datacube.pixel_start_n,
@@ -408,6 +416,8 @@ class pdf_analyse(QtWidgets.QMainWindow):
         self.update_graph()
 
     def range_fit(self):
+        if not self.check_condition():
+            return
         self.update_parameter()
         print(self.datacube.q_fitting_range_l,self.datacube.q_fitting_range_r)
         self.datacube.q, self.datacube.r, self.datacube.Iq, self.datacube.Autofit, self.datacube.phiq, self.datacube.phiq_damp, self.datacube.Gr, self.datacube.SS, self.datacube.fit_at_q, self.datacube.N = pdf_calculator.calculation(
@@ -434,6 +444,12 @@ class pdf_analyse(QtWidgets.QMainWindow):
     def check_condition(self):
         if self.datacube.azavg is None:
             QMessageBox.about(self, "info", "azimuthally averaged intensity is not calculated yet.")
+            return False
+        if np.array(self.datacube.element_nums).sum() == 0:
+            QMessageBox.about(self, "info", "set element first")
+            return False
+        if np.array(self.datacube.element_ratio).sum() == 0:
+            QMessageBox.about(self, "info", "set element ratio first")
             return False
         return True
 
@@ -598,8 +614,10 @@ class ControlPanel(QtWidgets.QWidget):
 
             self.spinbox_q_range_left = ui_util.DoubleSpinBox()
             self.spinbox_q_range_left.setSingleStep(0.1)
+            self.spinbox_q_range_left.setEnabled(False)
             self.spinbox_q_range_right = ui_util.DoubleSpinBox()
             self.spinbox_q_range_right.setSingleStep(0.1)
+            self.spinbox_q_range_right.setEnabled(False)
 
 
             lbl_N = QtWidgets.QLabel("N")

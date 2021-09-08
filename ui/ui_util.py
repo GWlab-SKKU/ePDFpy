@@ -49,8 +49,6 @@ class DoubleSpinBox(QtWidgets.QDoubleSpinBox):
     def valueFromText(self, text: str) -> float:
         # print("text:",text)
         # print("value:",super().valueFromText(text))
-        print("input:",str)
-        print("output:", np.round(float(text),self.decimals()))
         return np.round(float(text),self.decimals())
 
 
