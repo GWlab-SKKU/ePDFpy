@@ -281,7 +281,7 @@ class DataViewer(QtWidgets.QMainWindow):
             return
         load_paths.extend(file.get_file_list_from_path(path,'.mrc'))
         if len(load_paths) == 0:
-            QMessageBox.about("no file found")
+            QMessageBox.about(self,"No file found","No file found")
             return
         self.dcs.clear()
         self.dcs.extend([DataCube(path,'image') for path in load_paths])
@@ -295,7 +295,7 @@ class DataViewer(QtWidgets.QMainWindow):
             return
         load_paths.extend(file.get_file_list_from_path(path, file.preset_ext))
         if len(load_paths) == 0:
-            QMessageBox.about("no file found")
+            QMessageBox.about(self,"No file found","No file found")
             return
         self.dcs.clear()
         self.dcs.extend([file.load_preset(path) for path in load_paths])
