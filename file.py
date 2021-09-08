@@ -182,15 +182,15 @@ def load_preset(fp:str=None, dc:DataCube=None) -> DataCube:
         dc.azavg = df_azavg
     if os.path.isfile(data_r_path):
         df_r = pd.read_csv(data_r_path)
-        dc.r = df_r['r']
-        dc.Gr = df_r['Gr']
+        dc.r = df_r['r'].to_numpy()
+        dc.Gr = df_r['Gr'].to_numpy()
     if os.path.isfile(data_q_path):
         df_q = pd.read_csv(data_q_path)
-        dc.q = df_q['q']
-        dc.Iq = df_q['Iq']
-        dc.phiq = df_q['phiq']
-        dc.phiq_damp = df_q['phiq_damp']
-        dc.Autofit = df_q['Autofit']
+        dc.q = df_q['q'].to_numpy()
+        dc.Iq = df_q['Iq'].to_numpy()
+        dc.phiq = df_q['phiq'].to_numpy()
+        dc.phiq_damp = df_q['phiq_damp'].to_numpy()
+        dc.Autofit = df_q['Autofit'].to_numpy()
 
     # convert relative path to absolute path
     content['mrc_file_path'] = os.path.abspath(os.path.join(fp, "..", content['mrc_file_path']))
