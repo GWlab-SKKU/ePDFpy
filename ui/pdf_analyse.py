@@ -532,7 +532,6 @@ class ControlPanel(QtWidgets.QWidget):
             self.element_group_widgets = [ControlPanel.element_group("element" + str(num)) for num in range(1, 6)]
             for element_group_widgets in self.element_group_widgets:
                 layout.addWidget(element_group_widgets)
-                element_group_widgets.setContentsMargins(0, 0, 0, 0)
             self.setLayout(layout)
 
         def scattering_factors_widget(self):
@@ -751,7 +750,7 @@ class ControlPanel(QtWidgets.QWidget):
             QtWidgets.QWidget.__init__(self)
             layout = QtWidgets.QHBoxLayout()
             layout.setContentsMargins(0,0,0,0)
-            layout.setSpacing(3)
+            layout.setSpacing(0)
             lbl = QtWidgets.QLabel(label)
             self.combobox = QtWidgets.QComboBox()
             self.combobox.addItems(util.get_atomic_number_symbol())
