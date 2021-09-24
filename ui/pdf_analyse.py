@@ -528,6 +528,7 @@ class ControlPanel(QtWidgets.QWidget):
             layout.addWidget(menubar)
             layout.addWidget(self.scattering_factors_widget())
 
+
             self.element_group_widgets = [ControlPanel.element_group("element" + str(num)) for num in range(1, 6)]
             for element_group_widgets in self.element_group_widgets:
                 layout.addWidget(element_group_widgets)
@@ -537,6 +538,8 @@ class ControlPanel(QtWidgets.QWidget):
         def scattering_factors_widget(self):
             widget = QtWidgets.QWidget()
             layout = QtWidgets.QHBoxLayout()
+            layout.setSpacing(0)
+            layout.setContentsMargins(2,2,2,2)
             widget.setLayout(layout)
             self.lbl_scattering_factor = QtWidgets.QLabel("Scattering Factor")
             layout.addWidget(self.lbl_scattering_factor)
@@ -556,6 +559,8 @@ class ControlPanel(QtWidgets.QWidget):
             menu_frame_widget = QtWidgets.QWidget()
             menu_frame_widget_layout = QtWidgets.QHBoxLayout()
             menu_frame_widget.setLayout(menu_frame_widget_layout)
+            menu_frame_widget_layout.setContentsMargins(0,5,0,5)
+            # menu_frame_widget_layout.setSpacing(0)
 
             menu_frame_widget_layout.addWidget(menubar1)
             menu_frame_widget_layout.addWidget(menubar2)
@@ -704,6 +709,8 @@ class ControlPanel(QtWidgets.QWidget):
             layout.addWidget(lbl_electron_voltage, 11, 0)
             layout.addWidget(self.spinbox_electron_voltage, 11, 1)
 
+            layout.setSpacing(1)
+            # layout.setContentsMargins(0,0,0,0)
 
             self.setLayout(layout)
 
@@ -743,7 +750,8 @@ class ControlPanel(QtWidgets.QWidget):
         def __init__(self, label: str):
             QtWidgets.QWidget.__init__(self)
             layout = QtWidgets.QHBoxLayout()
-            layout.setContentsMargins(1, 1, 1, 1)
+            layout.setContentsMargins(0,0,0,0)
+            layout.setSpacing(3)
             lbl = QtWidgets.QLabel(label)
             self.combobox = QtWidgets.QComboBox()
             self.combobox.addItems(util.get_atomic_number_symbol())
