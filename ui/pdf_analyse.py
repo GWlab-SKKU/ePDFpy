@@ -64,7 +64,7 @@ class pdf_analyse(QtWidgets.QMainWindow):
 
     def initui(self):
         # self.setMinimumSize(800, 650)
-        self.resize(800, 800)
+        self.resize(800, 700)
         self.layout = QtWidgets.QHBoxLayout()
         self.controlPanel = ControlPanel(self)
         self.graphPanel = GraphPanel()
