@@ -550,6 +550,9 @@ class ControlPanel(QtWidgets.QWidget):
             menubar1 = mainWindow.menuBar()
             menubar2 = mainWindow.menuBar()
             menubar3 = mainWindow.menuBar()
+            menubar1.setNativeMenuBar(False)
+            menubar2.setNativeMenuBar(False)
+            menubar3.setNativeMenuBar(False)
             menu_frame_widget = QtWidgets.QWidget()
             menu_frame_widget_layout = QtWidgets.QHBoxLayout()
             menu_frame_widget.setLayout(menu_frame_widget_layout)
@@ -717,6 +720,7 @@ class ControlPanel(QtWidgets.QWidget):
 
         def create_menu(self, mainWindow: QtWidgets.QMainWindow):
             menubar = mainWindow.menuBar()
+            menubar.setNativeMenuBar(False)
 
             self.load_pdf_setting = QtWidgets.QAction("&Load pdf settings", self)
             self.save_pdf_setting = QtWidgets.QAction("&Save pdf settings", self)

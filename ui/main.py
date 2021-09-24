@@ -475,6 +475,7 @@ class ControlPanel(QtWidgets.QWidget):
 
         def create_menu(self, mainWindow: QtWidgets.QMainWindow):
             menubar = mainWindow.menuBar()
+            menubar.setNativeMenuBar(False)
 
             self.open_img_file = QtWidgets.QAction("Open &image file", self)
             self.open_img_folder = QtWidgets.QAction("Open &image folder", self)
