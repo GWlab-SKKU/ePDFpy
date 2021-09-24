@@ -486,6 +486,7 @@ class GraphPanel(QtWidgets.QWidget):
 
         self.layout.addWidget(self.splitter)
         self.setLayout(self.layout)
+        self.layout.setContentsMargins(2, 2, 2, 2)
 
 
 class ControlPanel(QtWidgets.QWidget):
@@ -506,7 +507,7 @@ class ControlPanel(QtWidgets.QWidget):
         self.setMinimumWidth(200)
         # self.resize(600,1000)
         self.setLayout(self.layout)
-        # self.layout.setContentsMargins(0,0,0,0)
+        self.layout.setContentsMargins(2,2,2,2)
 
     class OneGraph(QtWidgets.QWidget):
         def __init__(self):
