@@ -523,7 +523,7 @@ class ControlPanel(QtWidgets.QWidget):
             self.setTitle("Element")
             layout = QtWidgets.QVBoxLayout()
             layout.setSpacing(0)
-            layout.setContentsMargins(10, 0, 5, 5)
+            # layout.setContentsMargins(10, 0, 5, 5)
             menubar = self.create_menu(mainWindow)
             layout.addWidget(menubar)
             layout.addWidget(self.scattering_factors_widget())
