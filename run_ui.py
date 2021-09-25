@@ -1,7 +1,9 @@
 import sys
 from PyQt5 import QtWidgets
 from ui import main
+import os
 
+os.environ['QT_MAC_WANTS_LAYER'] = '1'
 
 if __name__ == '__main__':
     qtapp = QtWidgets.QApplication.instance()
