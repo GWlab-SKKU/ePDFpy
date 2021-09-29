@@ -165,7 +165,6 @@ class pdf_analyse(QtWidgets.QMainWindow):
         self.update_load_preset_enable()
 
     def load_element(self, preset_num):
-        print(self.element_presets[preset_num][1])
         data = self.element_presets[preset_num][1]
         for idx, widget in enumerate(self.controlPanel.fitting_elements.element_group_widgets):
             if "element"+str(idx) in data.keys():
@@ -421,7 +420,7 @@ class pdf_analyse(QtWidgets.QMainWindow):
         if not self.check_condition():
             return
         self.update_parameter()
-        print(self.datacube.q_fitting_range_l,self.datacube.q_fitting_range_r)
+        print("range fit:",self.datacube.q_fitting_range_l,self.datacube.q_fitting_range_r)
         self.datacube.q, self.datacube.r, self.datacube.Iq, self.datacube.Autofit, self.datacube.phiq, self.datacube.phiq_damp, self.datacube.Gr, self.datacube.SS, self.datacube.fit_at_q, self.datacube.N = pdf_calculator.calculation(
             self.datacube.ds,
             self.datacube.pixel_start_n,
