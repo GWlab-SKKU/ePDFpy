@@ -10,7 +10,7 @@ import pandas as pd
 from pathlib import Path
 import definitions
 
-analysis_folder_name = "Analysis ePDFpy"
+ePDFpy_analysis_folder_name = "Analysis ePDFpy"
 preset_ext = ".preset.json"
 azavg_ext = ".azavg.txt"
 data_q_ext = ".q.csv"
@@ -37,18 +37,28 @@ def get_file_list_from_path(fp, extension=None):
 
 def make_analyse_folder(dc_filepath):
     if os.path.isdir(dc_filepath):
-        analysis_folder = os.path.join(dc_filepath, analysis_folder_name)
+        ePDFpy_analysis_folder = os.path.join(dc_filepath, ePDFpy_analysis_folder_name)
     else:
         current_folder, current_file_full_name = os.path.split(dc_filepath)
-        analysis_folder = os.path.join(current_folder, analysis_folder_name)
-    if not os.path.isdir(analysis_folder):
+        ePDFpy_analysis_folder = os.path.join(current_folder, ePDFpy_analysis_folder_name)
+
+    if not os.path.isdir(ePDFpy_analysis_folder):
         try:
-            os.makedirs(analysis_folder)
-            return analysis_folder
+            os.makedirs(ePDFpy_analysis_folder)
         except:
-            print('Failed to make directory:', analysis_folder)
+            print('Failed to make directory:', ePDFpy_analysis_folder)
             return False
-    return analysis_folder
+
+    final_analysis_folder = os.path.join(ePDFpy_analysis_folder,os.path.splitext(current_file_full_name)[0])
+    if not os.path.isdir(final_analysis_folder):
+        try:
+            os.makedirs(final_analysis_folder)
+            return final_analysis_folder
+        except:
+            print('Failed to make directory:', final_analysis_folder)
+            return False
+
+    return final_analysis_folder
 
 
 def save_current_azimuthal(data: np.ndarray, current_file_path, azavg: bool, i_slice=None):
@@ -78,7 +88,7 @@ def load_preset_default(dc_file_path):
     current_folder_path, file_name = os.path.split(dc_file_path)
     file_short_name, file_ext = os.path.splitext(file_name)
 
-    analysis_folder_path = os.path.join(current_folder_path, analysis_folder_name)
+    analysis_folder_path = os.path.join(current_folder_path, ePDFpy_analysis_folder_name)
     preset_path = os.path.join(analysis_folder_path, file_short_name + preset_ext)
     if os.path.isfile(preset_path):
         return json.load(preset_path)

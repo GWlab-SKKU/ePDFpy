@@ -214,7 +214,7 @@ class DataViewer(QtWidgets.QMainWindow):
 
     def save_all_azimuthal(self):
         for i in range(len(self.dcs)):
-            print("processing auto_save azimuthal values", self.dcs[self.current_page].mrc_file_path)
+            print("processing azimuthal values", self.dcs[self.current_page].mrc_file_path)
             self.update_ui_dc(i)
             if self.dcs[i].img is not None and self.dcs[i].center[0] is None:
                 self.find_center()

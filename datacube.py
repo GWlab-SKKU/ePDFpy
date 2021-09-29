@@ -115,5 +115,5 @@ class DataCube:
             imgPanel.update_img(update_img)
 
         if imgPanel is not None:
-            img_file_path = os.path.join(folder_path, file.analysis_folder_name, file_name+"_img.tiff")
+            img_file_path = os.path.join(folder_path, file.ePDFpy_analysis_folder_name, file_name + "_img.tiff")
             imgPanel.imageView.export(img_file_path)
