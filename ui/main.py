@@ -231,10 +231,13 @@ class DataViewer(QtWidgets.QMainWindow):
         if self.dcs[self.current_page].azavg is None:
             return
         self.graphPanel.update_graph(self.dcs[self.current_page].azavg)
+        self.graphPanel.spinBox_pixel_range_right.blockSignals(True)
         self.graphPanel.spinBox_pixel_range_right.setMaximum(len(self.dcs[self.current_page].azavg))
         self.graphPanel.spinBox_pixel_range_left.setMaximum(len(self.dcs[self.current_page].azavg))
+        self.graphPanel.spinBox_pixel_range_right.blockSignals(False)
 
         if self.dcs[self.current_page].pixel_start_n is None:
+            print(self.dcs[self.current_page].pixel_start_n)
             left = q_range_selector.find_first_peak(self.dcs[self.current_page].azavg)
             # left = 0
             # for i in range(len(self.datacubes[self.current_page].azavg)):
@@ -513,13 +516,13 @@ class ControlPanel(QtWidgets.QWidget):
             self.open_img_file = QtWidgets.QAction("Open &image file", self)
             self.open_img_folder = QtWidgets.QAction("Open &image folder", self)
             self.open_preset = QtWidgets.QAction("Open &preset", self)
-            self.save_preset = QtWidgets.QAction("Save &preset", self)
+            self.save_preset = QtWidgets.QAction("&Save preset", self)
             self.open_presets = QtWidgets.QAction("Open p&resets", self)
             self.save_presets = QtWidgets.QAction("Save p&resets", self)
             self.open_azavg_only = QtWidgets.QAction("Open &azavg only", self)
             self.save_azavg_only = QtWidgets.QAction("Save &azavg only", self)
 
-            filemenu = menubar.addMenu("     File     ")
+            filemenu = menubar.addMenu("     &File     ")
             filemenu.addAction(self.open_img_file)
             filemenu.addAction(self.open_img_folder)
             filemenu.addSeparator()
