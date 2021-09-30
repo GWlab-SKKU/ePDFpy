@@ -27,6 +27,8 @@ class DataCube:
         self.pixel_end_n = None
         self.ds = None
         self.display_img = None
+        self.data_quality = None
+        self.data_quality_idx = None
 
         self.fit_at_q = None
         self.N = None
@@ -92,28 +94,28 @@ class DataCube:
         self.azavg, self.azvar = image_process.calculate_azimuthal_average(self.raw_img, self.center)
         return self.azavg, self.azvar
 
-    def save_azimuthal_data(self, intensity_start, intensity_end, intensity_slice, imgPanel=None, draw_center_line=False, masking=False):
-        if self.center[0] is None:
-            self.calculate_center((intensity_start, intensity_end), intensity_slice)
-        if self.azavg is None:
-            self.calculate_azimuthal_average()
-
-        i_list = [intensity_start,intensity_end,intensity_slice]
-        file.save_current_azimuthal(self.azavg, self.mrc_file_path, True, i_slice=i_list) # todo: seperate method
-        file.save_current_azimuthal(self.azvar, self.mrc_file_path, False, i_slice=i_list)
-
-        folder_path, file_full_name = os.path.split(self.mrc_file_path)
-        file_name, ext = os.path.splitext(file_full_name)
-
-        update_img = self.img.copy()
-
-        if masking == True:
-            update_img = cv2.bitwise_and(self.img, self.img, mask=np.bitwise_not(image_process.mask))
-
-        if draw_center_line == True:
-            update_img = image_process.draw_center_line(update_img, self.center)
-            imgPanel.update_img(update_img)
-
-        if imgPanel is not None:
-            img_file_path = os.path.join(folder_path, file.ePDFpy_analysis_folder_name, file_name + "_img.tiff")
-            imgPanel.imageView.export(img_file_path)
+    # def save_azimuthal_data(self, intensity_start, intensity_end, intensity_slice, imgPanel=None, draw_center_line=False, masking=False):
+    #     if self.center[0] is None:
+    #         self.calculate_center((intensity_start, intensity_end), intensity_slice)
+    #     if self.azavg is None:
+    #         self.calculate_azimuthal_average()
+    #
+    #     i_list = [intensity_start,intensity_end,intensity_slice]
+    #     file.save_current_azimuthal(self.azavg, self.mrc_file_path, True, i_slice=i_list) # todo: seperate method
+    #     file.save_current_azimuthal(self.azvar, self.mrc_file_path, False, i_slice=i_list)
+    #
+    #     folder_path, file_full_name = os.path.split(self.mrc_file_path)
+    #     file_name, ext = os.path.splitext(file_full_name)
+    #
+    #     update_img = self.img.copy()
+    #
+    #     if masking == True:
+    #         update_img = cv2.bitwise_and(self.img, self.img, mask=np.bitwise_not(image_process.mask))
+    #
+    #     if draw_center_line == True:
+    #         update_img = image_process.draw_center_line(update_img, self.center)
+    #         imgPanel.update_img(update_img)
+    #
+    #     if imgPanel is not None:
+    #         img_file_path = os.path.join(folder_path, file.ePDFpy_analysis_folder_name, file_name + "_img.tiff")
+    #         imgPanel.imageView.export(img_file_path)

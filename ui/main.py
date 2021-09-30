@@ -115,6 +115,7 @@ class DataViewer(QtWidgets.QMainWindow):
         self.controlPanel.openFilePanel.save_presets.triggered.connect(self.menu_save_presets)
         self.controlPanel.openFilePanel.open_azavg_only.triggered.connect(self.menu_open_azavg_only)
         self.controlPanel.openFilePanel.save_azavg_only.triggered.connect(self.menu_save_azavg_only)
+        self.controlPanel.openFilePanel.combo_dataQuality.currentIndexChanged.connect(self.set_data_quality)
 
         self.controlPanel.operationPanel.btn_find_center.clicked.connect(lambda: (self.find_center(),self.update_img()))
         self.imgPanel.btn_left.clicked.connect(self.btn_page_left_clicked)
@@ -122,8 +123,7 @@ class DataViewer(QtWidgets.QMainWindow):
         self.controlPanel.operationPanel.btn_get_azimuthal_avg.clicked.connect(self.get_azimuthal_value)
         self.controlPanel.settingPanel.spinBox_center_x.valueChanged.connect(self.spinbox_changed_event)
         self.controlPanel.settingPanel.spinBox_center_y.valueChanged.connect(self.spinbox_changed_event)
-        # self.controlPanel.operationPanel.btn_save_current_azimuthal.clicked.connect(self.save_current_azimuthal)
-        self.controlPanel.operationPanel.btn_calculate_all_azimuthal.clicked.connect(self.save_all_azimuthal)
+        self.controlPanel.operationPanel.btn_calculate_all_azimuthal.clicked.connect(self.calculate_all_azimuthal)
         self.controlPanel.settingPanel.chkBox_show_centerLine.stateChanged.connect(self.update_img)
         self.controlPanel.settingPanel.chkBox_show_beam_stopper_mask.stateChanged.connect(self.update_img)
         self.graphPanel.spinBox_pixel_range_left.valueChanged.connect(self.dialog_to_range)
@@ -134,6 +134,7 @@ class DataViewer(QtWidgets.QMainWindow):
         self.graphPanel.button_end.clicked.connect(self.btn_range_end_clicked)
         self.graphPanel.button_select.clicked.connect(self.btn_select_clicked)
         self.controlPanel.operationPanel.btn_open_epdf_analyser.clicked.connect(self.btn_show_erdf_analyser)
+
 
     def btn_select_clicked(self):
         azavg = self.dcs[self.current_page].azavg
@@ -202,17 +203,7 @@ class DataViewer(QtWidgets.QMainWindow):
         self.graphPanel.plot_azav.setXRange(l, r, padding=0.1)
         # self.graphPanel.plot_azav.setYRange(mn, mx, padding=0.1)
 
-    def save_current_azimuthal(self):
-        self.dcs[self.current_page]\
-            .save_azimuthal_data(intensity_start=self.controlPanel.settingPanel.spinBox_irange1.value(),
-                                 intensity_end=self.controlPanel.settingPanel.spinBox_irange2.value(),
-                                 intensity_slice=self.controlPanel.settingPanel.spinBox_slice_count.value(),
-                                 imgPanel=self.imgPanel,
-                                 draw_center_line=self.controlPanel.settingPanel.chkBox_show_centerLine.isChecked(),
-                                 masking=self.controlPanel.settingPanel.chkBox_show_beam_stopper_mask.isChecked()
-                                 )
-
-    def save_all_azimuthal(self):
+    def calculate_all_azimuthal(self):
         for i in range(len(self.dcs)):
             print("processing azimuthal values", self.dcs[self.current_page].mrc_file_path)
             self.update_ui_dc(i)
@@ -353,6 +344,13 @@ class DataViewer(QtWidgets.QMainWindow):
         # update number
         self.imgPanel.lbl_current_num.setText(str(self.current_page + 1) + "/" + str(len(self.dcs)))
 
+        # update quality number
+        self.reload_auto_data_quality()
+        if self.dcs[self.current_page].data_quality_idx is not None:
+            self.controlPanel.openFilePanel.combo_dataQuality.setCurrentIndex(self.dcs[self.current_page].data_quality_idx)
+        else:
+            self.controlPanel.openFilePanel.combo_dataQuality.setCurrentIndex(0)
+
         # update img
         self.update_img()
 
@@ -398,9 +396,8 @@ class DataViewer(QtWidgets.QMainWindow):
         ui_util.update_value(self.graphPanel.region,[left,right])
         self.dcs[self.current_page].pixel_start_n = left
         self.dcs[self.current_page].pixel_end_n = right
+        self.set_data_quality()
         if self.dcs[self.current_page].analyser is not None:
-            # self.dcs[self.current_page].pixel_start_n = int(left)
-            # self.dcs[self.current_page].pixel_end_n = int(right)
             self.dcs[self.current_page].analyser.instantfit()
 
     def range_to_dialog(self):
@@ -416,8 +413,32 @@ class DataViewer(QtWidgets.QMainWindow):
         ui_util.update_value(self.graphPanel.spinBox_pixel_range_right,right)
         self.dcs[self.current_page].pixel_start_n = left
         self.dcs[self.current_page].pixel_end_n = right
+        self.set_data_quality()
         if self.dcs[self.current_page].analyser is not None:
             self.dcs[self.current_page].analyser.instantfit()
+
+    def set_data_quality(self):
+        # set auto(data quality) combolist and save to datacube
+        txt_auto_quality = self.reload_auto_data_quality()
+        combobox_idx = self.controlPanel.openFilePanel.combo_dataQuality.currentIndex()
+        self.dcs[self.current_page].data_quality_idx = combobox_idx
+        if combobox_idx == 0:
+            # None
+            self.dcs[self.current_page].data_quality = None
+        elif combobox_idx == 1:
+            # Auto
+            self.dcs[self.current_page].data_quality = txt_auto_quality
+        else:
+            # Manual Selection of L1, L2, L3, L4
+            self.dcs[self.current_page].data_quality = self.controlPanel.openFilePanel.combo_dataQuality.currentText()
+
+    def reload_auto_data_quality(self):
+        if self.dcs[self.current_page].pixel_end_n is None:
+            return
+        right = self.dcs[self.current_page].pixel_end_n
+        txt_auto_quality = util.get_data_quality(right)
+        self.controlPanel.openFilePanel.combo_dataQuality.setItemText(1, "Auto({})".format(txt_auto_quality))
+        return txt_auto_quality
 
 
 class ControlPanel(QtWidgets.QWidget):
@@ -466,11 +487,23 @@ class ControlPanel(QtWidgets.QWidget):
         def __init__(self, arg, mainWindow: QtWidgets.QMainWindow):
             QtWidgets.QGroupBox.__init__(self)
             self.setTitle(arg)
-            layout = QtWidgets.QHBoxLayout()
+            layout = QtWidgets.QGridLayout()
+            # layout = QtWidgets.QHBoxLayout()
             self.menu_file = self.create_menu(mainWindow)
             self.lbl_file_name = QtWidgets.QLabel("...")
-            layout.addWidget(self.menu_file)
-            layout.addWidget(self.lbl_file_name)
+            # layout.addWidget(self.menu_file)
+            # layout.addWidget(self.lbl_file_name)
+            layout.addWidget(self.menu_file, 0,0,1,1)
+            layout.addWidget(self.lbl_file_name, 0,1,1,2)
+
+            self.lbl_data_quality = QtWidgets.QLabel("Data Quality")
+            self.combo_dataQuality = QtWidgets.QComboBox()
+            quality_list = ["None", "Auto"]
+            quality_list.extend(util.df_data_quality['label'].to_list())  # [None,Auto,L1,L2,L3,L4]
+            self.combo_dataQuality.addItems(quality_list)
+            layout.addWidget(self.combo_dataQuality, 1,1,1,1)
+            layout.addWidget(self.lbl_data_quality, 1,0,1,1)
+
             self.setLayout(layout)
 
         def create_menu(self, mainWindow: QtWidgets.QMainWindow):
@@ -666,9 +699,8 @@ class GraphPanel(QtWidgets.QWidget):
 
         self.azav_curr_dat = None
         self.azav_prev_dat = None
-        self.plot_azav_curr = self.plot_azav.plot( pen=pg.mkPen(255, 0, 0, width=2), name='current')
-        self.plot_azav_prev = self.plot_azav.plot( pen=pg.mkPen(0, 255, 0, width=2), name='previous')
-
+        self.plot_azav_prev = self.plot_azav.plot(pen=pg.mkPen(0, 255, 0, width=2), name='previous')
+        self.plot_azav_curr = self.plot_azav.plot(pen=pg.mkPen(255, 0, 0, width=2), name='current')
 
         # self.setMaximumHeight(300)
 

@@ -151,6 +151,13 @@ class DefaultSetting:
     def save_settings(self):
         json.dump(vars(self), open(setting_path, 'w'), indent=2)
 
+df_data_quality = pd.read_csv(definitions.DATA_QUALITY_PATH)
+def get_data_quality(max_pixel):
+    result = ""
+    for i in df_data_quality.index:
+        if max_pixel > df_data_quality.iloc[i][1]:
+            result = df_data_quality.iloc[i][0]
+            return result
 
 default_setting = DefaultSetting()
 

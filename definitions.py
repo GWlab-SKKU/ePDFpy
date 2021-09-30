@@ -3,6 +3,7 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 DEFAULT_JSON_PATH = os.path.join(ROOT_DIR, 'settings/default.json')
 ELEMENT_PRESETS_PATH = os.path.join(ROOT_DIR, 'settings/element_presets.json')
+DATA_QUALITY_PATH = os.path.join(ROOT_DIR, 'settings/data_quality.csv')
 
 KIRKLAND_PATH = os.path.join(ROOT_DIR, 'assets/Parameter_files/Kirkland_2010.txt')
 LOBATO_PATH = os.path.join(ROOT_DIR, 'assets/Parameter_files/Lobato_2014.txt')

@@ -9,6 +9,7 @@ import copy
 import pandas as pd
 from pathlib import Path
 import definitions
+import re
 
 ePDFpy_analysis_folder_name = "Analysis ePDFpy"
 preset_ext = ".preset.json"
@@ -35,7 +36,8 @@ def get_file_list_from_path(fp, extension=None):
     return file_list
 
 
-def make_analyse_folder(dc_filepath):
+def make_analyse_folder(datacube):
+    dc_filepath = datacube.load_file_path
     if os.path.isdir(dc_filepath):
         ePDFpy_analysis_folder = os.path.join(dc_filepath, ePDFpy_analysis_folder_name)
     else:
@@ -49,7 +51,10 @@ def make_analyse_folder(dc_filepath):
             print('Failed to make directory:', ePDFpy_analysis_folder)
             return False
 
-    final_analysis_folder = os.path.join(ePDFpy_analysis_folder,os.path.splitext(current_file_full_name)[0])
+    current_file_name = os.path.splitext(current_file_full_name)[0]
+    if datacube.data_quality is not None:
+        current_file_name = "({}){}".format(datacube.data_quality, current_file_name)
+    final_analysis_folder = os.path.join(ePDFpy_analysis_folder, current_file_name)
     if not os.path.isdir(final_analysis_folder):
         try:
             os.makedirs(final_analysis_folder)
@@ -61,64 +66,48 @@ def make_analyse_folder(dc_filepath):
     return final_analysis_folder
 
 
-def save_current_azimuthal(data: np.ndarray, current_file_path, azavg: bool, i_slice=None):
-    assert type(data) is np.ndarray
-    current_folder_path, file_name = os.path.split(current_file_path)
-    file_short_name, file_ext = os.path.splitext(file_name)
-
-    analysis_folder_path = make_analyse_folder(current_file_path)
-    if not analysis_folder_path:
-        return
-
-    if azavg:
-        path_save = os.path.join(analysis_folder_path, file_short_name + " azav")
-    else:
-        path_save = os.path.join(analysis_folder_path, file_short_name + " azvar")
-    if i_slice:
-        path_save = path_save + " center" + str(i_slice[0]) + "to" + str(i_slice[1]) + "_" + str(i_slice[2])
-
-    # add extension
-    path_save = path_save + ".txt"
-
-    np.savetxt(path_save, data)
-    print("save to", path_save)
-
-
-def load_preset_default(dc_file_path):
-    current_folder_path, file_name = os.path.split(dc_file_path)
-    file_short_name, file_ext = os.path.splitext(file_name)
-
-    analysis_folder_path = os.path.join(current_folder_path, ePDFpy_analysis_folder_name)
-    preset_path = os.path.join(analysis_folder_path, file_short_name + preset_ext)
-    if os.path.isfile(preset_path):
-        return json.load(preset_path)
-    else:
-        return False
-
-
 def save_preset_default(datacube, imgPanel=None):
-    if datacube.preset_file_path is not None:
-        # When you load preset files
-        current_folder_path, file_name = os.path.split(datacube.preset_file_path)
-        file_short_name = str(file_name)[:str(file_name).find(preset_ext)]
+    # Types of datacube source : azavg, mrc, None, preset&azavg, preset&mrc, preset&None
+
+    if datacube.azavg_file_path is not None:
+        # when you load "azavg only" or "preset that based on azavg".
+        current_folder_path, file_name = os.path.split(datacube.azavg_file_path)
+        file_short_name, file_ext = os.path.splitext(file_name)
         analysis_folder_path = current_folder_path
-    elif datacube.load_file_path is None:
+    if datacube.mrc_file_path is None and datacube.azavg_file_path is None:
         # When there is no source ( when load from other program )
         fp, _ = QFileDialog.getSaveFileName(filter="preset Files (*.preset.json)")
-        current_folder_path = file_name = os.path.split(fp)
+        current_folder_path, file_name = os.path.split(fp)
         file_short_name = str(file_name)[:str(file_name).find(preset_ext)]
         analysis_folder_path = current_folder_path
-    else:
-        # When you load only azavg or img files
-        current_folder_path, file_name = os.path.split(datacube.load_file_path)
-        file_short_name, file_ext = os.path.splitext(file_name)
-        analysis_folder_path = make_analyse_folder(datacube.load_file_path)
+    if datacube.mrc_file_path is not None:
+        # When you load img files
+        if datacube.preset_file_path is None:
+            current_folder_path, file_name = os.path.split(datacube.mrc_file_path)
+            file_short_name, file_ext = os.path.splitext(file_name)
+            analysis_folder_path = os.path.join(current_folder_path,
+                                                ePDFpy_analysis_folder_name,
+                                                "({}){}".format(datacube.data_quality, file_short_name))
+        else:
+            # with preset
+            current_folder_path, file_name = os.path.split(datacube.preset_file_path)
+            file_short_name = str(file_name)[:str(file_name).find(preset_ext)]
+            # data quality folder name
+            new_folder_path = re.sub(r'\(L.\)',"({})".format(datacube.data_quality), current_folder_path)
+            new_folder_path = re.sub(r'\(None\)',"({})".format(datacube.data_quality), new_folder_path)
+            if current_folder_path != new_folder_path:
+                os.rename(current_folder_path, new_folder_path)
+            analysis_folder_path = new_folder_path
+
+
+    os.makedirs(analysis_folder_path, exist_ok=True)
 
     preset_path = os.path.join(analysis_folder_path, file_short_name + preset_ext)
     azavg_path = os.path.join(analysis_folder_path, file_short_name + azavg_ext)
     data_q_path = os.path.join(analysis_folder_path, file_short_name + data_q_ext)
     data_r_path = os.path.join(analysis_folder_path, file_short_name + data_r_ext)
     img_path = os.path.join(analysis_folder_path, file_short_name + image_ext)
+    datacube.preset_file_path = preset_path
 
     # save azavg
     if datacube.azavg is not None:
@@ -204,6 +193,7 @@ def load_preset(fp:str=None, dc:DataCube=None) -> DataCube:
 
     # convert relative path to absolute path
     content['mrc_file_path'] = os.path.abspath(os.path.join(fp, "..", content['mrc_file_path']))
+    content['mrc_file_path'] = os.path.abspath(os.path.join(fp, "..", content['mrc_file_path']))
 
     # put content in DataCube
     for key, value in content.items():
@@ -261,12 +251,11 @@ if __name__ == '__main__':
     # print(get_file_list_from_path('/mnt/experiment/TEM diffraction/210312','.mrc'))
     # pth="/mnt/experiment/TEM diffraction/210215/sample47_TiGe44_bot_AD/Camera 230 mm Ceta 20210215 1438_2s_1f_area01.mrc"
     # print(os.path.split(pth))
-    # save_current_azimuthal(np.array([1,2,3]),pth,True)
     from PyQt5.QtWidgets import QMainWindow
     from PyQt5 import QtWidgets
 
     qtapp = QtWidgets.QApplication([])
     # load_azavg_manual(r"Y:\experiment\TEM diffraction\210520\Analysis pdf_tools\Camera 230 mm Ceta 20210520 1306_Au azav center110to120_1.txt")
-    load_azavg_manual()
+    # load_azavg_manual()
     qtapp.exec_()
     pass
