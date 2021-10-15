@@ -311,7 +311,13 @@ class DataViewer(QtWidgets.QMainWindow):
         if hasattr(self, "current_page") and not self.current_page == len(self.dcs) - 1:
             self.load_dc(self.current_page + 1)
 
-
+    def keyPressEvent(self, e: QtGui.QKeyEvent) -> None:
+        if e.key() in [QtCore.Qt.Key.Key_PageUp] or \
+                ((e.modifiers() & QtCore.Qt.Modifier.CTRL) and e.key() == QtCore.Qt.Key.Key_Left):
+            self.btn_page_left_clicked()
+        if e.key() in [QtCore.Qt.Key.Key_PageDown] or \
+                ((e.modifiers() & QtCore.Qt.Modifier.CTRL) and e.key() == QtCore.Qt.Key.Key_Right):
+            self.btn_page_right_clicked()
 
 
 if __name__ == '__main__':

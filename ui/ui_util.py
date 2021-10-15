@@ -139,10 +139,11 @@ class CoordinatesPlotWidget(pg.PlotWidget):
 
     def keyPressEvent(self, ev):
         if hasattr(self,'crosshair_plot') and self.crosshair_plot is not None:
-            if ev.key() == QtCore.Qt.Key.Key_Right:
-                self.move_cross_hair(+1)
-            elif ev.key() == QtCore.Qt.Key.Key_Left:
-                self.move_cross_hair(-1)
+            if not (ev.modifiers() & (QtCore.Qt.Modifier.CTRL | QtCore.Qt.Modifier.SHIFT | QtCore.Qt.Modifier.ALT)):
+                if ev.key() == QtCore.Qt.Key.Key_Right:
+                    self.move_cross_hair(+1)
+                elif ev.key() == QtCore.Qt.Key.Key_Left:
+                    self.move_cross_hair(-1)
         super().keyPressEvent(ev)
 
     def create_cross_hair(self):

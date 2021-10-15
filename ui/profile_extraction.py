@@ -87,28 +87,6 @@ class ProfileExtraction(QtWidgets.QWidget):
             self.control_panel.settingPanel.chkBox_show_beam_stopper_mask.setChecked(
                 util.default_setting.show_beam_stopper_mask)
 
-    def keyPressEvent(self, e: QtGui.QKeyEvent) -> None:
-        if e.key() == QtCore.Qt.Key.Key_Right:
-            self.control_panel.settingPanel.spinBox_center_x.setValue(
-                self.control_panel.settingPanel.spinBox_center_x.value() + 1
-            )
-        if e.key() == QtCore.Qt.Key.Key_Left:
-            self.control_panel.settingPanel.spinBox_center_x.setValue(
-                self.control_panel.settingPanel.spinBox_center_x.value() - 1
-            )
-        if e.key() == QtCore.Qt.Key.Key_Up:
-            self.control_panel.settingPanel.spinBox_center_y.setValue(
-                self.control_panel.settingPanel.spinBox_center_y.value() - 1
-            )
-        if e.key() == QtCore.Qt.Key.Key_Down:
-            self.control_panel.settingPanel.spinBox_center_y.setValue(
-                self.control_panel.settingPanel.spinBox_center_y.value() + 1
-            )
-        if e.key() == QtCore.Qt.Key.Key_PageUp:
-            self.btn_page_left_clicked()
-        if e.key() == QtCore.Qt.Key.Key_PageDown:
-            self.btn_page_right_clicked()
-
     def sig_binding(self):
         # self.controlPanel.openFilePanel.open_img_file.triggered.connect(self.menu_open_image_file)
         # self.controlPanel.openFilePanel.open_img_folder.triggered.connect(self.menu_open_image_stack)
