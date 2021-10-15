@@ -390,105 +390,105 @@ QComboBox::down-arrow
 }
 
 
-/*!*-----QSpinBox & QDateTimeEdit-----*!*/
-/*QSpinBox,*/
-/*QDoubleSpinBox,*/
-/*QDateTimeEdit */
-/*{*/
-/*    background-color: #131313;*/
-/*	color : #eee;*/
-/*	border: 1px solid #343434;*/
-/*	padding: 3px;*/
-/*	padding-left: 5px;*/
-/*    border-radius : 2px;*/
+/*-----QSpinBox & QDateTimeEdit-----*/
+QSpinBox,
+QDoubleSpinBox,
+QDateTimeEdit
+{
+    background-color: #131313;
+	color : #eee;
+	border: 1px solid #343434;
+	padding: 3px;
+	padding-left: 5px;
+    border-radius : 2px;
 
-/*}*/
-
-
-/*QSpinBox::up-button,*/
-/*QDoubleSpinBox::up-button,*/
-/*QDateTimeEdit::up-button*/
-/*{*/
-/*	border-top-right-radius:2px;*/
-/*	background-color: #777777;*/
-/*    width: 16px; */
-/*    border-width: 1px;*/
-
-/*}*/
+}
 
 
-/*QSpinBox::up-button:hover,*/
-/*QDoubleSpinBox::up-button:hover,*/
-/*QDateTimeEdit::up-button:hover*/
-/*{*/
-/*	background-color: #585858;*/
+QSpinBox::up-button,
+QDoubleSpinBox::up-button,
+QDateTimeEdit::up-button
+{
+	border-top-right-radius:2px;
+	background-color: #777777;
+    width: 16px;
+    border-width: 1px;
 
-/*}*/
-
-
-/*QSpinBox::up-button:pressed,*/
-/*QDoubleSpinBox::up-button:pressed,*/
-/*QDateTimeEdit::up-button:pressed*/
-/*{*/
-/*	background-color: #252525;*/
-/*    width: 16px; */
-/*    border-width: 1px;*/
-
-/*}*/
+}
 
 
-/*QSpinBox::up-arrow,*/
-/*QDoubleSpinBox::up-arrow,*/
-/*QDateTimeEdit::up-arrow*/
-/*{*/
-/*    image: url(://arrow-up.png);*/
-/*    width: 7px;*/
-/*    height: 7px;*/
+QSpinBox::up-button:hover,
+QDoubleSpinBox::up-button:hover,
+QDateTimeEdit::up-button:hover
+{
+	background-color: #585858;
 
-/*}*/
+}
 
 
-/*QSpinBox::down-button,*/
-/*QDoubleSpinBox::down-button,*/
-/*QDateTimeEdit::down-button*/
-/*{*/
-/*	border-bottom-right-radius:2px;*/
-/*	background-color: #777777;*/
-/*    width: 16px; */
-/*    border-width: 1px;*/
+QSpinBox::up-button:pressed,
+QDoubleSpinBox::up-button:pressed,
+QDateTimeEdit::up-button:pressed
+{
+	background-color: #252525;
+    width: 16px;
+    border-width: 1px;
 
-/*}*/
-
-
-/*QSpinBox::down-button:hover,*/
-/*QDoubleSpinBox::down-button:hover,*/
-/*QDateTimeEdit::down-button:hover*/
-/*{*/
-/*	background-color: #585858;*/
-
-/*}*/
+}
 
 
-/*QSpinBox::down-button:pressed,*/
-/*QDoubleSpinBox::down-button:pressed,*/
-/*QDateTimeEdit::down-button:pressed*/
-/*{*/
-/*	background-color: #252525;*/
-/*    width: 16px; */
-/*    border-width: 1px;*/
+QSpinBox::up-arrow,
+QDoubleSpinBox::up-arrow,
+QDateTimeEdit::up-arrow
+{
+    image: url(assets/css/icons/arrow-up.png);
+    width: 7px;
+    height: 7px;
 
-/*}*/
+}
 
 
-/*QSpinBox::down-arrow,*/
-/*QDoubleSpinBox::down-arrow,*/
-/*QDateTimeEdit::down-arrow*/
-/*{*/
-/*    image: url(://arrow-down.png);*/
-/*    width: 7px;*/
-/*    height: 7px;*/
+QSpinBox::down-button,
+QDoubleSpinBox::down-button,
+QDateTimeEdit::down-button
+{
+	border-bottom-right-radius:2px;
+	background-color: #777777;
+    width: 16px;
+    border-width: 1px;
 
-/*}*/
+}
+
+
+QSpinBox::down-button:hover,
+QDoubleSpinBox::down-button:hover,
+QDateTimeEdit::down-button:hover
+{
+	background-color: #585858;
+
+}
+
+
+QSpinBox::down-button:pressed,
+QDoubleSpinBox::down-button:pressed,
+QDateTimeEdit::down-button:pressed
+{
+	background-color: #252525;
+    width: 16px;
+    border-width: 1px;
+
+}
+
+
+QSpinBox::down-arrow,
+QDoubleSpinBox::down-arrow,
+QDateTimeEdit::down-arrow
+{
+    image: url(assets/css/icons/arrow-down.png);
+    width: 7px;
+    height: 7px;
+
+}
 
 QPushButton:disabled,
 QDoubleSpinBox:disabled
