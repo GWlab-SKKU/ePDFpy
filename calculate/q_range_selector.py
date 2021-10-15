@@ -2,6 +2,7 @@ from scipy.ndimage.filters import gaussian_filter1d
 from scipy.signal import find_peaks
 import numpy as np
 
+
 def find_first_peak(azavg, derivative=0):
     # flattening
     first_peak_idx = 1
@@ -37,6 +38,7 @@ def find_first_peak(azavg, derivative=0):
             return low_peaks[0]
         else:
             return None
+
 
 def find_multiple_peaks(azav):
     azavg = azav.copy()

@@ -10,99 +10,158 @@ import ui.ui_util as ui_util
 from PyQt5 import QtCore, QtWidgets, QtGui
 import os
 import numpy as np
+import definitions
+from calculate.q_range_selector import find_first_peak
 
 pg.setConfigOptions(antialias=True)
 
 
-class pdf_analyse(QtWidgets.QMainWindow):
-    def __init__(self, datacube):
+class PdfAnalysis(QtWidgets.QWidget):
+    def __init__(self, Dataviewer):
         super().__init__()
-        self.datacube = datacube
+        self.Dataviewer = Dataviewer
+        self.datacube = DataCube()
         self.datacube.analyser = self
         if self.datacube.element_nums is None:
             self.datacube.element_nums = []
             self.datacube.element_ratio = []
         self.instant_update = False
 
+
+
         self.initui()
-
-        self.load_default_setting()
-        self.update_initial_iq()
-        self.put_data_to_ui()
-        self.update_graph()
-
-        self.binding()
-        self.pdf_setting = {}
-
-        # set title
-        if datacube is not None and datacube.load_file_path is not None:
-            # self.setWindowTitle(datacube.load_file_path)
-            self.setWindowTitle(os.path.split(datacube.load_file_path)[1])
-        else:
-            self.setWindowTitle("pdf analyzer")
-
+        self.initgraph()
         self.element_presets = file.load_element_preset()
-        self.update_load_preset_enable()
-        self.update_parameter()
+        self.update_preset_enablility()
+
+        # datacube control
+        self.load_default_setting()
+        self.put_data_to_ui()
+        self.update_initial_iq()
+
+        self.sig_binding()
+
+        # self.update_parameter()
 
         self.update_graph()
 
+    def put_datacube(self,datacube):
+        self.controlPanel.blockSignals(True)
+        self.datacube = datacube
+        if self.datacube.element_nums is None:
+            self.datacube.element_nums = []
+            self.datacube.element_ratio = []
+        self.load_default_setting()
+        self.put_data_to_ui()
+        self.update_initial_iq()
+        self.update_graph()
+        self.update_initial_iq_graph()
+        self.controlPanel.blockSignals(False)
+
+    def btn_select_clicked(self):
+        azavg = self.dc.azavg
+        if self.dc.azavg is None:
+            return
+        first_peak_idx, second_peak_idx = q_range_selector.find_multiple_peaks(self.dc.azavg)
+        self.profile_graph_panel.plotWidget.create_circle([first_peak_idx, azavg[first_peak_idx]],
+                                                          [second_peak_idx, azavg[second_peak_idx]])
+
+        #
+        self.left.hide()
+
+        l = q_range_selector.find_first_nonzero_idx(self.dc.azavg)
+        r = l + int((len(self.dc.azavg) - l) / 4)
+        self.profile_graph_panel.plotWidget.setXRange(l, r, padding=0.1)
+
+        self.profile_graph_panel.plotWidget.select_mode = True
+        self.profile_graph_panel.plotWidget.select_event = self.azav_select_event
+        #
+        # self.left.show()
+
+    def azav_select_event(self):
+        self.left.show()
+        self.profile_graph_panel.plotWidget.select_mode = False
+        self.profile_graph_panel.plotWidget.first_dev_plot.clear()
+        self.profile_graph_panel.plotWidget.first_dev_plot = None
+        self.profile_graph_panel.plotWidget.second_dev_plot.clear()
+        self.profile_graph_panel.plotWidget.second_dev_plot = None
 
     def update_initial_iq(self):
-        if self.datacube.q is not None:
-            return
         if self.datacube.azavg is None:
             return
-        self.datacube.q, self.datacube.Iq = pdf_calculator.rescaling_Iq(
-            self.datacube.pixel_start_n,
-            self.datacube.pixel_end_n,
-            self.datacube.azavg,
-            self.datacube.ds,
-        )
+        if self.datacube.pixel_start_n is None:
+            self.datacube.pixel_start_n = find_first_peak(self.datacube.azavg)
+            self.datacube.pixel_end_n = len(self.datacube.azavg) - 1
 
+        azavg_px = np.arange(len(self.datacube.azavg))
+        self.datacube.all_q = pdf_calculator.pixel_to_q(azavg_px,self.datacube.ds)
 
+        self.datacube.Iq = self.datacube.azavg[self.datacube.pixel_start_n:self.datacube.pixel_end_n+1]
+        px = np.arange(self.datacube.pixel_start_n,self.datacube.pixel_end_n+1)
+        self.datacube.q = pdf_calculator.pixel_to_q(px,self.datacube.ds)
+
+    def update_initial_iq_graph(self):
+        if self.datacube.all_q is None:
+            return
+        self.graph_Iq_Iq.setData(self.datacube.all_q,self.datacube.azavg)
+
+        self.graph_Iq_panel.setting.spinBox_range_right.blockSignals(True)
+        self.graph_Iq_panel.setting.spinBox_range_right.setMaximum(self.datacube.all_q[-1])
+        self.graph_Iq_panel.setting.spinBox_range_left.setMaximum(self.datacube.all_q[-1])
+        self.graph_Iq_panel.setting.spinBox_range_right.setSingleStep(self.datacube.ds * 2 * np.pi)
+        self.graph_Iq_panel.setting.spinBox_range_left.setSingleStep(self.datacube.ds * 2 * np.pi)
+        self.graph_Iq_panel.setting.spinBox_range_right.blockSignals(False)
+        ui_util.update_value(self.graph_Iq_panel.region,
+                             pdf_calculator.pixel_to_q([self.datacube.pixel_start_n,self.datacube.pixel_end_n],self.datacube.ds))
 
     def initui(self):
-        # self.setMinimumSize(800, 650)
-        self.resize(800, 700)
+        self.controlPanel = ControlPanel(self.Dataviewer)
+        self.graph_Iq_panel = GraphIqPanel()
+        self.graph_phiq_panel = GraphPhiqPanel()
+        self.graph_Gr_panel = GraphGrPanel()
+
+        self.upper_left = self.controlPanel
+        self.bottom_left = self.graph_Iq_panel
+        self.upper_right = self.graph_phiq_panel
+        self.bottom_right = self.graph_Gr_panel
+
+        self.splitter_left_vertical = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        self.splitter_left_vertical.addWidget(self.upper_left)
+        self.splitter_left_vertical.addWidget(self.bottom_left)
+        self.splitter_left_vertical.setStretchFactor(1, 1)
+
+        self.splitter_right_vertical = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        self.splitter_right_vertical.addWidget(self.upper_right)
+        self.splitter_right_vertical.addWidget(self.bottom_right)
+
+        self.left = self.splitter_left_vertical
+        self.right = self.splitter_right_vertical
+
+        self.splitter_horizontal = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+        self.splitter_horizontal.addWidget(self.left)
+        self.splitter_horizontal.addWidget(self.right)
+        self.splitter_horizontal.setStretchFactor(0, 10)
+        self.splitter_horizontal.setStretchFactor(1, 10)
+
         self.layout = QtWidgets.QHBoxLayout()
-        self.controlPanel = ControlPanel(self)
-        self.graphPanel = GraphPanel()
+        self.layout.addWidget(self.splitter_horizontal)
 
-        self.splitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
-        self.splitter.addWidget(self.controlPanel)
-        self.splitter.addWidget(self.graphPanel)
-        self.splitter.setStretchFactor(0, 1)
-        self.splitter.setStretchFactor(1, 2)
-        self.layout.addWidget(self.splitter)
+    def initgraph(self):
+        self.graph_Iq = self.graph_Iq_panel.graph
+        self.graph_phiq = self.graph_phiq_panel.graph
+        self.graph_Gr = self.graph_Gr_panel.graph
 
-        # self.layout.addWidget(self.controlPanel)
-        # self.layout.addWidget(self.graphPanel)
-        # self.layout.setStretch(1, 1)
-        # self.setLayout(self.layout)
-        self.show()
-
-        self.graph_Iq_half_tail = self.controlPanel.one_graph.graph_Iq_half_tail
-        self.graph_Iq = self.graphPanel.graph_Iq
-        self.graph_phiq = self.graphPanel.graph_phiq
-        self.graph_Gr = self.graphPanel.graph_Gr
-
-        self.graph_Iq_half_tail.addLegend(offset=(-30,30))
         self.graph_Iq.addLegend(offset=(-30, 30))
         self.graph_phiq.addLegend(offset=(-30, 30))
         self.graph_Gr.addLegend(offset=(-30, 30))
 
-        self.graph_Iq_half_tail_Iq = self.graph_Iq_half_tail.plot(pen=pg.mkPen(255, 0, 0, width=2), name='Iq')
-        self.graph_Iq_half_tail_AutoFit = self.graph_Iq_half_tail.plot(pen=pg.mkPen(0, 255, 0, width=2), name='AutoFit')
-        self.graph_Iq_Iq = self.graph_Iq.plot(pen=pg.mkPen(255, 0, 0, width=2), name='Iq')
+        self.graph_Iq_Iq = self.graph_Iq.plot(pen=pg.mkPen(255, 0, 0, width=2), name='I')
         self.graph_Iq_AutoFit = self.graph_Iq.plot(pen=pg.mkPen(0, 255, 0, width=2), name='AutoFit')
         self.graph_phiq_phiq = self.graph_phiq.plot(pen=pg.mkPen(255, 0, 0, width=2), name='phiq')
         self.graph_phiq_damp = self.graph_phiq.plot(pen=pg.mkPen(0, 255, 0, width=2), name='phiq_damp')
         self.graph_Gr_Gr = self.graph_Gr.plot(pen=pg.mkPen(255, 0, 0, width=2), name='Gr')
 
-        centralWidget = QtWidgets.QWidget()
-        centralWidget.setLayout(self.layout)
-        self.setCentralWidget(centralWidget)
+        self.setLayout(self.layout)
 
 
     def load_default_setting(self):
@@ -138,18 +197,6 @@ class pdf_analyse(QtWidgets.QMainWindow):
 
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
-        util.default_setting.calibration_factor = self.controlPanel.fitting_factors.spinbox_ds.value()
-        util.default_setting.calibration_factor_step = self.controlPanel.fitting_factors.spinbox_ds_step.text()
-        util.default_setting.electron_voltage = self.controlPanel.fitting_factors.spinbox_electron_voltage.text()
-        util.default_setting.fit_at_q_step = self.controlPanel.fitting_factors.spinbox_fit_at_q_step.text()
-        util.default_setting.N_step = self.controlPanel.fitting_factors.spinbox_N_step.text()
-        util.default_setting.dr = self.controlPanel.fitting_factors.spinbox_dr.value()
-        util.default_setting.dr_step = self.controlPanel.fitting_factors.spinbox_dr_step.text()
-        util.default_setting.damping = self.controlPanel.fitting_factors.spinbox_damping.value()
-        util.default_setting.damping_step = self.controlPanel.fitting_factors.spinbox_damping_step.text()
-        util.default_setting.rmax = self.controlPanel.fitting_factors.spinbox_rmax.value()
-        util.default_setting.rmax_step = self.controlPanel.fitting_factors.spinbox_rmax_step.text()
-
         util.default_setting.save_settings()
         super().closeEvent(a0)
 
@@ -162,24 +209,24 @@ class pdf_analyse(QtWidgets.QMainWindow):
             data.update({"element" + str(idx):[widget.combobox.currentIndex(), widget.element_ratio.value()]})
         self.element_presets[preset_num] = [text, data]
         file.save_element_preset(self.element_presets)
-        self.update_load_preset_enable()
+        self.update_preset_enablility()
 
     def load_element(self, preset_num):
         data = self.element_presets[preset_num][1]
         for idx, widget in enumerate(self.controlPanel.fitting_elements.element_group_widgets):
             if "element"+str(idx) in data.keys():
-                widget.combobox.setCurrentIndex(data["element"+str(idx)][0])
-                widget.element_ratio.setValue(data["element"+str(idx)][1])
+                ui_util.update_value(widget.combobox, data["element"+str(idx)][0])
+                ui_util.update_value(widget.element_ratio, data["element"+str(idx)][1])
             else:
-                widget.combobox.setCurrentIndex(0)
-                widget.element_ratio.setValue(0)
+                ui_util.update_value(widget.combobox, 0)
+                ui_util.update_value(widget.element_ratio, 0)
 
     def del_element(self, preset_num):
         self.element_presets[preset_num] = None
         file.save_element_preset(self.element_presets)
-        self.update_load_preset_enable()
+        self.update_preset_enablility()
 
-    def update_load_preset_enable(self):
+    def update_preset_enablility(self):
         for idx, action in enumerate(self.controlPanel.fitting_elements.actions_load_preset):
             if self.element_presets[idx] is not None:
                 action.setDisabled(False)
@@ -203,9 +250,16 @@ class pdf_analyse(QtWidgets.QMainWindow):
     def put_data_to_ui(self):
         # elements
         if self.datacube.element_nums is not None:
-            for i in range(len(self.datacube.element_nums)):
-                self.controlPanel.fitting_elements.element_group_widgets[i].combobox.setCurrentIndex(self.datacube.element_nums[i])
-                self.controlPanel.fitting_elements.element_group_widgets[i].element_ratio.setValue(self.datacube.element_ratio[i])
+            # for i in range(len(self.datacube.element_nums)):
+            #     self.controlPanel.fitting_elements.element_group_widgets[i].combobox.setCurrentIndex(self.datacube.element_nums[i])
+            #     self.controlPanel.fitting_elements.element_group_widgets[i].element_ratio.setValue(self.datacube.element_ratio[i])
+            for idx, widget in enumerate(self.controlPanel.fitting_elements.element_group_widgets):
+                if idx < len(self.datacube.element_nums) and self.datacube.element_nums[idx] is not None:
+                    ui_util.update_value(widget.combobox,self.datacube.element_nums[idx])
+                    ui_util.update_value(widget.element_ratio,self.datacube.element_ratio[idx])
+                else:
+                    ui_util.update_value(widget.combobox, 0)
+                    ui_util.update_value(widget.element_ratio, 0)
 
         # factors
         if self.datacube.fit_at_q is not None:
@@ -228,25 +282,49 @@ class pdf_analyse(QtWidgets.QMainWindow):
             else:
                 ui_util.update_value(self.controlPanel.fitting_factors.radio_tail,True)
                 self.btn_radiotail_clicked()
+        if self.datacube.pixel_end_n is not None:
+            q_l = pdf_calculator.pixel_to_q(self.datacube.pixel_start_n,self.datacube.ds)
+            q_r = pdf_calculator.pixel_to_q(self.datacube.pixel_end_n,self.datacube.ds)
+            ui_util.update_value(self.graph_Iq_panel.setting.spinBox_range_left, q_l)
+            ui_util.update_value(self.graph_Iq_panel.setting.spinBox_range_right, q_r)
+            ui_util.update_value(self.graph_Iq_panel.region,[q_l,q_r])
+
 
 
     def update_graph(self):
+        ######## graph I(q) ########
+        self.graph_Iq_panel.datacube = self.datacube
         if self.datacube.q is not None:
-            self.graph_Iq_half_tail_Iq.setData(self.datacube.q, self.datacube.Iq)
-            self.graph_Iq_Iq.setData(self.datacube.q, self.datacube.Iq)
+            # self.graph_Iq_half_tail_Iq.setData(self.datacube.q, self.datacube.Iq)
+            self.graph_Iq_Iq.setData(self.datacube.all_q, self.datacube.azavg)
+            self.graph_Iq_panel.range_to_dialog()
+        else:
+            self.graph_Iq_Iq.setData([0])
+
         if self.datacube.Autofit is not None:
-            self.graph_Iq_half_tail_AutoFit.setData(self.datacube.q, self.datacube.Autofit)
-            self.graph_Iq_half_tail.setXRange(self.datacube.q.max()/2,self.datacube.q.max())
-            self.graph_Iq_half_tail.YScaling()
+            # self.graph_Iq_half_tail_AutoFit.setData(self.datacube.q, self.datacube.Autofit)
+            # self.graph_Iq_half_tail.setXRange(self.datacube.q.max()/2,self.datacube.q.max())
+            # self.graph_Iq_half_tail.YScaling()
             self.graph_Iq_AutoFit.setData(self.datacube.q, self.datacube.Autofit)
-        # self.graph_Iq_half_tail.autoRange()
+        else:
+            self.graph_Iq_AutoFit.setData([0])
+
+        ######## graph phi(q) ########
         if self.datacube.phiq is not None:
             self.graph_phiq_phiq.setData(self.datacube.q, self.datacube.phiq)
             self.graph_phiq_damp.setData(self.datacube.q, self.datacube.phiq_damp)
+        else:
+            # self.graph_phiq_phiq.clear() # i don't know why but it doens't work. It only works on the debug mode..
+            self.graph_phiq_phiq.setData([0])
+            self.graph_phiq_damp.setData([0])
+
+        ######## graph G(r) ########
         if self.datacube.Gr is not None:
             self.graph_Gr_Gr.setData(self.datacube.r, self.datacube.Gr)
+        else:
+            self.graph_Gr_Gr.setData([0])
 
-    def binding(self):
+    def sig_binding(self):
         self.controlPanel.fitting_factors.btn_auto_fit.clicked.connect(self.autofit)
         self.controlPanel.fitting_factors.btn_manual_fit.clicked.connect(self.manualfit)
 
@@ -260,6 +338,9 @@ class pdf_analyse(QtWidgets.QMainWindow):
         for widget in self.controlPanel.fitting_elements.element_group_widgets:
             widget.combobox.currentIndexChanged.connect(self.instantfit)
             widget.element_ratio.valueChanged.connect(self.instantfit)
+        self.graph_Iq_panel.setting.spinBox_range_left.valueChanged.connect(self.instantfit)
+        self.graph_Iq_panel.setting.spinBox_range_right.valueChanged.connect(self.instantfit)
+        self.graph_Iq_panel.region.sigRegionChangeFinished.connect(self.instantfit)
         self.controlPanel.fitting_elements.combo_scattering_factor.currentIndexChanged.connect(self.instantfit)
         self.controlPanel.fitting_factors.spinbox_electron_voltage.textChanged.connect(self.instantfit)
         self.controlPanel.fitting_factors.radio_tail.clicked.connect(self.btn_radiotail_clicked)
@@ -268,7 +349,7 @@ class pdf_analyse(QtWidgets.QMainWindow):
         # self.controlPanel.fitting_factors.spinbox_q_range_right.valueChanged.connect(self.fitting_q_range_changed)
 
         for idx, action in enumerate(self.controlPanel.fitting_elements.actions_load_preset):
-            action.triggered.connect(lambda state, x=idx: self.load_element(x))
+            action.triggered.connect(lambda state, x=idx: (self.load_element(x),self.instantfit()))
         for idx, action in enumerate(self.controlPanel.fitting_elements.actions_save_preset):
             action.triggered.connect(lambda state, x=idx: self.save_element(x))
         for idx, action in enumerate(self.controlPanel.fitting_elements.actions_del_preset):
@@ -322,10 +403,20 @@ class pdf_analyse(QtWidgets.QMainWindow):
         self.datacube.q_fitting_range_r = right
         self.range_fit()
 
-
-
-
     def update_parameter(self):
+        # default setting
+        util.default_setting.calibration_factor = self.controlPanel.fitting_factors.spinbox_ds.value()
+        util.default_setting.calibration_factor_step = self.controlPanel.fitting_factors.spinbox_ds_step.text()
+        util.default_setting.electron_voltage = self.controlPanel.fitting_factors.spinbox_electron_voltage.text()
+        util.default_setting.fit_at_q_step = self.controlPanel.fitting_factors.spinbox_fit_at_q_step.text()
+        util.default_setting.N_step = self.controlPanel.fitting_factors.spinbox_N_step.text()
+        util.default_setting.dr = self.controlPanel.fitting_factors.spinbox_dr.value()
+        util.default_setting.dr_step = self.controlPanel.fitting_factors.spinbox_dr_step.text()
+        util.default_setting.damping = self.controlPanel.fitting_factors.spinbox_damping.value()
+        util.default_setting.damping_step = self.controlPanel.fitting_factors.spinbox_damping_step.text()
+        util.default_setting.rmax = self.controlPanel.fitting_factors.spinbox_rmax.value()
+        util.default_setting.rmax_step = self.controlPanel.fitting_factors.spinbox_rmax_step.text()
+
         # elements
         self.datacube.element_nums.clear()
         self.datacube.element_ratio.clear()
@@ -368,8 +459,12 @@ class pdf_analyse(QtWidgets.QMainWindow):
         ui_util.update_value(self.controlPanel.fitting_factors.spinbox_N,self.datacube.N)
         # todo: add SS
         self.update_graph()
+        if self.Dataviewer.top_menu.combo_dataQuality.currentIndex() == 0:
+            self.Dataviewer.top_menu.combo_dataQuality.setCurrentIndex(1)
 
     def manualfit(self):
+        if not self.check_condition_instant_fit():
+            return
         if not self.check_condition():
             return
         self.update_parameter()
@@ -396,7 +491,9 @@ class pdf_analyse(QtWidgets.QMainWindow):
         if not self.controlPanel.fitting_factors.chkbox_instant_update.isChecked():
             # print("not checked")
             return
-        if not self.check_condition():
+        if not self.check_condition_instant_fit():
+            return
+        if not self.check_condition(False):
             return
         self.datacube.q, self.datacube.r, self.datacube.Iq, self.datacube.Autofit, self.datacube.phiq, self.datacube.phiq_damp, self.datacube.Gr, self.datacube.SS, self.datacube.fit_at_q, self.datacube.N = pdf_calculator.calculation(
             self.datacube.ds,
@@ -442,80 +539,71 @@ class pdf_analyse(QtWidgets.QMainWindow):
         ui_util.update_value(self.controlPanel.fitting_factors.spinbox_N,self.datacube.N)
         self.update_graph()
 
-    def check_condition(self):
+    def check_condition(self, message:bool=True):
         if self.datacube.azavg is None:
-            QMessageBox.about(self, "info", "azimuthally averaged intensity is not calculated yet.")
+            if message:
+                QMessageBox.about(self, "info", "azimuthally averaged intensity is not calculated yet.")
             return False
         if np.array(self.datacube.element_nums).sum() == 0:
-            QMessageBox.about(self, "info", "set element first")
+            if message:
+                QMessageBox.about(self, "info", "set element first")
             return False
         if np.array(self.datacube.element_ratio).sum() == 0:
-            QMessageBox.about(self, "info", "set element ratio first")
+            if message:
+                QMessageBox.about(self, "info", "set element ratio first")
             return False
         return True
 
+    def check_condition_instant_fit(self):
+        if self.datacube.fit_at_q == 0 or self.datacube.fit_at_q is None:
+            return False
+        return True
 
-class GraphPanel(QtWidgets.QWidget):
+class GraphIqPanel(ui_util.ProfileGraphPanel):
+    def __init__(self):
+        ui_util.ProfileGraphPanel.__init__(self,"I(q)")
+        self.graph = self.plotWidget
+        self.axis = pg.InfiniteLine(angle=0)
+        self.graph.addItem(self.axis)
+        self.layout.setContentsMargins(0,0,0,0)
+        self.setting.lbl_range.setText("Q Range")
+
+
+class GraphPhiqPanel(QtWidgets.QWidget):
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
         self.layout = QtWidgets.QVBoxLayout()
-        # self.graph_Iq = pg.PlotWidget(title='I(q)')
-        # self.graph_phiq = pg.PlotWidget(title='Φ(q)')
-        # self.graph_Gr = pg.PlotWidget(title='G(r)')
-        self.graph_Iq = ui_util.CoordinatesPlotWidget(title='I(q)')
-        self.graph_phiq = ui_util.CoordinatesPlotWidget(title='Φ(q)')
-        self.graph_Gr = ui_util.CoordinatesPlotWidget(title='G(r)')
-
-        self.axis1 = pg.InfiniteLine(angle=0)
-        self.axis2 = pg.InfiniteLine(angle=0)
-        self.axis3 = pg.InfiniteLine(angle=0)
-
-        self.graph_Iq.addItem(self.axis1)
-        self.graph_phiq.addItem(self.axis2)
-        self.graph_Gr.addItem(self.axis3)
-
-        # self.layout.addWidget(self.graph_Iq)
-        # self.layout.addWidget(self.graph_phiq)
-        # self.layout.addWidget(self.graph_Gr)
-
-        self.splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
-        self.splitter.addWidget(self.graph_Iq)
-        self.splitter.addWidget(self.graph_phiq)
-        self.splitter.addWidget(self.graph_Gr)
-
-        self.layout.addWidget(self.splitter)
+        self.graph = ui_util.CoordinatesPlotWidget(title='Φ(q)')
+        self.axis = pg.InfiniteLine(angle=0)
+        self.graph.addItem(self.axis)
+        self.layout.addWidget(self.graph)
         self.setLayout(self.layout)
-        self.layout.setContentsMargins(2, 2, 2, 2)
+
+class GraphGrPanel(QtWidgets.QWidget):
+    def __init__(self):
+        QtWidgets.QWidget.__init__(self)
+        self.layout = QtWidgets.QVBoxLayout()
+        self.graph = ui_util.CoordinatesPlotWidget(title='G(r)')
+        self.axis = pg.InfiniteLine(angle=0)
+        self.graph.addItem(self.axis)
+        self.layout.addWidget(self.graph)
+        self.setLayout(self.layout)
 
 
 class ControlPanel(QtWidgets.QWidget):
     def __init__(self, mainWindow: QtWidgets.QMainWindow):
         QtWidgets.QWidget.__init__(self)
-        self.layout = QtWidgets.QVBoxLayout()
-        self.load_and_save = self.LoadAndSaveGroup(mainWindow)
+        self.layout = QtWidgets.QHBoxLayout()
         self.fitting_elements = self.FittingElements(mainWindow)
         self.fitting_factors = self.FittingFactors()
-        self.one_graph = self.OneGraph()
 
-        # self.layout.addWidget(self.load_and_save)
         self.layout.addWidget(self.fitting_elements)
         self.layout.addWidget(self.fitting_factors)
-        self.layout.addWidget(self.one_graph)
 
-        self.layout.addStretch(1)
-        self.setMinimumWidth(200)
         # self.resize(600,1000)
         self.setLayout(self.layout)
         self.layout.setContentsMargins(2,2,2,2)
 
-    class OneGraph(QtWidgets.QWidget):
-        def __init__(self):
-            super().__init__()
-            self.layout = QtWidgets.QHBoxLayout()
-            self.graph_Iq_half_tail = ui_util.CoordinatesPlotWidget(title='I(q)')
-            self.layout.addWidget(self.graph_Iq_half_tail)
-            self.setLayout(self.layout)
-            self.layout.setContentsMargins(0,0,0,0)
 
 
     class FittingElements(QtWidgets.QGroupBox):
@@ -526,11 +614,11 @@ class ControlPanel(QtWidgets.QWidget):
             layout.setSpacing(0)
             # layout.setContentsMargins(10, 0, 5, 5)
             menubar = self.create_menu(mainWindow)
-            layout.addWidget(menubar)
+            layout.addWidget(menubar,alignment=QtCore.Qt.AlignCenter)
             layout.addWidget(self.scattering_factors_widget())
 
 
-            self.element_group_widgets = [ControlPanel.element_group("element" + str(num)) for num in range(1, 6)]
+            self.element_group_widgets = [ControlPanel.element_group("Element" + str(num)) for num in range(1, 6)]
             for element_group_widgets in self.element_group_widgets:
                 layout.addWidget(element_group_widgets)
             self.setLayout(layout)
@@ -550,46 +638,32 @@ class ControlPanel(QtWidgets.QWidget):
 
 
         def create_menu(self, mainWindow: QtWidgets.QMainWindow):
-            menubar1 = mainWindow.menuBar()
-            menubar2 = mainWindow.menuBar()
-            menubar3 = mainWindow.menuBar()
-            menubar1.setNativeMenuBar(False)
-            menubar2.setNativeMenuBar(False)
-            menubar3.setNativeMenuBar(False)
-            menu_frame_widget = QtWidgets.QWidget()
-            menu_frame_widget_layout = QtWidgets.QHBoxLayout()
-            menu_frame_widget.setLayout(menu_frame_widget_layout)
-            menu_frame_widget_layout.setContentsMargins(0,5,0,5)
+            menubar = mainWindow.menuBar()
+            menubar.setNativeMenuBar(False)
             # menu_frame_widget_layout.setSpacing(0)
 
-            menu_frame_widget_layout.addWidget(menubar1)
-            menu_frame_widget_layout.addWidget(menubar2)
-            menu_frame_widget_layout.addWidget(menubar3)
-
-            load_menu = menubar1.addMenu("  &Load  ")
+            load_menu = menubar.addMenu("  &Load  ")
             self.actions_load_preset = []
             preset_num = 5
             for i in range(preset_num):
                 self.actions_load_preset.append(QtWidgets.QAction("None", self))
                 load_menu.addAction(self.actions_load_preset[i])
 
-            save_menu = menubar2.addMenu("  &Save  ")
+            save_menu = menubar.addMenu("  &Save  ")
             self.actions_save_preset = []
             for i in range(preset_num):
                 self.actions_save_preset.append(QtWidgets.QAction("None", self))
                 save_menu.addAction(self.actions_save_preset[i])
 
-            del_menu = menubar3.addMenu("  &Del  ")
+            del_menu = menubar.addMenu("  &Del  ")
             self.actions_del_preset = []
             for i in range(preset_num):
                 self.actions_del_preset.append(QtWidgets.QAction("None", self))
                 del_menu.addAction(self.actions_del_preset[i])
 
-            menubar1.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-            menubar2.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-            menubar3.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+            menubar.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
 
-            return menu_frame_widget
+            return menubar
 
     class FittingFactors(QtWidgets.QGroupBox):
         def __init__(self):
@@ -610,11 +684,19 @@ class ControlPanel(QtWidgets.QWidget):
             self.radio_full_range = QtWidgets.QRadioButton("full range")
             self.radio_tail = QtWidgets.QRadioButton("select")
             self.radio_full_range.setChecked(True)
+            ########### Temporary disable ##############
+            lbl_fitting_q_range.setDisabled(True)
+            self.radio_full_range.setDisabled(True)
+            self.radio_tail.setDisabled(True)
+            #############################################
 
-            self.btn_auto_fit = QtWidgets.QPushButton("Auto Fit")
+            self.btn_auto_fit = QtWidgets.QPushButton("A\nu\nt\no")
+            self.btn_auto_fit.setMaximumWidth(30)
+            self.btn_auto_fit.setSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed,QtWidgets.QSizePolicy.Policy.Expanding)
 
             lbl_fit_at_q = QtWidgets.QLabel("Fit at q")
-            self.spinbox_fit_at_q = ui_util.DoubleSpinBox()
+            self.spinbox_fit_at_q = QtWidgets.QDoubleSpinBox()
+            self.spinbox_fit_at_q.setDecimals(3)
             self.spinbox_fit_at_q_step = ui_util.DoubleLineEdit()
             self.spinbox_fit_at_q_step.textChanged.connect(
                 lambda : self.spinbox_fit_at_q.setSingleStep(float(self.spinbox_fit_at_q_step.text())))
@@ -630,7 +712,8 @@ class ControlPanel(QtWidgets.QWidget):
 
 
             lbl_N = QtWidgets.QLabel("N")
-            self.spinbox_N = ui_util.DoubleSpinBox()
+            self.spinbox_N = QtWidgets.QDoubleSpinBox()
+            self.spinbox_N.setDecimals(3)
             self.spinbox_N_step = ui_util.DoubleLineEdit()
             self.spinbox_N_step.textChanged.connect(
                 lambda: self.spinbox_N.setSingleStep(float(self.spinbox_N_step.text())))
@@ -662,9 +745,14 @@ class ControlPanel(QtWidgets.QWidget):
 
             lbl_electron_voltage = QtWidgets.QLabel("EV / kW")
             self.spinbox_electron_voltage = ui_util.DoubleLineEdit()
+            self.spinbox_electron_voltage.setMaximumWidth(30)
+            self.spinbox_electron_voltage.setSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed,QtWidgets.QSizePolicy.Policy.Fixed)
 
 
-            self.btn_manual_fit = QtWidgets.QPushButton("Manual Fit")
+            self.btn_manual_fit = QtWidgets.QPushButton("Manual")
+            self.btn_manual_fit = QtWidgets.QPushButton("M\na\nn\nu\na\nl")
+            self.btn_manual_fit.setMaximumWidth(30)
+            self.btn_manual_fit.setSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Expanding)
 
             lbl_instant_update = QtWidgets.QLabel("instant update")
             self.chkbox_instant_update = QtWidgets.QCheckBox()
@@ -679,7 +767,9 @@ class ControlPanel(QtWidgets.QWidget):
             layout.addWidget(self.spinbox_q_range_left, 2, 2, 1, 1)
             layout.addWidget(self.spinbox_q_range_right, 2, 3, 1, 1)
 
-            layout.addWidget(self.btn_auto_fit, 3, 0, 1, 4)
+            layout.addWidget(self.btn_auto_fit, 0, 4, 3, 1)
+
+            layout.addWidget(ui_util.QHLine(),3,0,1,5)
 
             layout.addWidget(lbl_fit_at_q, 4, 0, 1, 2)
             layout.addWidget(self.spinbox_fit_at_q, 4, 2, 1, 1)
@@ -701,50 +791,20 @@ class ControlPanel(QtWidgets.QWidget):
             layout.addWidget(self.spinbox_dr, 8, 2, 1, 1)
             layout.addWidget(self.spinbox_dr_step, 8, 3, 1, 1)
 
-            layout.addWidget(self.btn_manual_fit, 9, 0, 1, 4)
+            layout.addWidget(self.btn_manual_fit, 4, 4, 5, 1)
 
-            layout.addWidget(lbl_instant_update, 10, 0)
-            layout.addWidget(self.chkbox_instant_update, 10, 1)
+            layout.addWidget(ui_util.QHLine(), 9, 0, 1, 5)
 
-            layout.addWidget(lbl_electron_voltage, 11, 0)
-            layout.addWidget(self.spinbox_electron_voltage, 11, 1)
+            layout.addWidget(lbl_instant_update, 10, 0,1,2)
+            layout.addWidget(self.chkbox_instant_update, 10, 2)
+
+            layout.addWidget(lbl_electron_voltage, 10, 3)
+            layout.addWidget(self.spinbox_electron_voltage, 10, 4)
 
             layout.setSpacing(1)
             # layout.setContentsMargins(0,0,0,0)
 
             self.setLayout(layout)
-
-    class LoadAndSaveGroup(QtWidgets.QGroupBox):
-        def __init__(self, mainWindow: QtWidgets.QMainWindow):
-            QtWidgets.QGroupBox.__init__(self)
-            self.setTitle("Load and Save")
-            layout = QtWidgets.QHBoxLayout()
-            self.menu_file = self.create_menu(mainWindow)
-            self.lbl_file_name = QtWidgets.QLabel("...")
-            layout.addWidget(self.menu_file)
-            layout.addWidget(self.lbl_file_name)
-            self.setLayout(layout)
-
-        def create_menu(self, mainWindow: QtWidgets.QMainWindow):
-            menubar = mainWindow.menuBar()
-            menubar.setNativeMenuBar(False)
-
-            self.load_pdf_setting = QtWidgets.QAction("&Load pdf settings", self)
-            self.save_pdf_setting = QtWidgets.QAction("&Save pdf settings", self)
-            self.save_pdf_setting_as = QtWidgets.QAction("&Save pdf settings as", self)
-            self.load_azavg_from_file = QtWidgets.QAction("&Load azavg from file", self)
-            self.load_azavg_from_main_window = QtWidgets.QAction("&Load azavg from main window", self)
-
-            filemenu = menubar.addMenu("     File     ")
-            filemenu.addAction(self.load_pdf_setting)
-            filemenu.addAction(self.save_pdf_setting)
-            filemenu.addAction(self.save_pdf_setting_as)
-            filemenu.addSeparator()
-            filemenu.addAction(self.load_azavg_from_file)
-            filemenu.addAction(self.load_azavg_from_main_window)
-
-            menubar.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-            return menubar
 
     class element_group(QtWidgets.QWidget):
         def __init__(self, label: str):
@@ -767,6 +827,6 @@ class ControlPanel(QtWidgets.QWidget):
 if __name__ == "__main__":
     qtapp = QtWidgets.QApplication([])
     # QtWidgets.QMainWindow().show()
-    window = pdf_analyse(DataCube())
+    window = PdfAnalysis(DataCube())
     window.show()
     qtapp.exec()

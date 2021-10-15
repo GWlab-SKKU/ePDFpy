@@ -1,6 +1,8 @@
 import os, sys, pathlib
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
+PROGRAM_NAME = "ePDFpy"
+
 DEFAULT_JSON_PATH = os.path.join(ROOT_DIR, 'settings/default.json')
 ELEMENT_PRESETS_PATH = os.path.join(ROOT_DIR, 'settings/element_presets.json')
 DATA_QUALITY_PATH = os.path.join(ROOT_DIR, 'settings/data_quality.csv')
@@ -13,3 +15,4 @@ COLORCUBE = os.path.join(ROOT_DIR, 'assets/colorcube256.csv')
 ATOMIC_SYMBOL_PATH = os.path.join(ROOT_DIR, "assets/Parameter_files/atomicNumber-symbol.csv")
 
 SAMPLE_IMG_PATH = os.path.join(ROOT_DIR, "assets/Camera 230 mm Ceta 20210312 1333_50s_20f_area01.mrc")
+STYLE_PATH = os.path.join(ROOT_DIR, 'assets/css/STYLE.qss')

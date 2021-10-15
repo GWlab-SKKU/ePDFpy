@@ -198,6 +198,11 @@ def _calculate_azimuthal_average_deprecated(raw_image, center):
 
 
 def calculate_azimuthal_average(raw_image, center):
+    raw_min = raw_image.min()
+    raw_image_abs = raw_image.copy()
+    if raw_min < 0:
+        raw_image_abs = raw_image_abs+np.abs(raw_min)+1
+
     mesh = np.meshgrid(range(raw_image.shape[1]), range(raw_image.shape[0]))
     mesh_x = mesh[0] - center[0]
     mesh_y = mesh[1] - center[1]
@@ -205,9 +210,172 @@ def calculate_azimuthal_average(raw_image, center):
     rr = cv2.bitwise_and(rr, rr, mask=np.bitwise_not(mask))
     rr = np.rint(rr).astype('uint16')
     n_rr = np.uint16(rr.max())
+
+
+    #### radial mean ####
     radial_mean = ndimage.mean(raw_image, labels=rr, index=np.arange(1, n_rr + 1))
     radial_mean = np.nan_to_num(radial_mean, 0)
-    return radial_mean, None
+
+    #### std ####
+    # todo: algo duplicated
+    corrected_mean = ndimage.mean(raw_image_abs, labels=rr, index=np.arange(1, n_rr + 1))
+    std = ndimage.standard_deviation(raw_image_abs, labels=rr, index=np.arange(1, n_rr + 1))
+
+    first_peak = 0
+    for i in range(len(radial_mean)):
+        if radial_mean[i] != 0:
+            first_peak = i
+            break
+
+    normalized_std = np.zeros(radial_mean.shape)
+    normalized_std[first_peak:] = std[first_peak:] / corrected_mean[first_peak:]
+    return radial_mean, normalized_std
+
+def calculate_azimuthal_average_(raw_image, center):
+    raw_image = raw_image.copy()
+    mesh = np.meshgrid(range(raw_image.shape[1]), range(raw_image.shape[0]))
+    mesh_x = mesh[0] - center[0]
+    mesh_y = mesh[1] - center[1]
+    rr = np.power(np.square(mesh_x) + np.square(mesh_y), 0.5)
+    rr = cv2.bitwise_and(rr, rr, mask=np.bitwise_not(mask))
+    rr = np.rint(rr).astype('uint16')
+    n_rr = np.uint16(rr.max())
+
+    count, sum, sum_c_sq = _stats(raw_image, labels=rr, index=np.arange(1, n_rr + 1), centered=True)
+
+    #### radial mean ####
+    radial_mean = sum / np.asanyarray(count).astype(np.float64)
+    radial_mean = np.nan_to_num(radial_mean, 0)
+
+    radial_mean_corrected = np.zeros(radial_mean.shape)
+    radial_min = np.min(radial_mean)
+    if radial_min <= 0:
+        radial_mean_corrected = radial_mean+np.abs(radial_min)+1
+
+    #### std ####
+    std = sum_c_sq / np.asanyarray(count).astype(float)
+
+    first_peak = 0
+    for i in range(len(radial_mean)):
+        if radial_mean[i] != 0:
+            first_peak = i
+            break
+    normalized_std = np.zeros(radial_mean.shape)
+    normalized_std[first_peak:] = std[first_peak:] / radial_mean_corrected[first_peak:]
+    return radial_mean, normalized_std
+
+def _stats(input, labels=None, index=None, centered=False):
+    """Count, sum, and optionally compute (sum - centre)^2 of input by label
+
+    Parameters
+    ----------
+    input : array_like, N-D
+        The input data to be analyzed.
+    labels : array_like (N-D), optional
+        The labels of the data in `input`. This array must be broadcast
+        compatible with `input`; typically, it is the same shape as `input`.
+        If `labels` is None, all nonzero values in `input` are treated as
+        the single labeled group.
+    index : label or sequence of labels, optional
+        These are the labels of the groups for which the stats are computed.
+        If `index` is None, the stats are computed for the single group where
+        `labels` is greater than 0.
+    centered : bool, optional
+        If True, the centered sum of squares for each labeled group is
+        also returned. Default is False.
+
+    Returns
+    -------
+    counts : int or ndarray of ints
+        The number of elements in each labeled group.
+    sums : scalar or ndarray of scalars
+        The sums of the values in each labeled group.
+    sums_c : scalar or ndarray of scalars, optional
+        The sums of mean-centered squares of the values in each labeled group.
+        This is only returned if `centered` is True.
+
+    """
+    def single_group(vals):
+        if centered:
+            vals_c = vals - vals.mean()
+            return vals.size, vals.sum(), (vals_c * vals_c.conjugate()).sum()
+        else:
+            return vals.size, vals.sum()
+
+    if labels is None:
+        return single_group(input)
+
+    # ensure input and labels match sizes
+    input, labels = np.broadcast_arrays(input, labels)
+
+    if index is None:
+        return single_group(input[labels > 0])
+
+    if np.isscalar(index):
+        return single_group(input[labels == index])
+
+    def _sum_centered(labels):
+        # `labels` is expected to be an ndarray with the same shape as `input`.
+        # It must contain the label indices (which are not necessarily the labels
+        # themselves).
+        means = sums / counts
+        centered_input = input - means[labels]
+        # bincount expects 1-D inputs, so we ravel the arguments.
+        bc = np.bincount(labels.ravel(),
+                              weights=(centered_input *
+                                       centered_input.conjugate()).ravel())
+        return bc
+
+    # Remap labels to unique integers if necessary, or if the largest
+    # label is larger than the number of values.
+
+    if (not _safely_castable_to_int(labels.dtype) or
+            labels.min() < 0 or labels.max() > labels.size):
+        # Use np.unique to generate the label indices.  `new_labels` will
+        # be 1-D, but it should be interpreted as the flattened N-D array of
+        # label indices.
+        unique_labels, new_labels = np.unique(labels, return_inverse=True)
+        counts = np.bincount(new_labels)
+        sums = np.bincount(new_labels, weights=input.ravel())
+        if centered:
+            # Compute the sum of the mean-centered squares.
+            # We must reshape new_labels to the N-D shape of `input` before
+            # passing it _sum_centered.
+            sums_c = _sum_centered(new_labels.reshape(labels.shape))
+        idxs = np.searchsorted(unique_labels, index)
+        # make all of idxs valid
+        idxs[idxs >= unique_labels.size] = 0
+        found = (unique_labels[idxs] == index)
+    else:
+        # labels are an integer type allowed by bincount, and there aren't too
+        # many, so call bincount directly.
+        counts = np.bincount(labels.ravel())
+        sums = np.bincount(labels.ravel(), weights=input.ravel())
+        if centered:
+            sums_c = _sum_centered(labels)
+        # make sure all index values are valid
+        idxs = np.asanyarray(index, np.int_).copy()
+        found = (idxs >= 0) & (idxs < counts.size)
+        idxs[~found] = 0
+
+    counts = counts[idxs]
+    counts[~found] = 0
+    sums = sums[idxs]
+    sums[~found] = 0
+
+    if not centered:
+        return (counts, sums)
+    else:
+        sums_c = sums_c[idxs]
+        sums_c[~found] = 0
+        return (counts, sums, sums_c)
+
+def _safely_castable_to_int(dt):
+    """Test whether the NumPy data type `dt` can be safely cast to an int."""
+    int_size = np.dtype(int).itemsize
+    safe = ((np.issubdtype(dt, np.signedinteger) and dt.itemsize <= int_size) or
+            (np.issubdtype(dt, np.unsignedinteger) and dt.itemsize < int_size))
+    return safe
 
 
 def _calculate_azimuthal_average_cuda_deprecated(raw_image, center):

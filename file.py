@@ -14,9 +14,10 @@ import re
 ePDFpy_analysis_folder_name = "Analysis ePDFpy"
 preset_ext = ".preset.json"
 azavg_ext = ".azavg.txt"
+normstd_ext = ".normstd.txt"
 data_q_ext = ".q.csv"
 data_r_ext = ".r.csv"
-image_ext = ".img.tiff"
+image_ext = ".img.png"
 
 def load_mrc_img(fp):
     with mrcfile.open(fp) as mrc:
@@ -104,6 +105,7 @@ def save_preset_default(datacube, imgPanel=None):
 
     preset_path = os.path.join(analysis_folder_path, file_short_name + preset_ext)
     azavg_path = os.path.join(analysis_folder_path, file_short_name + azavg_ext)
+    normstd_path = os.path.join(analysis_folder_path, file_short_name + normstd_ext)
     data_q_path = os.path.join(analysis_folder_path, file_short_name + data_q_ext)
     data_r_path = os.path.join(analysis_folder_path, file_short_name + data_r_ext)
     img_path = os.path.join(analysis_folder_path, file_short_name + image_ext)
@@ -112,15 +114,18 @@ def save_preset_default(datacube, imgPanel=None):
     # save azavg
     if datacube.azavg is not None:
         np.savetxt(azavg_path, datacube.azavg)
+    # save normalized std
+    if datacube.azvar is not None:
+        np.savetxt(normstd_path, datacube.azvar)
     # save q data
     if datacube.q is not None:
-        df = pd.DataFrame(
-            {'q': datacube.q, 'Iq': datacube.Iq, 'Autofit': datacube.Autofit, 'phiq': datacube.phiq,
-             'phiq_damp': datacube.phiq_damp})
+        lst = ['q','Iq','Autofit','phiq','phiq_damp']
+        df = pd.DataFrame({name:getattr(datacube, name) for name in lst if getattr(datacube, name) is not None})
         df.to_csv(data_q_path, index=None)
     # save r data
     if datacube.r is not None:
-        df = pd.DataFrame({'r': datacube.r, 'Gr': datacube.Gr})
+        lst = ['r','Gr']
+        df = pd.DataFrame({name:getattr(datacube, name) for name in lst if getattr(datacube, name) is not None})
         df.to_csv(data_r_path, index=None)
     # save img data
     if imgPanel is not None and datacube.img is not None:
@@ -156,6 +161,7 @@ def save_preset_default(datacube, imgPanel=None):
         presets['center'] = [int(presets['center'][0]), int(presets['center'][1])]
 
     print("save data:", presets)
+    print(preset_path)
     json.dump(presets, open(preset_path, 'w'), indent=2)
     return True
 
@@ -173,23 +179,24 @@ def load_preset(fp:str=None, dc:DataCube=None) -> DataCube:
     azavg_path = os.path.join(os.path.split(fp)[0], fp[:fp.rfind(preset_ext)] + azavg_ext)
     data_r_path = os.path.join(os.path.split(fp)[0], fp[:fp.rfind(preset_ext)] + data_r_ext)
     data_q_path = os.path.join(os.path.split(fp)[0], fp[:fp.rfind(preset_ext)] + data_q_ext)
+    normstd_path = os.path.join(os.path.split(fp)[0], fp[:fp.rfind(preset_ext)] + normstd_ext)
 
     dc.load_file_path = fp
     dc.preset_file_path = fp
     if os.path.isfile(azavg_path):
         df_azavg = np.loadtxt(azavg_path)
         dc.azavg = df_azavg
+    if os.path.isfile(normstd_path):
+        df_normstd = np.loadtxt(normstd_path)
+        dc.azvar = df_normstd
     if os.path.isfile(data_r_path):
         df_r = pd.read_csv(data_r_path)
-        dc.r = df_r['r'].to_numpy()
-        dc.Gr = df_r['Gr'].to_numpy()
+        for column in df_r.columns:
+            setattr(dc, column, df_r[column].to_numpy())
     if os.path.isfile(data_q_path):
         df_q = pd.read_csv(data_q_path)
-        dc.q = df_q['q'].to_numpy()
-        dc.Iq = df_q['Iq'].to_numpy()
-        dc.phiq = df_q['phiq'].to_numpy()
-        dc.phiq_damp = df_q['phiq_damp'].to_numpy()
-        dc.Autofit = df_q['Autofit'].to_numpy()
+        for column in df_q.columns:
+            setattr(dc, column, df_q[column].to_numpy())
 
     # convert relative path to absolute path
     content['mrc_file_path'] = os.path.abspath(os.path.join(fp, "..", content['mrc_file_path']))

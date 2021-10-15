@@ -4,6 +4,7 @@ from calculate import image_process
 import os
 import cv2
 import numpy as np
+import time
 
 class DataCube:
     _use_cupy = False
@@ -40,6 +41,8 @@ class DataCube:
         self.q = None
         self.r = None
 
+        self.all_q = None
+
         self.Iq = None
         self.Gr = None
 
@@ -70,8 +73,11 @@ class DataCube:
 
 
     def image_ready(self):
-        if self.mrc_file_path is not None:
+        if self.mrc_file_path is not None and os.path.isfile(self.mrc_file_path):
             self.raw_img, self.img = file.load_mrc_img(self.mrc_file_path)
+            return True
+        else:
+            return False
 
     def release(self):
         self.raw_img, self.img = None, None
@@ -91,7 +97,10 @@ class DataCube:
                 self.calculate_center(intensity_range, step_size)
             else:
                 raise Exception("You need to calculate center first")
+        tic = time.time()
         self.azavg, self.azvar = image_process.calculate_azimuthal_average(self.raw_img, self.center)
+        toc = time.time()
+        print(toc-tic)
         return self.azavg, self.azvar
 
     # def save_azimuthal_data(self, intensity_start, intensity_end, intensity_slice, imgPanel=None, draw_center_line=False, masking=False):

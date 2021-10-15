@@ -5,7 +5,9 @@ paramK = np.loadtxt(definitions.KIRKLAND_PATH)
 paramL = np.loadtxt(definitions.LOBATO_PATH)
 
 
-def calculation(ds, q_start_num, q_end_num, element_nums, ratio, azavg, is_full_q, damping, rmax, dr, electron_voltage, fit_at_q=None, N=None, scattering_factor_type="Kirkland", fitting_range=None):
+def calculation(ds, px_start_num, px_end_num, element_nums, ratio, azavg, is_full_q, damping, rmax, dr, electron_voltage, fit_at_q=None, N=None, scattering_factor_type="Kirkland", fitting_range=None):
+    assert len(element_nums) == len(ratio)
+
     element_nums = np.array(element_nums)
     for idx, element in enumerate(element_nums):
         if element == 0:
@@ -16,8 +18,8 @@ def calculation(ds, q_start_num, q_end_num, element_nums, ratio, azavg, is_full_
     e_tot = np.sum(np.array(ratio))
     e_ratio = ratio / e_tot
 
-    x = np.arange(q_start_num, q_end_num + 1)  # selected x ranges, end point = end point(eRDF) + 1
-    Iq = azavg[q_start_num - 1:q_end_num]
+    x = np.arange(px_start_num, px_end_num + 1)  # selected x ranges, end point = end point(eRDF) + 1
+    Iq = azavg[px_start_num - 1:px_end_num]
 
     q = x * ds * 2 * np.pi
 
@@ -32,7 +34,7 @@ def calculation(ds, q_start_num, q_end_num, element_nums, ratio, azavg, is_full_
         f = np.array([LobatoFactors(s2, paramL_elem) for paramL_elem in paramL_elems])
     f = f * calculate_relativistic(electron_voltage)
 
-    fq = np.sum(f * e_ratio[:, None], axis=0)  # fq.shape = 2366,
+    fq = np.sum(f * e_ratio[:, None], axis=0)
     fq_sq = fq ** 2
     gq = np.sum(f ** 2 * e_ratio[:, None], axis=0)
 
@@ -105,6 +107,12 @@ def rescaling_Iq(q_start_num, q_end_num, azavg, ds):
 
     q = x * ds * 2 * np.pi
     return q, Iq
+
+def pixel_to_q(args, ds):
+    return np.array(args) * ds * 2 * np.pi
+
+def q_to_pixel(args, ds):
+    return np.round(np.array(args) / ds / 2 / np.pi).astype(int)
 
 def _calculation_with_q(ds, q, Iq, element_nums, ratio, is_full_q, damping, rmax, dr, fit_at_q=None, N=None):
     element_nums = np.array(element_nums)

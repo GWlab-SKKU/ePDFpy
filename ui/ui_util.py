@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import QWidget
 import numpy as np
 from pyqtgraph.graphicsItems.LegendItem import LegendItem
 import pyqtgraph as pg
+from calculate.pdf_calculator import pixel_to_q, q_to_pixel
 
 
 class binding():
@@ -82,6 +83,8 @@ class CoordinatesPlotWidget(pg.PlotWidget):
         # self.coor_label.setPos(10,10)
 
         # self.cross_hair = self.plot()
+
+        self.setBackground('#2a2a2a')
 
         # legend = self.addLegend()
         if offset is None:
@@ -188,12 +191,13 @@ class CoordinatesPlotWidget(pg.PlotWidget):
     def setYScaling(self, bool):
         if bool:
             self.sigXRangeChanged.connect(self.YScaling)
-        else:
-            self.sigXRangeChanged.disconnect()
+        # else:
+        #     self.sigXRangeChanged.disconnect()
 
     def YScaling(self):
         self.enableAutoRange(axis='y')
         self.setAutoVisible(y=True)
+
 
 class IntensityPlotWidget(CoordinatesPlotWidget):
     def mousePressEvent(self, ev):
@@ -202,7 +206,6 @@ class IntensityPlotWidget(CoordinatesPlotWidget):
             data = np.concatenate([self.first_dev_plot.getData()[0],self.second_dev_plot.getData()[0]])
             distance = np.abs(data - qp.x())
             idx = np.argmin(distance)
-            print(data[idx])
             left, right = self.region.getRegion()
             self.region.setRegion([data[idx],right])
             self.select_event()
@@ -237,4 +240,176 @@ def update_value(widget:QtWidgets.QWidget, value):
         widget.setValue(value)
     if issubclass(type(widget),pg.LinearRegionItem):
         widget.setRegion(value)
+    if issubclass(type(widget),QtWidgets.QComboBox):
+        widget.setCurrentIndex(value)
     widget.blockSignals(False)
+
+
+
+
+class QHLine(QtWidgets.QFrame):
+    def __init__(self):
+        super(QHLine, self).__init__()
+        self.setFrameShape(QtWidgets.QFrame.HLine)
+        self.setFrameShadow(QtWidgets.QFrame.Sunken)
+
+class QVLine(QtWidgets.QFrame):
+    def __init__(self):
+        super(QVLine, self).__init__()
+        self.setFrameShape(QtWidgets.QFrame.VLine)
+        self.setFrameShadow(QtWidgets.QFrame.Sunken)
+
+
+class ProfileGraphPanel(QtWidgets.QWidget):
+    def __init__(self, title):
+        QtWidgets.QWidget.__init__(self)
+        self.imageView = pg.ImageView()
+        self.datacube = None
+        # self.plot_azav = pg.PlotWidget(title='azimuthal average')
+        self.plotWidget = IntensityPlotWidget(title=title)
+        self.plotWidget.setYScaling(True)
+        self.setting = self.Setting()
+
+        self.region = pg.LinearRegionItem([0, 100])
+
+        self.plotWidget.region = self.region
+        self.plotWidget.addItem(self.region)
+
+        # self.legend = self.plotWidget.addLegend(offset=(-30, 30))
+        self.layout = QtWidgets.QVBoxLayout()
+        self.layout.addWidget(self.setting)
+        self.layout.addWidget(self.plotWidget)
+        self.setLayout(self.layout)
+
+        # self.setMaximumHeight(300)
+        self.sig_binding()
+
+        self.integer = False
+
+    def hide_region(self):
+        if self.setting.hide_checkBox.isChecked():
+            self.region.setBrush(QtGui.QBrush(QtGui.QColor(0, 0, 255, 50)))
+            self.region.setHoverBrush(QtGui.QBrush(QtGui.QColor(0, 0, 255, 100)))
+            self.region.setMovable(True)
+        else:
+            self.region.setBrush(QtGui.QBrush(QtGui.QColor(0, 0, 0, 0)))
+            self.region.setHoverBrush(QtGui.QBrush(QtGui.QColor(0, 0, 0, 0)))
+            self.region.setMovable(False)
+        self.update()
+
+    def sig_binding(self):
+        self.setting.hide_checkBox.clicked.connect(self.hide_region)
+        self.setting.button_start.clicked.connect(self.btn_range_start_clicked)
+        self.setting.button_all.clicked.connect(self.btn_range_all_clicked)
+        self.setting.button_end.clicked.connect(self.btn_range_end_clicked)
+        self.setting.spinBox_range_left.valueChanged.connect(self.dialog_to_range)
+        self.setting.spinBox_range_right.valueChanged.connect(self.dialog_to_range)
+        self.region.sigRegionChangeFinished.connect(self.range_to_dialog)
+
+    def dialog_to_range(self):
+        left, right = (self.setting.spinBox_range_left.value(),self.setting.spinBox_range_right.value())
+        if self.integer:
+            left = int(np.round(left))
+            right = int(np.round(right))
+        update_value(self.region, [left, right])
+        self.datacube.pixel_start_n = q_to_pixel(left,self.datacube.ds)
+        self.datacube.pixel_end_n = q_to_pixel(right,self.datacube.ds)
+        self.setting.lbl_pixel_range.setText("({},{})".format(self.datacube.pixel_start_n,self.datacube.pixel_end_n))
+
+    def range_to_dialog(self):
+        left, right = self.region.getRegion()
+        if self.integer:
+            left = int(np.round(left))
+            right = int(np.round(right))
+        maxes = [dataItem.xData[-1] for dataItem in self.plotWidget.getPlotItem().dataItems]
+        max = np.max(maxes)
+        if right > max:
+            right = max
+        if left < 0:
+            left = 0
+        update_value(self.region, [left, right])
+        update_value(self.setting.spinBox_range_left, left)
+        update_value(self.setting.spinBox_range_right, right)
+        self.datacube.pixel_start_n = q_to_pixel(left,self.datacube.ds)
+        self.datacube.pixel_end_n = q_to_pixel(right,self.datacube.ds)
+        self.setting.lbl_pixel_range.setText("({},{})".format(self.datacube.pixel_start_n, self.datacube.pixel_end_n))
+
+
+    def btn_range_start_clicked(self):
+        # left = q_range_selector.find_first_nonzero_idx(self.dc.azavg)
+        left = self.setting.spinBox_range_left.value()
+        right = self.setting.spinBox_range_right.value()
+
+        l = left
+        r = left + int((right - left) / 4)
+        # r = left + int((len(self.dc.azavg) - left) / 4)
+        # print("left {}, right {}".format(l, r))
+        # mx = np.max(self.dc.azavg[l:r])
+        # mn = np.min(self.dc.azavg[l:r])
+        self.plotWidget.setXRange(l, r, padding=0.1)
+        # self.graphPanel.plot_azav.setYRange(mn, mx, padding=0.1)
+        # print(self.graphPanel.plot_azav.viewRange())
+
+    def btn_range_all_clicked(self):
+        self.plotWidget.autoRange()
+
+    def btn_range_end_clicked(self):
+        left = self.setting.spinBox_range_left.value()
+        right = self.setting.spinBox_range_right.value()
+        l = right-int((right - left) / 4)
+        r = right
+        # mx = np.max(self.dc.azavg[l:r])
+        # mn = np.min(self.dc.azavg[l:r])
+        self.plotWidget.setXRange(l, r, padding=0.1)
+        # self.graphPanel.plot_azav.setYRange(mn, mx, padding=0.1)
+
+
+    def update_graph(self, dat):
+        # self.plotWindow.layout.setSpacing(0)
+        # self.plotWindow.layout.setContentsMargins(0,0,0,0)
+        # self.plot_azav = pg.PlotWidget(title='azimuthal average')
+        # self.plotWindow.layout.addWidget(self.plot_azav)
+        # self.plotWindow.setLayout(self.plotWindow.layout)
+        self.plot_azav_curr.setData(dat)
+
+        # self.plotWindow.resize(1000,350)
+
+    class Setting(QtWidgets.QGroupBox):
+        def __init__(self):
+            QtWidgets.QGroupBox.__init__(self)
+            self.layout = QtWidgets.QHBoxLayout()
+            self.setLayout(self.layout)
+
+            # self.button_grp_widget.layout.addStretch(1)
+            self.hide_checkBox = QtWidgets.QCheckBox()
+            self.hide_checkBox.setObjectName("CheckVisible")
+            # self.hide_checkBox.setFixedSize(20,20)
+            self.hide_checkBox.setSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed,QtWidgets.QSizePolicy.Policy.Fixed)
+            self.hide_checkBox.setChecked(True)
+            self.lbl_range = QtWidgets.QLabel("Q range")
+            self.lbl_pixel_range = QtWidgets.QLabel("")
+            self.spinBox_range_left = QtWidgets.QDoubleSpinBox()
+            self.spinBox_range_left.setDecimals(3)
+            self.spinBox_range_right = QtWidgets.QDoubleSpinBox()
+            self.spinBox_range_right.setDecimals(3)
+            self.layout.addWidget(self.hide_checkBox)
+            self.layout.addWidget(self.lbl_range)
+            self.layout.addWidget(self.lbl_pixel_range)
+            self.layout.addWidget(self.spinBox_range_left)
+            self.layout.addWidget(self.spinBox_range_right)
+            self.layout.addWidget(QVLine())
+
+            maximum_width = 40
+            self.button_start = QtWidgets.QPushButton("╟─")
+            self.button_start.setMaximumWidth(maximum_width)
+            self.button_start.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
+            self.button_all = QtWidgets.QPushButton("├─┤")
+            self.button_all.setMaximumWidth(maximum_width)
+            self.button_end = QtWidgets.QPushButton("─╢")
+            self.button_end.setMaximumWidth(maximum_width)
+            self.button_select = QtWidgets.QPushButton("Select")
+            self.layout.addWidget(self.button_start)
+            self.layout.addWidget(self.button_all)
+            self.layout.addWidget(self.button_end)
+            self.layout.addWidget(self.button_select)
+            # self.button_grp_widget.layout.addStretch(1)
