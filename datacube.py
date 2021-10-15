@@ -100,7 +100,7 @@ class DataCube:
         tic = time.time()
         self.azavg, self.azvar = image_process.calculate_azimuthal_average(self.raw_img, self.center)
         toc = time.time()
-        print(toc-tic)
+        print("Time to get azavg:",toc-tic)
         return self.azavg, self.azvar
 
     # def save_azimuthal_data(self, intensity_start, intensity_end, intensity_slice, imgPanel=None, draw_center_line=False, masking=False):

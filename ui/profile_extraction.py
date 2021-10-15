@@ -4,6 +4,7 @@ import pyqtgraph as pg
 import file
 import numpy as np
 import util
+import time
 from datacube import DataCube
 from typing import List
 from ui.pdfanalysis import PdfAnalysis
@@ -104,6 +105,7 @@ class ProfileExtraction(QtWidgets.QWidget):
         self.update_img()
 
     def calculate_all_azimuthal(self):
+        tic = time.time()
         for i in range(len(self.Dataviewer.dcs)):
             print("processing azimuthal values", self.dc.mrc_file_path)
             self.Dataviewer.load_dc(i)
@@ -112,6 +114,10 @@ class ProfileExtraction(QtWidgets.QWidget):
                 self.update_img()
             if self.Dataviewer.dcs[i].azavg is None:
                 self.get_azimuthal_value()
+            toc = time.time()
+            print("({}/{}) Done, Time:{}".format(i+1,len(self.Dataviewer.dcs),toc-tic))
+        toc = time.time()
+        print("Calculation is done, {}".format(toc-tic))
             # self.datacubes[i].save_azimuthal_data()
             # self.save_current_azimuthal()
         #     self.controlPanel.operationPanel.progress_bar.setValue((i+1)/len(self.datacubes))
