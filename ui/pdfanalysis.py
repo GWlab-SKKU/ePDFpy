@@ -565,7 +565,6 @@ class GraphIqPanel(ui_util.ProfileGraphPanel):
         self.graph = self.plotWidget
         self.axis = pg.InfiniteLine(angle=0)
         self.graph.addItem(self.axis)
-        self.layout.setContentsMargins(0,0,0,0)
         self.setting.lbl_range.setText("Q Range")
 
 
@@ -577,6 +576,7 @@ class GraphPhiqPanel(QtWidgets.QWidget):
         self.axis = pg.InfiniteLine(angle=0)
         self.graph.addItem(self.axis)
         self.layout.addWidget(self.graph)
+        self.layout.setContentsMargins(5,5,5,5)
         self.setLayout(self.layout)
 
 class GraphGrPanel(QtWidgets.QWidget):
@@ -587,6 +587,7 @@ class GraphGrPanel(QtWidgets.QWidget):
         self.axis = pg.InfiniteLine(angle=0)
         self.graph.addItem(self.axis)
         self.layout.addWidget(self.graph)
+        self.layout.setContentsMargins(5,5,5,5)
         self.setLayout(self.layout)
 
 

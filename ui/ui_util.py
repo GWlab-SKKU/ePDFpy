@@ -279,6 +279,7 @@ class ProfileGraphPanel(QtWidgets.QWidget):
         self.layout = QtWidgets.QVBoxLayout()
         self.layout.addWidget(self.setting)
         self.layout.addWidget(self.plotWidget)
+        self.layout.setContentsMargins(5,5,5,5)
         self.setLayout(self.layout)
 
         # self.setMaximumHeight(300)
@@ -379,6 +380,8 @@ class ProfileGraphPanel(QtWidgets.QWidget):
             QtWidgets.QGroupBox.__init__(self)
             self.layout = QtWidgets.QHBoxLayout()
             self.setLayout(self.layout)
+            # remove title region
+            self.setStyleSheet("QGroupBox{padding-top:0px; margin-top:0px}")
 
             # self.button_grp_widget.layout.addStretch(1)
             self.hide_checkBox = QtWidgets.QCheckBox()
@@ -408,6 +411,7 @@ class ProfileGraphPanel(QtWidgets.QWidget):
             self.button_end = QtWidgets.QPushButton("─╢")
             self.button_end.setMaximumWidth(maximum_width)
             self.button_select = QtWidgets.QPushButton("Select")
+            self.button_select.setDisabled(True)
             self.layout.addWidget(self.button_start)
             self.layout.addWidget(self.button_all)
             self.layout.addWidget(self.button_end)
