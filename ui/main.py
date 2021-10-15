@@ -28,7 +28,7 @@ class DataViewer(QtWidgets.QMainWindow):
 
         self.dcs: List[DataCube] = []
 
-        self.setStyleSheet(open("assets/css/Combinear.qss", 'r').read()+open(definitions.STYLE_PATH, 'r').read())
+        self.setStyleSheet(open(definitions.THEME_PATH, 'r').read()+open(definitions.STYLE_PATH, 'r').read())
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.top_menu)

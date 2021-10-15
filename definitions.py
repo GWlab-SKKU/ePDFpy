@@ -16,3 +16,4 @@ ATOMIC_SYMBOL_PATH = os.path.join(ROOT_DIR, "assets/Parameter_files/atomicNumber
 
 SAMPLE_IMG_PATH = os.path.join(ROOT_DIR, "assets/Camera 230 mm Ceta 20210312 1333_50s_20f_area01.mrc")
 STYLE_PATH = os.path.join(ROOT_DIR, 'assets/css/STYLE.qss')
+THEME_PATH = os.path.join(ROOT_DIR, 'assets/css/Combinear.qss')
