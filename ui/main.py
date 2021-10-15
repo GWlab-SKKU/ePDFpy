@@ -28,7 +28,10 @@ class DataViewer(QtWidgets.QMainWindow):
 
         self.dcs: List[DataCube] = []
 
-        self.setStyleSheet(open(definitions.THEME_PATH, 'r').read()+open(definitions.STYLE_PATH, 'r').read())
+        style_sheet = open(definitions.THEME_PATH, 'r').read()+open(definitions.STYLE_PATH, 'r').read()
+        style_sheet = style_sheet.replace("image: url(","image: url("+definitions.ROOT_DIR+"/")
+        self.setStyleSheet(style_sheet)
+
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.top_menu)
