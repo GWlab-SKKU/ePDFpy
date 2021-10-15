@@ -18,6 +18,7 @@ normstd_ext = ".normstd.txt"
 data_q_ext = ".q.csv"
 data_r_ext = ".r.csv"
 image_ext = ".img.png"
+rdf_screen_ext = ".rdf.png"
 
 def load_mrc_img(fp):
     with mrcfile.open(fp) as mrc:
@@ -67,7 +68,8 @@ def make_analyse_folder(datacube):
     return final_analysis_folder
 
 
-def save_preset_default(datacube, imgPanel=None):
+def save_preset_default(datacube, main_window):
+    imgPanel = main_window.profile_extraction.img_panel
     # Types of datacube source : azavg, mrc, None, preset&azavg, preset&mrc, preset&None
 
     if datacube.azavg_file_path is not None:
@@ -109,6 +111,7 @@ def save_preset_default(datacube, imgPanel=None):
     data_q_path = os.path.join(analysis_folder_path, file_short_name + data_q_ext)
     data_r_path = os.path.join(analysis_folder_path, file_short_name + data_r_ext)
     img_path = os.path.join(analysis_folder_path, file_short_name + image_ext)
+    rdf_screen_path = os.path.join(analysis_folder_path, file_short_name + rdf_screen_ext)
     datacube.preset_file_path = preset_path
 
     # save azavg
@@ -130,6 +133,9 @@ def save_preset_default(datacube, imgPanel=None):
     # save img data
     if imgPanel is not None and datacube.img is not None:
         imgPanel.imageView.export(img_path)
+    # save screenshot
+    if datacube.Gr is not None:
+        main_window.PDF_analyser.grab().save(rdf_screen_path)
 
     ################ save preset #################
     presets = vars(copy.copy(datacube))

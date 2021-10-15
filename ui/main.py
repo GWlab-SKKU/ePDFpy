@@ -32,7 +32,6 @@ class DataViewer(QtWidgets.QMainWindow):
         style_sheet = style_sheet.replace("image: url(","image: url("+definitions.ROOT_DIR+"/")
         self.setStyleSheet(style_sheet)
 
-
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.top_menu)
         layout.addWidget(self.bottom)
@@ -42,12 +41,8 @@ class DataViewer(QtWidgets.QMainWindow):
         centralWidget = QtWidgets.QWidget()
         centralWidget.setLayout(layout)
         self.setCentralWidget(centralWidget)
-
         self.setWindowTitle(definitions.PROGRAM_NAME)
-
         self.sig_binding()
-
-
         self.resize(1300,800)
 
     class TopMenu(QtWidgets.QWidget):
@@ -84,7 +79,6 @@ class DataViewer(QtWidgets.QMainWindow):
             self.open_azavg_only = QtWidgets.QAction("Open &azavg only", self)
             self.save_azavg_only = QtWidgets.QAction("Save &azavg only", self)
 
-
             open_menu = menubar.addMenu("     &Open     ")
             open_menu.addAction(self.open_img_file)
             open_menu.addAction(self.open_img_stack)
@@ -100,7 +94,6 @@ class DataViewer(QtWidgets.QMainWindow):
             save_menu.addAction(self.save_preset_option)
             save_menu.addSeparator()
             save_menu.addAction(self.save_azavg_only)
-
 
             menubar.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
             return menubar
@@ -295,7 +288,8 @@ class DataViewer(QtWidgets.QMainWindow):
         self.load_dc(0)
 
     def menu_save_preset(self):
-        file.save_preset_default(self.dcs[self.current_page], self.profile_extraction.img_panel)
+        file.save_preset_default(self.dcs[self.current_page], self)
+        self.PDF_analyser.grab().save("test.png")
 
     def menu_save_presets(self):
         for i in range(len(self.dcs)):
