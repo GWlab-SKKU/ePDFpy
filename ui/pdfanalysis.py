@@ -195,11 +195,6 @@ class PdfAnalysis(QtWidgets.QWidget):
         if util.default_setting.rmax_step is not None:
             self.controlPanel.fitting_factors.spinbox_rmax_step.setText(util.default_setting.rmax_step)
 
-
-    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
-        util.default_setting.save_settings()
-        super().closeEvent(a0)
-
     def save_element(self, preset_num):
         text, ok = QtWidgets.QInputDialog.getText(self, 'Input Dialog', 'Enter preset name:')
         if ok is False:

@@ -65,15 +65,6 @@ class ProfileExtraction(QtWidgets.QWidget):
 
         self.setLayout(self.layout)
 
-
-    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
-        util.default_setting.intensity_range_1 = self.control_panel.settingPanel.spinBox_irange1.value()
-        util.default_setting.intensity_range_2 = self.control_panel.settingPanel.spinBox_irange2.value()
-        util.default_setting.slice_count = self.control_panel.settingPanel.spinBox_slice_count.value()
-        util.default_setting.show_center_line = self.control_panel.settingPanel.chkBox_show_centerLine.isChecked()
-        util.default_setting.save_settings()
-        super().closeEvent(a0)
-
     def load_default(self):
         if util.default_setting.intensity_range_1 is not None:
             self.control_panel.settingPanel.spinBox_irange1.setValue(util.default_setting.intensity_range_1)

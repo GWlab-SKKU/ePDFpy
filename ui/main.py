@@ -319,6 +319,14 @@ class DataViewer(QtWidgets.QMainWindow):
                 ((e.modifiers() & QtCore.Qt.Modifier.CTRL) and e.key() == QtCore.Qt.Key.Key_Right):
             self.btn_page_right_clicked()
 
+    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
+        util.default_setting.intensity_range_1 = self.profile_extraction.control_panel.settingPanel.spinBox_irange1.value()
+        util.default_setting.intensity_range_2 = self.profile_extraction.control_panel.settingPanel.spinBox_irange2.value()
+        util.default_setting.slice_count = self.profile_extraction.control_panel.settingPanel.spinBox_slice_count.value()
+        util.default_setting.show_center_line = self.profile_extraction.control_panel.settingPanel.chkBox_show_centerLine.isChecked()
+        util.default_setting.save_settings()
+        super().closeEvent(a0)
+
 
 if __name__ == '__main__':
     qtapp = QtWidgets.QApplication.instance()
