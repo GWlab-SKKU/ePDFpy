@@ -292,7 +292,7 @@ class PdfAnalysis(QtWidgets.QWidget):
         if self.datacube.q is not None:
             # self.graph_Iq_half_tail_Iq.setData(self.datacube.q, self.datacube.Iq)
             self.graph_Iq_Iq.setData(self.datacube.all_q, self.datacube.azavg)
-            self.graph_Iq_panel.range_to_dialog()
+            # self.graph_Iq_panel.range_to_dialog()
         else:
             self.graph_Iq_Iq.setData([0])
 

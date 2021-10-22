@@ -205,8 +205,9 @@ def load_preset(fp:str=None, dc:DataCube=None) -> DataCube:
             setattr(dc, column, df_q[column].to_numpy())
 
     # convert relative path to absolute path
-    content['mrc_file_path'] = os.path.abspath(os.path.join(fp, "..", content['mrc_file_path']))
-    content['mrc_file_path'] = os.path.abspath(os.path.join(fp, "..", content['mrc_file_path']))
+    if 'mrc_file_path' in content.keys():
+        content['mrc_file_path'] = os.path.abspath(os.path.join(fp, "..", content['mrc_file_path']))
+        content['mrc_file_path'] = os.path.abspath(os.path.join(fp, "..", content['mrc_file_path']))
 
     # put content in DataCube
     for key, value in content.items():

@@ -9,6 +9,7 @@ from typing import List
 from ui.pdfanalysis import PdfAnalysis
 from calculate import pdf_calculator, image_process, q_range_selector
 from PyQt5.QtWidgets import QMessageBox
+import ui.averaging_multiple_gr as averaging_multiple_gr
 from ui import ui_util
 pg.setConfigOptions(antialias=True)
 import definitions
@@ -76,8 +77,10 @@ class DataViewer(QtWidgets.QMainWindow):
             self.open_preset_stack = QtWidgets.QAction("Open preset &stack", self)
             self.save_preset_stack = QtWidgets.QAction("Save preset &stack", self)
             self.save_preset_option = QtWidgets.QAction("Save preset &option setting", self)
+            self.save_preset_option.setDisabled(True)
             self.open_azavg_only = QtWidgets.QAction("Open &azavg only", self)
             self.save_azavg_only = QtWidgets.QAction("Save &azavg only", self)
+            self.averaging_gr = QtWidgets.QAction("Averaging multiple G(r)", self)
 
             open_menu = menubar.addMenu("     &Open     ")
             open_menu.addAction(self.open_img_file)
@@ -94,6 +97,9 @@ class DataViewer(QtWidgets.QMainWindow):
             save_menu.addAction(self.save_preset_option)
             save_menu.addSeparator()
             save_menu.addAction(self.save_azavg_only)
+
+            utility_menu = menubar.addMenu("     &Utility     ")
+            utility_menu.addAction(self.averaging_gr)
 
             menubar.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
             return menubar
@@ -200,11 +206,17 @@ class DataViewer(QtWidgets.QMainWindow):
         self.top_menu.open_azavg_only.triggered.connect(self.menu_open_azavg_only)
         self.top_menu.save_azavg_only.triggered.connect(self.menu_save_azavg_only)
         self.top_menu.combo_dataQuality.currentIndexChanged.connect(self.set_data_quality)
+        self.top_menu.averaging_gr.triggered.connect(self.menu_util_averaging_gr)
         self.PDF_analyser.graph_Iq_panel.setting.spinBox_range_right.valueChanged.connect(self.set_data_quality)
         self.PDF_analyser.graph_Iq_panel.region.sigRegionChangeFinished.connect(self.set_data_quality)
 
         self.top_menu.btn_left.clicked.connect(self.btn_page_left_clicked)
         self.top_menu.btn_right.clicked.connect(self.btn_page_right_clicked)
+
+    def menu_util_averaging_gr(self):
+        self.averaging_multiple_gr_viewer = averaging_multiple_gr.Viewer(self)
+        self.averaging_multiple_gr_viewer.show()
+        pass
 
     def load_dc(self,index):
         if not len(self.dcs) == 1 and hasattr(self,"current_page"):
@@ -218,14 +230,20 @@ class DataViewer(QtWidgets.QMainWindow):
         else:
             self.top_menu.combo_dataQuality.setCurrentIndex(0)
 
+        # show image
         self.dcs[self.current_page].image_ready()
 
+        # Update profile_extraction ui
         self.profile_extraction.update_dc(self.dcs[self.current_page])
+
+        # Update pdf_analyser ui
         self.PDF_analyser.put_datacube(self.dcs[self.current_page])
 
+        # Set program title as sample path
         if self.dcs[self.current_page].load_file_path is not None:
             self.setWindowTitle(definitions.PROGRAM_NAME + " : " + self.dcs[self.current_page].load_file_path)
 
+        # Set index label
         self.top_menu.lbl_current_num.setText(str(self.current_page + 1) + "/" + str(len(self.dcs)))
 
 

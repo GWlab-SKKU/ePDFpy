@@ -19,12 +19,13 @@ class Viewer(QtWidgets.QWidget):
     str_data_r = r"\Data_r.csv"
     str_data_q = r"\Data_q.csv"
 
-    def __init__(self):
+    def __init__(self,mainWindow=None):
         super().__init__()
         self.initui()
         self.grCubes = []
         self.avg_azavg = None
         self.binding()
+        self.mainWindow = mainWindow
 
     def initui(self):
         self.layout = QtWidgets.QVBoxLayout()
@@ -53,39 +54,31 @@ class Viewer(QtWidgets.QWidget):
         fp, ext = QtWidgets.QFileDialog.getSaveFileName(self, filter="text file (*.txt);;All Files (*)")
         if fp == "":
             return
-        azavg_list = []
-        shortest_end = 1000000
-        for grCube in self.grCubes:
-            azavg = np.loadtxt(grCube.data_azav_path)
-            if shortest_end > len(azavg):
-                shortest_end = len(azavg)
-            azavg_list.append(azavg)
-        azavg_list = [azavg[:shortest_end] for azavg in azavg_list]
-        np.array(azavg_list)
-        avg_azavg = np.average(np.array(azavg_list), axis=0).transpose()
-        self.avg_azavg = avg_azavg
-        np.savetxt(fp+".txt", avg_azavg)
+        self.averaging_profile_intensity()
+        np.savetxt(fp+".txt", self.avg_azavg)
 
     def open_analyzer(self):
         if self.grCubes is None or len(self.grCubes) is 0:
             pass
         else:
-            azavg_list = []
-            shortest_end = 1000000
-            for grCube in self.grCubes:
+            self.averaging_profile_intensity()
+
+        if self.avg_azavg is not None:
+            self.mainWindow.menu_open_azavg_only(self.avg_azavg)
+            print(np.sum(self.avg_azavg))
+
+    def averaging_profile_intensity(self):
+        azavg_list = []
+        shortest_end = 1000000
+        for grCube in self.grCubes:
+            if grCube.chkbox_module.chkbox.isChecked():
                 azavg = np.loadtxt(grCube.data_azav_path)
                 if shortest_end > len(azavg):
                     shortest_end = len(azavg)
                 azavg_list.append(azavg)
-            azavg_list = [azavg[:shortest_end] for azavg in azavg_list]
-            np.array(azavg_list)
-            avg_azavg = np.average(np.array(azavg_list), axis=0).transpose()
-            self.avg_azavg = avg_azavg
-
-        analyzer_window = main.DataViewer()
-        analyzer_window.show()
-        if self.avg_azavg is not None:
-            analyzer_window.main_window.menu_open_azavg_only(self.avg_azavg)
+        azavg_list = [azavg[:shortest_end] for azavg in azavg_list]
+        avg_azavg = np.average(np.array(azavg_list), axis=0).transpose()
+        self.avg_azavg = avg_azavg
 
 
     def open_btn_clicked(self):
@@ -143,6 +136,7 @@ class Viewer(QtWidgets.QWidget):
 
 
     def get_csv_files_from_folder(self, folder):
+        # Old data search #
         csvfiles = Path(folder).rglob("*_r30_*.csv")
         gr_path_list = []
         azavg_path_lst = []
@@ -157,6 +151,25 @@ class Viewer(QtWidgets.QWidget):
             fp1 = fp1[:fp1.rfind("_r30_")]
             search_name = fp1[:32]
             rglob = Path(folder).rglob(search_name+"*azav*.txt")
+            searched_files = []
+            for fp2 in rglob:
+                searched_files.append(str(fp2.absolute()))
+
+            if len(searched_files) > 0:
+                # print(searched_files[0])
+                gr_path_list.append(str(file.absolute()))
+                azavg_path_lst.append(searched_files[0])
+            else:
+                QMessageBox.about(self,"Not Found","failed to find azav file for {}".format(file))
+
+        # New data search #
+        csvfiles = Path(folder).rglob("*.r.csv")
+        for file in csvfiles:
+            fp1 = str(file.absolute())
+            fp1 = os.path.split(fp1)[1]
+            fp1 = fp1[:fp1.rfind(".r.csv")]
+            print(fp1)
+            rglob = Path(folder).rglob(fp1 + ".azavg.txt")
             searched_files = []
             for fp2 in rglob:
                 searched_files.append(str(fp2.absolute()))

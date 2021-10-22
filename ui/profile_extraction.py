@@ -124,11 +124,15 @@ class ProfileExtraction(QtWidgets.QWidget):
         # self.controlPanel.operationPanel.progress_bar.setValue(0)
 
     def get_azimuthal_value(self):
+
+        # calculate azavg
         i1 = self.control_panel.settingPanel.spinBox_irange1.value()
         i2 = self.control_panel.settingPanel.spinBox_irange2.value()
         intensity_range = (i1, i2)
         slice_count = int(self.control_panel.settingPanel.spinBox_slice_count.value())
         self.dc.calculate_azimuthal_average(intensity_range, slice_count)
+
+        # update ui
         self.update_azavg_graph()
         self.update_std_graph()
         self.Dataviewer.PDF_analyser.update_initial_iq()
