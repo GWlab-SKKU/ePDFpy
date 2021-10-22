@@ -161,6 +161,29 @@ class Viewer(QtWidgets.QWidget):
                 azavg_path_lst.append(searched_files[0])
             else:
                 QMessageBox.about(self,"Not Found","failed to find azav file for {}".format(file))
+        if len(azavg_path_lst)>0:
+            QMessageBox.about(self, "Not Found", "Only file name with r30 files are loaded")
+            return gr_path_list, azavg_path_lst
+
+        # Old data search2 #
+        csvfiles = Path(folder).rglob("*Data_r.csv")
+        for file in csvfiles:
+            fp1 = str(file.absolute())
+            fp1 = os.path.split(fp1)[1]
+            fp1 = fp1[:fp1.rfind("Data_r.csv")-1]
+            search_name = fp1[:32]
+            rglob = Path(folder).rglob(search_name+"*azav*.txt")
+            searched_files = []
+            for fp2 in rglob:
+                searched_files.append(str(fp2.absolute()))
+
+            if len(searched_files) > 0:
+                # print(searched_files[0])
+                gr_path_list.append(str(file.absolute()))
+                azavg_path_lst.append(searched_files[0])
+            else:
+                QMessageBox.about(self,"Not Found","failed to find azav file for {}".format(file))
+
 
         # New data search #
         csvfiles = Path(folder).rglob("*.r.csv")
