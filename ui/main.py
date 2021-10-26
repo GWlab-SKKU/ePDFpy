@@ -8,7 +8,7 @@ from datacube import DataCube
 from typing import List
 from ui.pdfanalysis import PdfAnalysis
 from calculate import pdf_calculator, image_process, q_range_selector
-from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtWidgets import QMessageBox, QFileDialog
 import ui.averaging_multiple_gr as averaging_multiple_gr
 from ui import ui_util
 pg.setConfigOptions(antialias=True)
@@ -80,7 +80,9 @@ class DataViewer(QtWidgets.QMainWindow):
             self.save_preset_option.setDisabled(True)
             self.open_azavg_only = QtWidgets.QAction("Open &azavg only", self)
             self.save_azavg_only = QtWidgets.QAction("Save &azavg only", self)
+
             self.averaging_gr = QtWidgets.QAction("Averaging multiple G(r)", self)
+            self.blank = QtWidgets.QAction("Blank Image", self)
 
             open_menu = menubar.addMenu("     &Open     ")
             open_menu.addAction(self.open_img_file)
@@ -100,6 +102,7 @@ class DataViewer(QtWidgets.QMainWindow):
 
             utility_menu = menubar.addMenu("     &Utility     ")
             utility_menu.addAction(self.averaging_gr)
+            utility_menu.addAction(self.blank)
 
             menubar.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
             return menubar
@@ -209,9 +212,15 @@ class DataViewer(QtWidgets.QMainWindow):
         self.top_menu.averaging_gr.triggered.connect(self.menu_util_averaging_gr)
         self.PDF_analyser.graph_Iq_panel.setting.spinBox_range_right.valueChanged.connect(self.set_data_quality)
         self.PDF_analyser.graph_Iq_panel.region.sigRegionChangeFinished.connect(self.set_data_quality)
+        self.top_menu.blank.triggered.connect(self.subtract_blank_img)
 
         self.top_menu.btn_left.clicked.connect(self.btn_page_left_clicked)
         self.top_menu.btn_right.clicked.connect(self.btn_page_right_clicked)
+
+    def subtract_blank_img(self):
+        sub_img = file.load_blank_img()
+        if sub_img is not None:
+            self.dcs[self.current_page].raw_img = self.dcs[self.current_page].raw_img - sub_img
 
     def menu_util_averaging_gr(self):
         self.averaging_multiple_gr_viewer = averaging_multiple_gr.Viewer(self)
