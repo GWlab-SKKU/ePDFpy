@@ -171,6 +171,13 @@ def save_preset_default(datacube, main_window):
     json.dump(presets, open(preset_path, 'w'), indent=2)
     return True
 
+def load_blank_img():
+    fp, _ = QFileDialog.getOpenFileName(filter="mrc (*.mrc)")
+    if fp == '':
+        return
+    with mrcfile.open(fp) as mrc:
+        raw_img = mrc.data
+    return raw_img
 
 def load_preset(fp:str=None, dc:DataCube=None) -> DataCube:
     if fp is None:
