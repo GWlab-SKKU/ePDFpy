@@ -23,7 +23,8 @@ def calculation(ds, px_start_num, px_end_num, element_nums, ratio, azavg, is_ful
     e_ratio = ratio / e_tot
 
     x = np.arange(px_start_num, px_end_num + 1)  # selected x ranges, end point = end point(eRDF) + 1
-    Iq = azavg[px_start_num - 1:px_end_num]
+    # Iq = azavg[px_start_num-1:px_end_num]        # Indexing number
+    Iq = azavg[px_start_num: px_end_num + 1]
 
     q = x * ds * 2 * np.pi
 
