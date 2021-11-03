@@ -141,22 +141,37 @@ class CoordinatesPlotWidget(pg.PlotWidget):
         return super().mousePressEvent(ev)
 
     def mouseDoubleClickEvent(self, ev):
-        print("Double click event", ev.localPos())
-        qp = self.getPlotItem().getViewBox().mapSceneToView(ev.localPos())
-        self.getPlotItem().getViewBox().scaleBy(x=0.3,y=0.3)
-        vr = self.getPlotItem().getViewBox().targetRect()
 
-        center = self.getPlotItem().getViewBox().rect().center()
-        center = self.getPlotItem().getViewBox().mapSceneToView(center)
+        mouseMode = self.getPlotItem().getViewBox().getState()['mouseMode']
+        if mouseMode == 1:
+            # 1 button mode
+            self.getPlotItem().getViewBox().autoRange()
+        elif mouseMode == 3:
+            # 3 button mode
+            try:  # some qt version use different path
+                modifiers = QtGui.QApplication.keyboardModifiers()
+            except:
+                modifiers = QtWidgets.QApplication.keyboardModifiers()
 
-        diff_x, diff_y = center.x() - qp.x(), center.y() - qp.y()
-        x = vr.left() - diff_x, vr.right() - diff_x
-        y = vr.top() - diff_y, vr.bottom() - diff_y
-        self.setRange(xRange=x, yRange=y, padding=0)
+            qp = self.getPlotItem().getViewBox().mapSceneToView(ev.localPos())
 
+            if modifiers == QtCore.Qt.AltModifier:
+                # Zoom Out
+                self.getPlotItem().getViewBox().scaleBy(x=3, y=3)
+            else:
+                # Zoom In
+                self.getPlotItem().getViewBox().scaleBy(x=1/3, y=1/3)
 
-        ev.accept()
-        # self.sigRangeChangedManually.emit(mask)
+            vr = self.getPlotItem().getViewBox().targetRect()
+            center = self.getPlotItem().getViewBox().rect().center()
+            center = self.getPlotItem().getViewBox().mapSceneToView(center)
+
+            diff_x, diff_y = center.x() - qp.x(), center.y() - qp.y()
+            x = vr.left() - diff_x, vr.right() - diff_x
+            y = vr.top() - diff_y, vr.bottom() - diff_y
+            self.setRange(xRange=x, yRange=y, padding=0)
+
+        super().mouseDoubleClickEvent(ev)
 
 
 
