@@ -73,7 +73,7 @@ class IntLineEdit(QtWidgets.QLineEdit):
 
 
 class CoordinatesPlotWidget(pg.PlotWidget):
-    def __init__(self, parent=None, background='default', offset=None, plotItem=None, **kargs):
+    def __init__(self, setYScaling=False, parent=None, background='default', offset=None, plotItem=None, **kargs):
         super().__init__(parent, background, plotItem, **kargs)
 
         # self.setRange(QRectF(-50, -50, 100, 100))
@@ -98,6 +98,9 @@ class CoordinatesPlotWidget(pg.PlotWidget):
         self.legend_labelitem = legend.getLabel(style)
         self.legend_labelitem.setText('x:0 y:0')
         self.coor_update_toggle = True
+
+        if setYScaling:
+            self.sigXRangeChanged.connect(self.YScaling)
 
     def mouseMoveEvent(self, ev):
         if self.coor_update_toggle:
@@ -136,6 +139,26 @@ class CoordinatesPlotWidget(pg.PlotWidget):
             pass
         # print(self.getPlotItem().dataItems[0].xDisp) # xData, yData, xDisp, yDisp
         return super().mousePressEvent(ev)
+
+    def mouseDoubleClickEvent(self, ev):
+        print("Double click event", ev.localPos())
+        qp = self.getPlotItem().getViewBox().mapSceneToView(ev.localPos())
+        self.getPlotItem().getViewBox().scaleBy(x=0.3,y=0.3)
+        vr = self.getPlotItem().getViewBox().targetRect()
+
+        center = self.getPlotItem().getViewBox().rect().center()
+        center = self.getPlotItem().getViewBox().mapSceneToView(center)
+
+        diff_x, diff_y = center.x() - qp.x(), center.y() - qp.y()
+        x = vr.left() - diff_x, vr.right() - diff_x
+        y = vr.top() - diff_y, vr.bottom() - diff_y
+        self.setRange(xRange=x, yRange=y, padding=0)
+
+
+        ev.accept()
+        # self.sigRangeChangedManually.emit(mask)
+
+
 
     def keyPressEvent(self, ev):
         if hasattr(self,'crosshair_plot') and self.crosshair_plot is not None:

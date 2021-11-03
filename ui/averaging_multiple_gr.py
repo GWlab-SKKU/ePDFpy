@@ -270,7 +270,7 @@ class GraphPanel(QtWidgets.QWidget):
         super().__init__()
         self.layout = QtWidgets.QVBoxLayout()
         self.setLayout(self.layout)
-        self.graphView = ui_util.CoordinatesPlotWidget(title='G(r)')
+        self.graphView = ui_util.CoordinatesPlotWidget(title='G(r)', setYScaling=True)
         self.axis1 = pg.InfiniteLine(angle=0)
         self.graphView.addItem(self.axis1)
         self.layout.addWidget(self.graphView)
