@@ -141,7 +141,6 @@ class CoordinatesPlotWidget(pg.PlotWidget):
         return super().mousePressEvent(ev)
 
     def mouseDoubleClickEvent(self, ev):
-
         mouseMode = self.getPlotItem().getViewBox().getState()['mouseMode']
         if mouseMode == 1:
             # 1 button mode
@@ -172,7 +171,6 @@ class CoordinatesPlotWidget(pg.PlotWidget):
             self.setRange(xRange=x, yRange=y, padding=0)
 
         super().mouseDoubleClickEvent(ev)
-
 
 
     def keyPressEvent(self, ev):
