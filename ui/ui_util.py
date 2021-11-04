@@ -8,6 +8,7 @@ import numpy as np
 from pyqtgraph.graphicsItems.LegendItem import LegendItem
 import pyqtgraph as pg
 from calculate.pdf_calculator import pixel_to_q, q_to_pixel
+import platform
 
 
 class binding():
@@ -83,6 +84,8 @@ class CoordinatesPlotWidget(pg.PlotWidget):
         # self.coor_label.setPos(10,10)
 
         # self.cross_hair = self.plot()
+        self.crosshair_plot = None
+        self.graph_legend = self.getPlotItem().addLegend(offset=(-3, 3))
 
         self.setBackground('#2a2a2a')
 
@@ -93,8 +96,8 @@ class CoordinatesPlotWidget(pg.PlotWidget):
         legend = LegendItem(offset=offset)
         legend.setParentItem(self.getViewBox())
 
-        style = pg.PlotDataItem()
-        legend.addItem(style, 'A2')
+        style = pg.PlotDataItem(pen=(0,0,0,0))  # make transparent
+        legend.addItem(style, 'coordi')
         self.legend_labelitem = legend.getLabel(style)
         self.legend_labelitem.setText('x:0 y:0')
         self.coor_update_toggle = True
@@ -129,6 +132,7 @@ class CoordinatesPlotWidget(pg.PlotWidget):
             if hasattr(self, 'crosshair_plot') and self.crosshair_plot is not None:
                 self.removeItem(self.crosshair_plot)
                 self.crosshair_plot = None
+                self.crosshair_legend.hide()
             else:
                 self.crosshair_curve_dataItem, self.crosshair_idx = self.find_closest_coor(qp.x(), qp.y())
                 self.create_cross_hair()
@@ -183,9 +187,27 @@ class CoordinatesPlotWidget(pg.PlotWidget):
         super().keyPressEvent(ev)
 
     def create_cross_hair(self):
-        self.crosshair_plot = self.plot(symbol='+', symbolSize=20, pen='b',symbolPen=pg.mkPen(width=1),symbolBrush=('b'),name="cross")
-        legend = self.addLegend()
-        self.crosshair_legend_label = legend.items[-1][-1]
+        if platform.system() == 'Darwin':
+            args = {'symbol':'+', 'symbolSize':20, 'pen':'b','symbolPen':pg.mkPen(width=1),'symbolBrush':('b'),'name':"cross"}
+            label_text_size = '15pt'
+        else:
+            args = {'symbol':'+', 'symbolSize':20, 'pen': 'b', 'symbolPen': pg.mkPen(width=1), 'symbolBrush': ('b'),'name':"cross"}
+            label_text_size = '9pt'
+
+        if self.crosshair_plot is None:
+            self.crosshair_plot = self.plot(**args)
+            self.graph_legend.removeItem(self.crosshair_plot)
+
+        offset = (-3,-3)
+        self.crosshair_legend = LegendItem(offset=offset, labelTextSize=label_text_size)
+        self.crosshair_legend.setParentItem(self.getViewBox())
+
+        style = pg.PlotDataItem(**args)
+        self.crosshair_legend.addItem(style, 'cross')
+
+        self.crosshair_legend_label = self.crosshair_legend.getLabel(style)
+        self.crosshair_legend_label.setText('x:0 y:0')
+
         self.set_cross_hair_coordi()
 
     def move_cross_hair(self, x_increase):
