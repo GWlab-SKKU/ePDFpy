@@ -91,6 +91,8 @@ class PdfAnalysis(QtWidgets.QWidget):
             return
         if self.datacube.pixel_start_n is None:
             self.datacube.pixel_start_n = find_first_peak(self.datacube.azavg)
+            if self.datacube.pixel_start_n is not 0:
+                self.datacube.pixel_start_n = self.datacube.pixel_start_n - 1 # why ?
             self.datacube.pixel_end_n = len(self.datacube.azavg) - 1
 
         azavg_px = np.arange(len(self.datacube.azavg))
