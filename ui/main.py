@@ -1,16 +1,14 @@
 from PyQt5 import QtCore, QtWidgets, QtGui
-import os, sys
+import sys
 import pyqtgraph as pg
 import file
-import numpy as np
 import util
 from datacube import DataCube
 from typing import List
 from ui.pdfanalysis import PdfAnalysis
-from calculate import pdf_calculator, image_process, q_range_selector
 from PyQt5.QtWidgets import QMessageBox
-import ui.averaging_multiple_gr as averaging_multiple_gr
-from ui import ui_util
+import ui.selection_analysis.averaging_multiple_gr as averaging_multiple_gr
+
 pg.setConfigOptions(antialias=True)
 import definitions
 from ui.profile_extraction import ProfileExtraction
