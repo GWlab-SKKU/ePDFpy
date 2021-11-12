@@ -88,6 +88,7 @@ class DataCube:
         except:
             df = pd.read_csv(self.load_file_path)
             self.original_data_has_column = True
+        df.columns = df.columns.astype(str)
         self.pd_data = df
         self.original_data = df.to_numpy()
 

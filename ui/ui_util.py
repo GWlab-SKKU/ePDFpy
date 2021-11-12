@@ -74,7 +74,7 @@ class IntLineEdit(QtWidgets.QLineEdit):
 
 
 class CoordinatesPlotWidget(pg.PlotWidget):
-    def __init__(self, setYScaling=False, parent=None, background='default', offset=None, plotItem=None, **kargs):
+    def __init__(self, setYScaling=False, parent=None, background='default', offset=None, plotItem=None, button1mode=False, **kargs):
         super().__init__(parent, background, plotItem, **kargs)
 
         # self.setRange(QRectF(-50, -50, 100, 100))
@@ -105,6 +105,9 @@ class CoordinatesPlotWidget(pg.PlotWidget):
         if setYScaling:
             self.sigXRangeChanged.connect(self.YScaling)
 
+        if button1mode:
+            self.plotItem.vb.setLeftButtonAction('rect')
+
     def mouseMoveEvent(self, ev):
         if self.coor_update_toggle:
             qp = self.plotItem.vb.mapSceneToView(ev.localPos())
@@ -114,35 +117,7 @@ class CoordinatesPlotWidget(pg.PlotWidget):
             y = y[:y.find('.') + 1] + y[y.find('.') + 1:][:4]
             self.legend_labelitem.setText("x:{} \ny:{}".format(x,y))
         # self.coor_label.setText("x:{} \ny:{}".format(str(qp.x())[:8],str(qp.y())[:8]))
-        return super(CoordinatesPlotWidget, self).mouseMoveEvent(ev)
-
-    def mousePressEvent(self, ev):
-        qp = self.plotItem.vb.mapSceneToView(ev.localPos())
-
-        try:  # some qt version use different path
-            modifiers = QtGui.QApplication.keyboardModifiers()
-        except:
-            modifiers = QtWidgets.QApplication.keyboardModifiers()
-
-        if modifiers == QtCore.Qt.ShiftModifier:
-            # shift click
-            self.coor_update_toggle = not self.coor_update_toggle
-        elif modifiers == QtCore.Qt.ControlModifier:
-            # ctrl click
-            if hasattr(self, 'crosshair_plot') and self.crosshair_plot is not None:
-                self.removeItem(self.crosshair_plot)
-                self.crosshair_plot = None
-                self.crosshair_legend.hide()
-            else:
-                self.crosshair_curve_dataItem, self.crosshair_idx = self.find_closest_coor(qp.x(), qp.y())
-                self.create_cross_hair()
-        elif modifiers == (QtCore.Qt.ControlModifier | QtCore.Qt.ShiftModifier):
-            # shift + ctrl click
-            pass
-        else:
-            pass
-        # print(self.getPlotItem().dataItems[0].xDisp) # xData, yData, xDisp, yDisp
-        return super().mousePressEvent(ev)
+        return super().mouseMoveEvent(ev)
 
     def mouseDoubleClickEvent(self, ev):
         mouseMode = self.getPlotItem().getViewBox().getState()['mouseMode']
@@ -175,6 +150,34 @@ class CoordinatesPlotWidget(pg.PlotWidget):
             self.setRange(xRange=x, yRange=y, padding=0)
 
         super().mouseDoubleClickEvent(ev)
+
+    def mousePressEvent(self, ev):
+        qp = self.plotItem.vb.mapSceneToView(ev.localPos())
+
+        try:  # some qt version use different path
+            modifiers = QtGui.QApplication.keyboardModifiers()
+        except:
+            modifiers = QtWidgets.QApplication.keyboardModifiers()
+
+        if modifiers == QtCore.Qt.ShiftModifier:
+            # shift click
+            self.coor_update_toggle = not self.coor_update_toggle
+        elif modifiers == QtCore.Qt.ControlModifier:
+            # ctrl click
+            if hasattr(self, 'crosshair_plot') and self.crosshair_plot is not None:
+                self.removeItem(self.crosshair_plot)
+                self.crosshair_plot = None
+                self.crosshair_legend.hide()
+            else:
+                self.crosshair_curve_dataItem, self.crosshair_idx = self.find_closest_coor(qp.x(), qp.y())
+                self.create_cross_hair()
+        elif modifiers == (QtCore.Qt.ControlModifier | QtCore.Qt.ShiftModifier):
+            # shift + ctrl click
+            pass
+        else:
+            pass
+        # print(self.getPlotItem().dataItems[0].xDisp) # xData, yData, xDisp, yDisp
+        return super().mousePressEvent(ev)
 
 
     def keyPressEvent(self, ev):
@@ -256,6 +259,28 @@ class CoordinatesPlotWidget(pg.PlotWidget):
     def YScaling(self):
         self.enableAutoRange(axis='y')
         self.setAutoVisible(y=True)
+
+class HoverableCurveItem(pg.PlotCurveItem):
+    sigCurveHovered = QtCore.Signal(object, object)
+    sigCurveNotHovered = QtCore.Signal(object, object)
+    sigCurveClicked = QtCore.Signal(object, object)
+
+    def __init__(self, hoverable=True, *args, **kwargs):
+        super(HoverableCurveItem, self).__init__(*args, **kwargs)
+        self.hoverable = hoverable
+        self.setAcceptHoverEvents(True)
+
+    def hoverEvent(self, ev):
+        if self.mouseShape().contains(ev.pos()):
+            self.sigCurveHovered.emit(self, ev)
+        else:
+            self.sigCurveNotHovered.emit(self, ev)
+
+    def mouseClickEvent(self, ev):
+        if self.mouseShape().contains(ev.pos()):
+            self.sigCurveClicked.emit(self, ev)
+        return super().mouseClickEvent(ev)
+
 
 
 class IntensityPlotWidget(CoordinatesPlotWidget):

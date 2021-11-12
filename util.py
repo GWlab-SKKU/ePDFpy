@@ -125,6 +125,10 @@ def xor(lst):
     else:
         return False
 
+def find_nearest(array, value):
+    array = np.asarray(array)
+    idx = (np.abs(array - value)).argmin()
+    return idx, array[idx]
 
 class DefaultSetting:
     def __init__(self):
