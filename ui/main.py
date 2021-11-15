@@ -77,7 +77,7 @@ class DataViewer(QtWidgets.QMainWindow):
             self.save_preset_option.setDisabled(True)
             self.open_azavg_only = QtWidgets.QAction("Open &azavg only", self)
             self.save_azavg_only = QtWidgets.QAction("Save &azavg only", self)
-            self.averaging_gr = QtWidgets.QAction("Averaging multiple G(r)", self)
+            self.averaging_gr = QtWidgets.QAction("Selection Analysis", self)
 
             open_menu = menubar.addMenu("     &Open     ")
             open_menu.addAction(self.open_img_file)

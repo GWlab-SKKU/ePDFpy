@@ -186,6 +186,7 @@ class Viewer(QtWidgets.QWidget):
         self.menu_save_intensity_profile_avg.setEnabled(False)
         self.open_stack(dcs)
         self.update_graph()
+        self.rightPanel.graphView.autoRange()
 
     def open_txt_clicked(self):
         #### get files ####
@@ -195,6 +196,7 @@ class Viewer(QtWidgets.QWidget):
         self.menu_save_intensity_profile_avg.setEnabled(False)
         self.open_stack(dcs)
         self.update_graph()
+        self.rightPanel.graphView.autoRange()
 
     def open_custom_clicked(self):
         #### get files ####
@@ -207,6 +209,7 @@ class Viewer(QtWidgets.QWidget):
         self.menu_save_intensity_profile_avg.setEnabled(False)
         self.open_stack(dcs)
         self.update_graph()
+        self.rightPanel.graphView.autoRange()
 
 
 
@@ -309,11 +312,14 @@ class Viewer(QtWidgets.QWidget):
         if (len(shared) / len(unioned)) < 0.7:
             QMessageBox.warning(self,"Warning","axis seems doesn't match \nShared percentage of axis is below 70%")
 
+        self.rightPanel.graphView.autoRange()
+
     def y_axis_changed(self, state):
         if not state:
             return
         self.set_data()
         self.update_graph()
+        self.rightPanel.graphView.autoRange()
 
     def update_graph(self):
         l = self.leftPanel.graph_range_area.spinbox_range_min.value()
@@ -347,8 +353,6 @@ class Viewer(QtWidgets.QWidget):
             self.std_plot.setData(self.std_x[range_slice], self.std_y[range_slice])
         else:
             self.std_plot.setVisible(False)
-
-        self.rightPanel.graphView.autoRange()
         print("update graph")
 
     def data_cut(self, cubes):
