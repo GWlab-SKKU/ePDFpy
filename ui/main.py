@@ -282,7 +282,7 @@ class DataViewer(QtWidgets.QMainWindow):
 
     def menu_open_azavg_only(self, azavg=None):  # azavg arguments is for averaging_multiple_gr.py
         if azavg is None or azavg is False:
-            fp, _ = QtWidgets.QFileDialog.getOpenFileName()
+            fp, _ = QtWidgets.QFileDialog.getOpenFileName(self, filter="csv (*.csv); text file (*.txt)")
             if fp is '':
                 return
             dc = DataCube(file_path=fp,file_type='azavg')
@@ -304,7 +304,6 @@ class DataViewer(QtWidgets.QMainWindow):
 
     def menu_save_preset(self):
         file.save_preset_default(self.dcs[self.current_page], self)
-        self.PDF_analyser.grab().save("test.png")
 
     def menu_save_presets(self):
         for i in range(len(self.dcs)):
