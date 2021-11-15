@@ -535,6 +535,7 @@ class Viewer(QtWidgets.QWidget):
     def create_menu_bar(self):
         self.mainWindow = self.mainWindow
         self.menubar = self.mainWindow.menuBar()
+        self.menubar.setNativeMenuBar(False)
 
         self.menu_open_csv = QtWidgets.QAction("csv", self.mainWindow)
         self.menu_open_txt = QtWidgets.QAction("txt", self.mainWindow)
@@ -761,7 +762,7 @@ class LeftPanel(QtWidgets.QWidget):
             self.graph_group_widget.layout.setSpacing(5)
             self.setWidget(self.graph_group_widget)
 
-            self.setMinimumSize(200,400)
+            self.setMinimumSize(200,300)
             self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
             self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
             self.setWidgetResizable(True)
