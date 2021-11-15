@@ -225,6 +225,22 @@ class CoordinatesPlotWidget(pg.PlotWidget):
         str_y = str(np.round(y,2))
         self.crosshair_legend_label.setText("x:{},y:{}".format(str_x, str_y))
 
+    def save_intensity_avg(self):
+        fp, ext = QtWidgets.QFileDialog.getSaveFileName(self, filter="text file (*.txt);;All Files (*)")
+        if fp == "":
+            return
+        azavg_list = []
+        shortest_end = 1000000
+        for grCube in self.grCubes:
+            azavg = np.loadtxt(grCube.azavg_file_path)
+            if shortest_end > len(azavg):
+                shortest_end = len(azavg)
+            azavg_list.append(azavg)
+        azavg_list = [azavg[:shortest_end] for azavg in azavg_list]
+        avg_azavg = np.average(np.array(azavg_list), axis=0).transpose()
+        np.savetxt(fp+".txt", avg_azavg)
+
+
     def find_closest_coor(self, x,y):
         """
         :param x:
@@ -267,8 +283,6 @@ class HoverableCurveItem(pg.PlotCurveItem):
 
     def __init__(self, hoverable=True, *args, **kwargs):
         super(HoverableCurveItem, self).__init__(*args, **kwargs)
-        self.hoverable = hoverable
-        self.setAcceptHoverEvents(True)
 
     def hoverEvent(self, ev):
         if self.mouseShape().contains(ev.pos()):
@@ -419,7 +433,6 @@ class ProfileGraphPanel(QtWidgets.QWidget):
         self.datacube.pixel_end_n = q_to_pixel(right,self.datacube.ds)
         self.setting.lbl_pixel_range.setText("({},{})".format(self.datacube.pixel_start_n, self.datacube.pixel_end_n))
 
-
     def btn_range_start_clicked(self):
         # left = q_range_selector.find_first_nonzero_idx(self.dc.azavg)
         left = self.setting.spinBox_range_left.value()
@@ -448,7 +461,6 @@ class ProfileGraphPanel(QtWidgets.QWidget):
         self.plotWidget.setXRange(l, r, padding=0.1)
         # self.graphPanel.plot_azav.setYRange(mn, mx, padding=0.1)
 
-
     def update_graph(self, dat):
         # self.plotWindow.layout.setSpacing(0)
         # self.plotWindow.layout.setContentsMargins(0,0,0,0)
@@ -456,7 +468,6 @@ class ProfileGraphPanel(QtWidgets.QWidget):
         # self.plotWindow.layout.addWidget(self.plot_azav)
         # self.plotWindow.setLayout(self.plotWindow.layout)
         self.plot_azav_curr.setData(dat)
-
         # self.plotWindow.resize(1000,350)
 
     class Setting(QtWidgets.QGroupBox):

@@ -12,6 +12,7 @@ from ui import ui_util
 import datacube
 from PyQt5.QtGui import QColor
 import util
+from typing import List
 from ui.selection_analysis.column_selector import ColumnSelector
 
 pg.setConfigOptions(antialias=True)
@@ -29,8 +30,7 @@ class Viewer(QtWidgets.QWidget):
 
     def __init__(self, mainWindow, profile_extraction=None):
         super().__init__()
-
-        self.grCubes = []
+        self.grCubes: List[GrCube] = []
         self.avg_azavg = None
         self.profile_extraction = profile_extraction
         self.mainWindow = mainWindow
@@ -48,7 +48,7 @@ class Viewer(QtWidgets.QWidget):
         self.leftPanel = LeftPanel()
         self.rightPanel = GraphPanel()
         self.average_plot = self.rightPanel.graphView.plot(pen=pg.mkPen(255,255,255,width=5))
-        self.variance_plot = self.rightPanel.graphView.plot(pen=pg.mkPen(255, 255, 255, width=5))
+        self.std_plot = self.rightPanel.graphView.plot(pen=pg.mkPen(255, 255, 255, width=5))
 
         self.splitter_horizontal = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
         self.splitter_horizontal.addWidget(self.leftPanel)
@@ -63,19 +63,67 @@ class Viewer(QtWidgets.QWidget):
         self.layout.addWidget(self.splitter_horizontal)
 
     def binding(self):
-        self.menu_open_gr.triggered.connect(self.open_btn_clicked)
+        self.menu_open_gr.triggered.connect(self.open_gr_clicked)
         self.menu_open_csv.triggered.connect(self.open_csv_clicked)
+        self.menu_open_txt.triggered.connect(self.open_txt_clicked)
+        self.menu_open_custom.triggered.connect(self.open_custom_clicked)
+        self.menu_save_current.triggered.connect(self.save_current_graphs)
         self.leftPanel.graph_x_data_select_area.cmb_x_data.currentTextChanged.connect(self.x_axis_changed)
-        self.leftPanel.graph_y_data_select_area.radio_grp.buttonToggled.connect(self.y_axis_changed)
         self.leftPanel.graph_range_area.spinbox_range_min.valueChanged.connect(self.update_graph)
         self.leftPanel.graph_range_area.spinbox_range_max.valueChanged.connect(self.update_graph)
         self.leftPanel.graph_ops_select_area.chkbox_average.clicked.connect(self.update_graph)
-        self.leftPanel.graph_ops_select_area.chkbox_variance.clicked.connect(self.update_graph)
-        self.menu_open_txt.triggered.connect(self.open_txt_clicked)
-        self.menu_open_custom.triggered.connect(self.open_custom_clicked)
+        self.leftPanel.graph_ops_select_area.chkbox_std.clicked.connect(self.update_graph)
+
         # self.leftPanel.btn_group.btn_save_gr_avg.clicked.connect(self.save_gr_avg)
         # self.leftPanel.btn_group.btn_save_intensity_avg.clicked.connect(self.save_intensity_avg)
         # self.leftPanel.btn_group.btn_open_analyzer.clicked.connect(self.open_analyzer)
+
+    def save_current_graphs(self):
+        plot_to_save = {}
+
+        if len(self.grCubes) == 0:
+            return
+
+        # x data
+        str_xaxis = self.leftPanel.graph_x_data_select_area.cmb_x_data.currentText()
+        if str_xaxis == "None":
+            x = np.arange(len(self.grCubes[0].pd_data))
+        else:
+            x = self.grCubes[0].pd_data[str_xaxis]
+        plot_to_save.update({"x":x})
+
+        # y data
+        str_yaxis = self.leftPanel.graph_y_data_select_area.radio_grp.checkedButton().text()
+        for grCube in self.grCubes:
+            if grCube.chkbox_module.isChecked() == True:
+                y = grCube.pd_data[str_yaxis]
+                plot_to_save.update({grCube.load_file_path:y})
+
+        # average
+        if self.leftPanel.graph_ops_select_area.chkbox_average.isChecked():
+            avg_lst = [grCube.pd_data[str_yaxis] for grCube in self.grCubes if grCube.plotItem.isVisible()]
+            avg = np.average(np.array(avg_lst).transpose(), axis=1)
+            plot_to_save.update({"average":avg})
+
+        if self.leftPanel.graph_ops_select_area.chkbox_std.isChecked():
+            std_lst = [grCube.pd_data[str_yaxis] for grCube in self.grCubes if grCube.plotItem.isVisible()]
+            std_ = np.std(np.array(std_lst).transpose(), axis=1)
+            plot_to_save.update({"std": std_})
+
+        df = pd.DataFrame(plot_to_save)
+        cols = df.columns.to_list()
+        if "std" in cols:
+            cols.remove("std")
+            cols.insert(1,"std")
+        if "average" in cols:
+            cols.remove("average")
+            cols.insert(1,"average")
+        df.columns = cols
+
+        fp, ext = QtWidgets.QFileDialog.getSaveFileName(self, filter="CSV Files (*.csv)")
+        if fp == '':
+            return
+        df.to_csv(fp, index=None)
 
     def save_gr_avg(self):
         # calculate avg
@@ -102,18 +150,6 @@ class Viewer(QtWidgets.QWidget):
             self.profile_extraction.menu_open_azavg_only(self.avg_azavg)
             print(np.sum(self.avg_azavg))
 
-    def averaging_profile_intensity(self):
-        azavg_list = []
-        shortest_end = 1000000
-        for grCube in self.grCubes:
-            if grCube.chkbox_module.chkbox.isChecked():
-                azavg = np.loadtxt(grCube.azavg_file_path)
-                if shortest_end > len(azavg):
-                    shortest_end = len(azavg)
-                azavg_list.append(azavg)
-        azavg_list = [azavg[:shortest_end] for azavg in azavg_list]
-        avg_azavg = np.average(np.array(azavg_list), axis=0).transpose()
-        self.avg_azavg = avg_azavg
 
     def verify_files(self, dcs):
         # column header corresponding
@@ -125,46 +161,46 @@ class Viewer(QtWidgets.QWidget):
         if len(set.intersection(*lst_set)) == 0:
             QMessageBox.about(self, "Error2", "column header doesn't match each other. \n"
                                                     "Detected columns:{}"
-                                    .format(set.union(*lst_set)-set.intersection(*lst_set)))
+                                    .format(set.union(*lst_set)))
             return False
         if len(set.union(*lst_set)) != len(set.intersection(*lst_set)):
-            reply = QMessageBox.Information(self, "Select", "Only shared headers will show. \n"
+            reply = QMessageBox.information(self, "Select", "Only shared headers will show. \n"
                                                     "Shared columns:{} \n"
                                                     "Different columns:{}"
-                                    .format(set.intersection(*lst_set),set.symmetric_difference(*lst_set)))
+                                    .format(set.intersection(*lst_set),set.union(*lst_set)-set.intersection(*lst_set)))
             if reply == QMessageBox.No:
                 return False
         return True
-
-    def open_file_clicked(self):
-        fp, _ = QtWidgets.QFileDialog.getOpenFileName()
-        if ".preset.csv" in fp:
-            dc = datacube.DataCube(fp,file_type="preset")
-        else:
-            dc = datacube.DataCube(fp)
-        return dc
 
     def open_csv_clicked(self):
         #### get files ####
         dcs = self.get_dcs_from_folder("*.csv")
         if dcs is None:
             return
+        self.menu_save_intensity_profile.setEnabled(False)
         self.open_stack(dcs)
+        self.update_graph()
 
     def open_txt_clicked(self):
         #### get files ####
         dcs = self.get_dcs_from_folder("*.txt")
         if dcs is None:
             return
+        self.menu_save_intensity_profile.setEnabled(False)
         self.open_stack(dcs)
+        self.update_graph()
 
     def open_custom_clicked(self):
         #### get files ####
         text, _ = QtWidgets.QInputDialog.getText(None, "Type custom name", "e.g) *.csv, *azavg*.txt")
+        if text == "" or _ is False:
+            return
         dcs = self.get_dcs_from_folder(text)
         if dcs is None:
             return
+        self.menu_save_intensity_profile.setEnabled(False)
         self.open_stack(dcs)
+        self.update_graph()
 
 
 
@@ -177,7 +213,8 @@ class Viewer(QtWidgets.QWidget):
             return
 
         #### grcube load ####
-        [grCube.clear() for grCube in self.grCubes]
+        for grCube in self.grCubes:
+            grCube.clear()
         self.grCubes.clear()
         self.grCubes.extend(dcs)
 
@@ -185,9 +222,10 @@ class Viewer(QtWidgets.QWidget):
         self.data_cut(dcs)
 
         # set x axis
-        columns = dcs[0].pd_data.columns.to_list()
+        lst_set = [set(dc.pd_data.columns) for dc in dcs]
+        shared_columns = list(set.intersection(*lst_set))
         combo_lst = ["None"]
-        combo_lst.extend(columns)
+        combo_lst.extend(shared_columns)
         self.leftPanel.graph_x_data_select_area.cmb_x_data.blockSignals(True)
         self.leftPanel.graph_x_data_select_area.cmb_x_data.clear()
         self.leftPanel.graph_x_data_select_area.cmb_x_data.addItems(combo_lst)
@@ -195,25 +233,27 @@ class Viewer(QtWidgets.QWidget):
 
         # set y axis
         self.leftPanel.graph_y_data_select_area.clear_radio()
-        for clmn in columns:
+        for clmn in shared_columns:
             radio = self.leftPanel.graph_y_data_select_area.add_radio(clmn)
             radio.toggled.connect(self.y_axis_changed)
-        self.leftPanel.graph_y_data_select_area.radio_grp.blockSignals(True)
-        self.leftPanel.graph_y_data_select_area.radio_grp.buttons()[0].setChecked(True)
-        self.leftPanel.graph_y_data_select_area.radio_grp.blockSignals(False)
+        radio_grp = self.leftPanel.graph_y_data_select_area.radio_grp
+        radio_lst = radio_grp.buttons()
+        radio_grp.blockSignals(True)
+        radio_lst[0].setChecked(True)
+        radio_grp.blockSignals(False)
 
         self.change_range()
         self.set_data()
 
         for idx, grCube in enumerate(self.grCubes):
-            grCube.color = pg.intColor(idx, minValue=200, alpha=200)
-            color = grCube.color
-            grCube.plotItem = ui_util.HoverableCurveItem(grCube.data_x, grCube.data_y, pen=pg.mkPen(color), setAcceptHoverEvent=True)
+
+
+            grCube.plotItem = ui_util.HoverableCurveItem(grCube.data_x, grCube.data_y)
             self.rightPanel.graphView.addItem(grCube.plotItem)
-            grCube.chkbox_module = self.leftPanel.graph_list_area.add_module(grCube.load_file_path, color)
-            grCube.chkbox_module.chkbox.toggled.connect(grCube.plot_show_hide)
-            grCube.chkbox_module.chkbox.toggled.connect(self.calculate_average)
-            grCube.chkbox_module.chkbox.toggled.connect(self.calculate_variance)
+            grCube.chkbox_module = self.leftPanel.graph_list_area.add_module(grCube.load_file_path)
+            grCube.set_color(idx)
+            grCube.chkbox_module.toggled.connect(grCube.visible_toggle)
+            grCube.chkbox_module.toggled.connect(self.update_graph)
             grCube.binding_event()
         # columns_to_add = columns
         # if x_axis in columns_to_add:
@@ -228,15 +268,18 @@ class Viewer(QtWidgets.QWidget):
                 self.calculate_average()
             else:
                 self.average_plot.hide()
-            if self.leftPanel.graph_ops_select_area.chkbox_variance.isChecked():
-                self.calculate_variance()
+            if self.leftPanel.graph_ops_select_area.chkbox_std.isChecked():
+                self.calculate_std()
             else:
-                self.variance_plot.hide()
+                self.std_plot.hide()
 
 
     def x_axis_changed(self):
         current_x_axis = self.leftPanel.graph_x_data_select_area.cmb_x_data.currentText()
-        buttons = self.leftPanel.graph_y_data_select_area.radio_grp.buttons()
+        btn_grp = self.leftPanel.graph_y_data_select_area.radio_grp
+        btn_grp.blockSignals(True)
+        buttons = btn_grp.buttons()
+        [radio.blockSignals(True) for radio in buttons]
         for idx, radio in enumerate(buttons):
             if current_x_axis == radio.text():
                 radio.setEnabled(False)
@@ -244,11 +287,29 @@ class Viewer(QtWidgets.QWidget):
                     buttons[np.mod(idx+1,len(buttons))].setChecked(True)
             else:
                 radio.setEnabled(True)
+        btn_grp.blockSignals(False)
+        [radio.blockSignals(False) for radio in buttons]
         self.change_range()
         self.set_data()
         self.update_graph()
 
-    def y_axis_changed(self):
+
+        if current_x_axis == "None":
+            return
+        shared = set(self.grCubes[0].pd_data[current_x_axis].to_list())
+        unioned = set(self.grCubes[0].pd_data[current_x_axis].to_list())
+        for grCube in self.grCubes:
+            shared = set.intersection(shared, set(grCube.pd_data[current_x_axis].to_list()))
+            unioned = set.union(unioned, set(grCube.pd_data[current_x_axis].to_list()))
+        if (len(shared) / len(unioned)) < 0.7:
+            QMessageBox.warning(self,"Warning","axis seems doesn't match \nShared percentage of axis is below 70%")
+
+
+
+
+    def y_axis_changed(self, state):
+        if not state:
+            return
         self.set_data()
         self.update_graph()
 
@@ -266,23 +327,27 @@ class Viewer(QtWidgets.QWidget):
         idx_l, value_l = util.find_nearest(self.grCubes[0].data_x, l)
         idx_r, value_r = util.find_nearest(self.grCubes[0].data_x, r)
 
+        range_slice = slice(idx_l,idx_r+1)
         for grCube in self.grCubes:
-            grCube.plotItem.setData(grCube.data_x[idx_l:idx_r],grCube.data_y[idx_l:idx_r])
+            grCube.plotItem.setData(grCube.data_x[range_slice],grCube.data_y[range_slice])
 
         # average
         if self.leftPanel.graph_ops_select_area.chkbox_average.isChecked():
             self.average_plot.setVisible(True)
             self.calculate_average()
+            self.average_plot.setData(self.avg_x[range_slice], self.avg_y[range_slice])
         else:
             self.average_plot.setVisible(False)
         # std
-        if self.leftPanel.graph_ops_select_area.chkbox_variance.isChecked():
-            self.variance_plot.setVisible(True)
-            self.calculate_variance()
+        if self.leftPanel.graph_ops_select_area.chkbox_std.isChecked():
+            self.std_plot.setVisible(True)
+            self.calculate_std()
+            self.std_plot.setData(self.std_x[range_slice], self.std_y[range_slice])
         else:
-            self.variance_plot.setVisible(False)
+            self.std_plot.setVisible(False)
 
         self.rightPanel.graphView.autoRange()
+        print("update graph")
 
     def data_cut(self, cubes):
         min_length = min([len(grCube.pd_data) for grCube in cubes])
@@ -325,64 +390,25 @@ class Viewer(QtWidgets.QWidget):
             str_yaxis = button.text()
             grcube.data_y = grcube.pd_data[str_yaxis].to_numpy()
 
-
-    def draw_graphs(self, dcs:[datacube.DataCube]):
-        for idx, dc in enumerate(dcs):
-            dc:datacube.DataCube
-            color = pg.intColor(idx, minValue=200)
-            graph_name = os.path.split(dc.load_file_path)[1]
-            if len(dc.original_data) == 1:
-                plot_ = self.rightPanel.graphView.plot(dc.original_data, name=graph_name, pen=pg.mkPen(color))
-            grCube.plotItem = plot_
-        pass
-
-    def open_stack_txt_clicked(self):
-
-        pass
-
-    def open_btn_clicked(self):
+    def open_gr_clicked(self):
         path = QtWidgets.QFileDialog.getExistingDirectory(self,'open')
         self.setWindowTitle(path)
         if path == "":
             return
 
-        for grCube in self.grCubes: grCube.clear()
-        self.grCubes.clear()
-
         data_r_files, data_azav_files = self.get_gr_files(path)
-        if len(data_r_files) == 0 :
+        if len(data_r_files) == 0:
             QMessageBox.about(self,"Error","No data detected on the folder")
 
-        ################## MAIN ####################
-        for idx, data_r_file in enumerate(data_r_files):
-            grCube = GrCube()
-            grCube.unit_path = data_r_file
+        dcs = []
+        for i in range(len(data_r_files)):
+            dc = GrCube(data_r_files[i])
+            dc.azavg_file_path = data_azav_files[i]
+            dcs.append(dc)
 
-            # graph name
-            # graph_name = data_r_file[data_r_file.rfind("_")+1:data_r_file.find("Data_r.csv")]
-            graph_name = data_r_file[data_r_file.rfind("_") + 1:data_r_file.find("r30.csv")]
+        self.menu_save_intensity_profile.setEnabled(True)
+        self.open_stack(dcs)
 
-            # put parameters
-
-            # load and plot
-            grCube.r, grCube.Gr = self.load_Gr_file(data_r_file)
-            grCube.color = pg.intColor(idx,minValue=200)
-            grCube.r_file_path = data_r_file
-            grCube.azavg_file_path = data_azav_files[idx]
-            color = grCube.color
-            plot_ = self.rightPanel.graphView.plot(grCube.r,grCube.Gr,name=graph_name,pen=pg.mkPen(color))
-            grCube.plotItem = plot_
-            grCube.chkbox_module = self.leftPanel.graph_list_area.add_module(os.path.split(data_r_file)[1],color)
-            grCube.chkbox_module.chkbox.clicked.connect(grCube.plot_show_hide)
-            grCube.chkbox_module.chkbox.clicked.connect(self.calculate_average)
-
-            grCube.binding_event()
-
-            self.grCubes.append(grCube)
-
-        self.calculate_average()
-        self.rightPanel.graphView.autoRange()
-        self.rightPanel.graphView.setRange(xRange=[0,10])
 
     def load_Gr_file(self, path):
         df = pd.read_csv(path)
@@ -471,19 +497,38 @@ class Viewer(QtWidgets.QWidget):
         return gr_path_list, azavg_path_lst
 
     def calculate_average(self):
-        avg_lst = [grCube.data_y for grCube in self.grCubes if grCube.plotItem.isVisible()]
-        self.avg = np.average(np.array(avg_lst).transpose(), axis=1)
-        self.average_plot.setData(self.grCubes[0].data_x, self.avg)
+        df_sum = pd.DataFrame()
+        str_xaxis = self.leftPanel.graph_x_data_select_area.cmb_x_data.currentText()
+        str_yaxis = self.leftPanel.graph_y_data_select_area.radio_grp.checkedButton().text()
+        for grCube in self.grCubes:
+            if grCube.chkbox_module.isChecked() == False:
+                continue
+            if str_xaxis == 'None':
+                df = pd.DataFrame(grCube.pd_data[str_yaxis])
+            else:
+                df = pd.DataFrame(grCube.pd_data[str_yaxis].values,index=grCube.pd_data[str_xaxis])
+            df_sum = pd.concat([df_sum,df],axis=1)
+        df_mean = df_sum.mean(axis=1)
+        self.avg_x = df_mean.index.to_numpy()
+        self.avg_y = df_mean.to_numpy().squeeze()
+        return self.avg_x, self.avg_y
 
-    def calculate_variance(self):
-        avg_lst = [grCube.data_y for grCube in self.grCubes if grCube.plotItem.isVisible()]
-        self.var = np.std(np.array(avg_lst).transpose(), axis=1)
-        self.variance_plot.setData(self.grCubes[0].data_x, self.var)
-
-    # def hovering_event(self):
-    #     for grCube in self.grCubes:
-    #         grCube.chkbox_module:GraphModule
-    #         grCube.chkbox_module.enterEvent_list.append(grCube.plotItem)
+    def calculate_std(self):
+        df_sum = pd.DataFrame()
+        str_xaxis = self.leftPanel.graph_x_data_select_area.cmb_x_data.currentText()
+        str_yaxis = self.leftPanel.graph_y_data_select_area.radio_grp.checkedButton().text()
+        for grCube in self.grCubes:
+            if grCube.chkbox_module.isChecked() == False:
+                continue
+            if str_xaxis == 'None':
+                df = pd.DataFrame(grCube.pd_data[str_yaxis])
+            else:
+                df = pd.DataFrame(grCube.pd_data[str_yaxis].values,index=grCube.pd_data[str_xaxis])
+            df_sum = pd.concat([df_sum,df],axis=1)
+        df_std = df_sum.std(axis=1)
+        self.std_x = df_std.index.to_numpy()
+        self.std_y = df_std.to_numpy().squeeze()
+        return self.std_x, self.std_y
 
     def create_menu_bar(self):
         self.mainWindow = self.mainWindow
@@ -492,8 +537,11 @@ class Viewer(QtWidgets.QWidget):
         self.menu_open_csv = QtWidgets.QAction("csv", self.mainWindow)
         self.menu_open_txt = QtWidgets.QAction("txt", self.mainWindow)
         self.menu_open_preset = QtWidgets.QAction("preset", self.mainWindow)
+        self.menu_open_preset.setDisabled(True)
         self.menu_open_gr = QtWidgets.QAction("gr", self.mainWindow)
         self.menu_open_custom = QtWidgets.QAction("Custom Name", self.mainWindow)
+
+
 
         self.menubar: QtWidgets.QMenuBar
         self.menubar.setMaximumHeight(25)
@@ -508,7 +556,13 @@ class Viewer(QtWidgets.QWidget):
         open_menu.addAction(self.menu_open_custom)
         open_menu.addSeparator()
 
+        self.menu_save_current = QtWidgets.QAction("Save current graphs", self.mainWindow)
+        self.menu_save_intensity_profile = QtWidgets.QAction("Save intensity profile", self.mainWindow)
         save_menu = self.menubar.addMenu("     &Save     ")
+        save_menu.addAction(self.menu_save_current)
+        save_menu.addAction(self.menu_save_intensity_profile)
+        self.menu_save_intensity_profile.setEnabled(False)
+
         return self.menubar
 
 
@@ -519,37 +573,82 @@ class GrCube(datacube.DataCube):
         self.color: QColor
         self.color = None
         self.plotItem = None
-        self.chkbox_module:GraphModule
+        self.chkbox_module:GraphCheckBox
         self.chkbox_module = None
-
-    def plot_show_hide(self):
-        if self.chkbox_module.chkbox.isChecked():
-            self.plotItem.show()
-        else:
-            self.plotItem.hide()
-
-    def plot_hide(self):
-        self.chkbox_module.chkbox.setChecked(False)
-        self.plotItem.hide()
 
     def clear(self):
         self.plotItem.clear()
         self.chkbox_module.deleteLater()
         self.chkbox_module = None
 
+    def set_color(self, int):
+        ## color ##
+        self.color = pg.intColor(int, minValue=200, alpha=255)
+        # self.color_dark = self.color.darker(50)
+        # self.color_bright = self.color.lighter(50)
+        self.color_txt = "rgba({}, {}, {}, {});".format(self.color.red(), self.color.green(), self.color.blue(), self.color.alpha())
+
+        ## pen ##
+        self.enter_pen = pg.mkPen(self.color,width=5)
+        self.default_pen = pg.mkPen(self.color,width=1)
+
+        ## default chkbox ##
+        self.styleSheet_default = "background-color: #444444;" \
+                                  "padding-top: 10px;"\
+                                  "padding-bottom: 10px;"\
+                                  "color:{}".format(self.color_txt)
+        self.styleSheet_highlight =  "background-color: #777777;"\
+                                     "padding-top: 10px;"\
+                                     "padding-bottom: 10px;"\
+                                     "color:{}".format(self.color_txt)
+        self.styleSheet_unuse =      "background-color: #111111;"\
+                                     "padding-top: 10px;"\
+                                     "padding-bottom: 10px;"\
+                                     "color:{}".format(self.color_txt)
+        self.styleSheet_default_using = self.styleSheet_default
+        self.styleSheet_highlight_using = self.styleSheet_highlight
+
+        self.chkbox_module.setStyleSheet(self.styleSheet_default_using)
+
+        ## default graphPen ##
+        self.plotItem.setPen(self.default_pen)
+
+
     def binding_event(self):
         # widget enter event
-        enter_pen = pg.mkPen(self.color,width=5)
-        default_pen = pg.mkPen(self.color,width=1)
-        print(enter_pen)
-        self.chkbox_module.enterEvent_list.append(lambda: self.plotItem.setPen(enter_pen))
-        self.chkbox_module.leaveEvent_list.append(lambda: self.plotItem.setPen(default_pen))
-        self.plotItem.sigCurveHovered.connect(lambda: self.plotItem.setPen(enter_pen))
-        self.plotItem.sigCurveNotHovered.connect(lambda: self.plotItem.setPen(default_pen))
+        self.chkbox_module.enterEvent_list.append(self.hover_in)
+        self.chkbox_module.leaveEvent_list.append(self.hover_out)
+        self.plotItem.sigCurveHovered.connect(self.hover_in)
+        self.plotItem.sigCurveNotHovered.connect(self.hover_out)
+        self.plotItem.sigCurveClicked.connect(lambda: self.chkbox_module.setChecked(False))
 
-        self.plotItem.sigCurveHovered.connect(lambda: self.plotItem.setPen(enter_pen))
-        self.plotItem.sigCurveNotHovered.connect(lambda: self.plotItem.setPen(default_pen))
-        self.plotItem.sigCurveClicked.connect(self.plot_hide)
+    def hover_in(self):
+        ### graph ###
+        self.plotItem.setPen(self.enter_pen)
+
+        ### chkbox ###
+        self.chkbox_module.setStyleSheet(self.styleSheet_highlight_using)
+
+
+    def hover_out(self):
+        if self.styleSheet_default_using is None:
+            return
+        self.chkbox_module.setStyleSheet(self.styleSheet_default_using)
+        self.plotItem.setPen(self.default_pen)
+        self.chkbox_module.setStyleSheet(self.styleSheet_default_using)
+        pass
+
+    def visible_toggle(self):
+        if self.chkbox_module.isChecked():
+            self.plotItem.show()
+            self.styleSheet_default_using = self.styleSheet_default
+            self.styleSheet_highlight_using = self.styleSheet_highlight
+            self.chkbox_module.setStyleSheet(self.styleSheet_highlight_using)
+        else:
+            self.plotItem.hide()
+            self.styleSheet_default_using = self.styleSheet_unuse
+            self.styleSheet_highlight_using = self.styleSheet_unuse
+            self.chkbox_module.setStyleSheet(self.styleSheet_default_using)
 
 
 class GraphPanel(QtWidgets.QWidget):
@@ -617,9 +716,9 @@ class LeftPanel(QtWidgets.QWidget):
             self.layout = QtWidgets.QVBoxLayout()
             self.setLayout(self.layout)
             self.chkbox_average = QtWidgets.QCheckBox("Average")
-            self.chkbox_variance = QtWidgets.QCheckBox("Variance")
+            self.chkbox_std = QtWidgets.QCheckBox("Std")
             self.layout.addWidget(self.chkbox_average)
-            self.layout.addWidget(self.chkbox_variance)
+            self.layout.addWidget(self.chkbox_std)
 
     class GraphYDataSelectArea(QtWidgets.QGroupBox):
         def __init__(self):
@@ -655,11 +754,10 @@ class LeftPanel(QtWidgets.QWidget):
             self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
             self.setWidgetResizable(True)
 
-        def add_module(self, text, color):
+        def add_module(self, text):
             print("module:",text)
-            module = GraphModule()
-            module.set_text(text)
-            module.set_color(color)
+            module = GraphCheckBox()
+            module.setText(text)
             self.graph_group_widget.layout.insertWidget(0, module)
             return module
 
@@ -681,58 +779,17 @@ class LeftPanel(QtWidgets.QWidget):
             self.layout.addWidget(self.btn_open_analyzer)
 
 
-class GraphModule(QtWidgets.QWidget):
+class GraphCheckBox(QtWidgets.QCheckBox):
     def __init__(self):
         super().__init__()
         self.enterEvent_list = []
         self.leaveEvent_list = []
-        self.enterEvent_list = [self.enter_color]
-        self.leaveEvent_list = [self.exit_color]
-        layout = QtWidgets.QHBoxLayout()
-        layout.setContentsMargins(0,0,0,0)
-        layout.setSpacing(0)
-        self.setLayout(layout)
-        self.chkbox = QtWidgets.QCheckBox("")
-        self.chkbox.setChecked(True)
-        self.textbox = QtWidgets.QPlainTextEdit("")
-        self.textbox.setReadOnly(True)
-        self.textbox.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        self.setChecked(True)
         self.color = None
         self.color_txt = None
         self.dark_color_txt = None
         self.bright_color_txt = None
-        self.textbox.setMaximumHeight(20)
-        layout.addWidget(self.chkbox)
-
-        # layout.addWidget(self.textbox)
-
-    # def set_text(self,text):
-    #     self.textbox.setPlainText(text)
-
-    def set_text(self,text):
-        self.chkbox.setText(text)
-
-    def set_color(self, color):
-        self.color = color
-        self.dark_color = self.color.lighter()
-        self.color_txt = "rgba({}, {}, {}, {});".format(color.red(), color.green(), color.blue(), color.alpha())
-        self.dark_color_txt = "rgba({}, {}, {}, {});".format(color.red(), color.green(), color.blue(), 100)
-        self.bright_color_txt = "rgba({}, {}, {}, {});".format(color.red(), color.green(), color.blue(), 100)
-        self.setStyleSheet("background-color: {};"
-                           "padding-top: 10px;"
-                           "padding-bottom: 10px;".format(self.color_txt))
-        # self.chkbox.styleSheet()
-        pass
-
-    def enter_color(self):
-        self.setStyleSheet("background-color: {};"
-                           "padding-top: 10px;"
-                           "padding-bottom: 10px;".format(self.bright_color_txt))
-
-    def exit_color(self):
-        self.setStyleSheet("background-color: {};"
-                           "padding-top: 10px;"
-                           "padding-bottom: 10px;".format(self.color_txt))
 
     def enterEvent(self, a0: QtCore.QEvent) -> None:
         super().enterEvent(a0)
