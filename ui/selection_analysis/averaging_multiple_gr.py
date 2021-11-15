@@ -657,7 +657,6 @@ class GraphPanel(QtWidgets.QWidget):
         super().__init__()
         self.layout = QtWidgets.QVBoxLayout()
         self.setLayout(self.layout)
-        self.layout.setContentsMargins(5,5,5,5)
         self.graphView = ui_util.CoordinatesPlotWidget(setYScaling=False, button1mode=True)
         self.axis1 = pg.InfiniteLine(angle=0)
         self.graphView.addItem(self.axis1)
@@ -670,7 +669,6 @@ class LeftPanel(QtWidgets.QWidget):
         self.splitter_left_vertical = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         self.layout = QtWidgets.QHBoxLayout()
         self.setLayout(self.layout)
-        self.layout.setContentsMargins(5,5,5,5)
 
         self.graph_list_area = self.GraphListArea()
         self.graph_ops_select_area = self.GraphOpsArea()
@@ -679,11 +677,11 @@ class LeftPanel(QtWidgets.QWidget):
         self.graph_x_data_select_area = self.GraphXDataSelectArea()
         # self.btn_group = self.ButtonListWidget()
 
-        self.splitter_left_vertical.addWidget(self.graph_list_area)
-        self.splitter_left_vertical.addWidget(self.graph_ops_select_area)
-        self.splitter_left_vertical.addWidget(self.graph_x_data_select_area)
-        self.splitter_left_vertical.addWidget(self.graph_y_data_select_area)
-        self.splitter_left_vertical.addWidget(self.graph_range_area)
+        # self.splitter_left_vertical.addWidget(self.graph_list_area)
+        # self.splitter_left_vertical.addWidget(self.graph_ops_select_area)
+        # self.splitter_left_vertical.addWidget(self.graph_x_data_select_area)
+        # self.splitter_left_vertical.addWidget(self.graph_y_data_select_area)
+        # self.splitter_left_vertical.addWidget(self.graph_range_area)
 
         self.splitter_left_vertical.setStretchFactor(0, 5)
         # self.splitter_left_vertical.setStretchFactor(1, 5)
@@ -692,8 +690,12 @@ class LeftPanel(QtWidgets.QWidget):
 
         self.graph_y_data_select_area.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Maximum,
                                                          QtWidgets.QSizePolicy.Policy.Maximum))
-
-        self.layout.addWidget(self.splitter_left_vertical)
+        self.layout.addWidget(self.graph_list_area)
+        self.layout.addWidget(self.graph_ops_select_area)
+        self.layout.addWidget(self.graph_x_data_select_area)
+        self.layout.addWidget(self.graph_y_data_select_area)
+        self.layout.addWidget(self.graph_range_area)
+        # self.layout.addWidget(self.splitter_left_vertical)
 
     class GraphXDataSelectArea(QtWidgets.QGroupBox):
         def __init__(self):
