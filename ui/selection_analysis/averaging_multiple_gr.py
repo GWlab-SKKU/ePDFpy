@@ -13,6 +13,7 @@ import datacube
 from PyQt5.QtGui import QColor
 import util
 from typing import List
+import platform
 from ui.selection_analysis.column_selector import ColumnSelector
 
 pg.setConfigOptions(antialias=True)
@@ -656,6 +657,7 @@ class GraphPanel(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
         self.layout = QtWidgets.QVBoxLayout()
+        self.layout.setContentsMargins(5,10,10,10)
         self.setLayout(self.layout)
         self.graphView = ui_util.CoordinatesPlotWidget(setYScaling=False, button1mode=True)
         self.axis1 = pg.InfiniteLine(angle=0)
@@ -669,7 +671,9 @@ class LeftPanel(QtWidgets.QWidget):
         self.splitter_left_vertical = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         self.layout = QtWidgets.QVBoxLayout()
         self.setLayout(self.layout)
-        self.layout.setSpacing(0)
+        if platform.system() == 'Darwin':
+            self.layout.setSpacing(0)
+        self.layout.setContentsMargins(10,10,5,10)
 
         self.graph_list_area = self.GraphListArea()
         self.graph_ops_select_area = self.GraphOpsArea()
@@ -689,8 +693,8 @@ class LeftPanel(QtWidgets.QWidget):
         # self.splitter_left_vertical.setStretchFactor(2, 5)
         # self.splitter_left_vertical.addWidget(self.btn_group)
 
-        self.graph_y_data_select_area.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Maximum,
-                                                         QtWidgets.QSizePolicy.Policy.Maximum))
+        # self.graph_y_data_select_area.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Maximum,
+        #                                                  QtWidgets.QSizePolicy.Policy.Maximum))
         self.layout.addWidget(self.graph_list_area)
         self.layout.addWidget(self.graph_ops_select_area)
         self.layout.addWidget(self.graph_x_data_select_area)
@@ -731,6 +735,7 @@ class LeftPanel(QtWidgets.QWidget):
             super().__init__("Y data")
             self.layout = QtWidgets.QVBoxLayout()
             self.setLayout(self.layout)
+            # self.layout.addWidget(QtWidgets.QCheckBox("Hdo"))
             self.radio_grp = QtWidgets.QButtonGroup()
 
         def add_radio(self, name):
@@ -756,6 +761,7 @@ class LeftPanel(QtWidgets.QWidget):
             self.graph_group_widget.layout.setSpacing(5)
             self.setWidget(self.graph_group_widget)
 
+            self.setMinimumSize(200,400)
             self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
             self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
             self.setWidgetResizable(True)
