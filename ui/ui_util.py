@@ -294,9 +294,14 @@ class HoverableCurveItem(pg.PlotCurveItem):
             self.sigCurveNotHovered.emit(self, ev)
 
     def mouseClickEvent(self, ev):
-        if self.mouseShape().contains(ev.pos()):
-            self.sigCurveClicked.emit(self, ev)
-        return super().mouseClickEvent(ev)
+        try:  # some qt version use different path
+            modifiers = QtGui.QApplication.keyboardModifiers()
+        except:
+            modifiers = QtWidgets.QApplication.keyboardModifiers()
+        if modifiers == QtCore.Qt.AltModifier:
+            if self.mouseShape().contains(ev.pos()):
+                self.sigCurveClicked.emit(self, ev)
+            return super().mouseClickEvent(ev)
 
 
 
