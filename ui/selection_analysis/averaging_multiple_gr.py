@@ -667,7 +667,7 @@ class LeftPanel(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
         self.splitter_left_vertical = QtWidgets.QSplitter(QtCore.Qt.Vertical)
-        self.layout = QtWidgets.QHBoxLayout()
+        self.layout = QtWidgets.QVBoxLayout()
         self.setLayout(self.layout)
 
         self.graph_list_area = self.GraphListArea()
