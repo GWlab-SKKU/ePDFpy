@@ -8,6 +8,7 @@ from typing import List
 from ui.pdfanalysis import PdfAnalysis
 from PyQt5.QtWidgets import QMessageBox
 import ui.selection_analysis.averaging_multiple_gr as averaging_multiple_gr
+from ui import ui_util
 
 pg.setConfigOptions(antialias=True)
 import definitions
@@ -27,9 +28,7 @@ class DataViewer(QtWidgets.QMainWindow):
 
         self.dcs: List[DataCube] = []
 
-        style_sheet = open(definitions.THEME_PATH, 'r').read()+open(definitions.STYLE_PATH, 'r').read()
-        style_sheet = style_sheet.replace("image: url(","image: url("+definitions.ROOT_DIR+"/")
-        self.setStyleSheet(style_sheet)
+        self.setStyleSheet(ui_util.get_style_sheet())
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.top_menu)

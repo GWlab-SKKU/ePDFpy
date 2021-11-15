@@ -1,5 +1,5 @@
 from PyQt5 import QtWidgets, QtCore
-import ui.main as main
+from ui import main
 import pyqtgraph as pg
 import os
 import glob
@@ -43,7 +43,6 @@ class Viewer(QtWidgets.QWidget):
 
     def initui(self):
         self.layout = QtWidgets.QVBoxLayout()
-
         self.setLayout(self.layout)
         self.leftPanel = LeftPanel()
         self.rightPanel = GraphPanel()
@@ -62,12 +61,15 @@ class Viewer(QtWidgets.QWidget):
         self.layout.addWidget(self.menu_bar)
         self.layout.addWidget(self.splitter_horizontal)
 
+        self.setStyleSheet(ui_util.get_style_sheet())
+
     def binding(self):
         self.menu_open_gr.triggered.connect(self.open_gr_clicked)
         self.menu_open_csv.triggered.connect(self.open_csv_clicked)
         self.menu_open_txt.triggered.connect(self.open_txt_clicked)
         self.menu_open_custom.triggered.connect(self.open_custom_clicked)
         self.menu_save_current.triggered.connect(self.save_current_graphs)
+        self.menu_save_intensity_profile_avg.triggered.connect(self.save_intensity_avg)
         self.leftPanel.graph_x_data_select_area.cmb_x_data.currentTextChanged.connect(self.x_axis_changed)
         self.leftPanel.graph_range_area.spinbox_range_min.valueChanged.connect(self.update_graph)
         self.leftPanel.graph_range_area.spinbox_range_max.valueChanged.connect(self.update_graph)
@@ -125,14 +127,6 @@ class Viewer(QtWidgets.QWidget):
             return
         df.to_csv(fp, index=None)
 
-    def save_gr_avg(self):
-        # calculate avg
-        fp,ext = QtWidgets.QFileDialog.getSaveFileName(self, filter="CSV Files (*.csv);;All Files (*)")
-        if fp == "":
-            return
-        df = pd.DataFrame({'r':self.grCubes[0].r,'Gr':self.avg})
-        df.to_csv(fp+".csv",index=False)
-
     def save_intensity_avg(self):
         fp, ext = QtWidgets.QFileDialog.getSaveFileName(self, filter="text file (*.txt);;All Files (*)")
         if fp == "":
@@ -150,6 +144,17 @@ class Viewer(QtWidgets.QWidget):
             self.profile_extraction.menu_open_azavg_only(self.avg_azavg)
             print(np.sum(self.avg_azavg))
 
+    def averaging_profile_intensity(self):
+        azavg_list = []
+        shortest_end = 1000000
+        for grCube in self.grCubes:
+            if grCube.chkbox_module.isChecked():
+                azavg = np.loadtxt(grCube.azavg_file_path)
+                shortest_end = min(shortest_end,len(azavg))
+                azavg_list.append(azavg)
+        azavg_list = [azavg[:shortest_end] for azavg in azavg_list]
+        avg_azavg = np.average(np.array(azavg_list), axis=0).transpose()
+        self.avg_azavg = avg_azavg
 
     def verify_files(self, dcs):
         # column header corresponding
@@ -177,7 +182,7 @@ class Viewer(QtWidgets.QWidget):
         dcs = self.get_dcs_from_folder("*.csv")
         if dcs is None:
             return
-        self.menu_save_intensity_profile.setEnabled(False)
+        self.menu_save_intensity_profile_avg.setEnabled(False)
         self.open_stack(dcs)
         self.update_graph()
 
@@ -186,19 +191,19 @@ class Viewer(QtWidgets.QWidget):
         dcs = self.get_dcs_from_folder("*.txt")
         if dcs is None:
             return
-        self.menu_save_intensity_profile.setEnabled(False)
+        self.menu_save_intensity_profile_avg.setEnabled(False)
         self.open_stack(dcs)
         self.update_graph()
 
     def open_custom_clicked(self):
         #### get files ####
-        text, _ = QtWidgets.QInputDialog.getText(None, "Type custom name", "e.g) *.csv, *azavg*.txt")
-        if text == "" or _ is False:
+        text, status = QtWidgets.QInputDialog.getText(None, "custom name", "Type filtering name using wildcard \ne.g) *Data_q.csv, *azavg*.txt")
+        if text == "" or status is False:
             return
         dcs = self.get_dcs_from_folder(text)
         if dcs is None:
             return
-        self.menu_save_intensity_profile.setEnabled(False)
+        self.menu_save_intensity_profile_avg.setEnabled(False)
         self.open_stack(dcs)
         self.update_graph()
 
@@ -293,7 +298,6 @@ class Viewer(QtWidgets.QWidget):
         self.set_data()
         self.update_graph()
 
-
         if current_x_axis == "None":
             return
         shared = set(self.grCubes[0].pd_data[current_x_axis].to_list())
@@ -303,9 +307,6 @@ class Viewer(QtWidgets.QWidget):
             unioned = set.union(unioned, set(grCube.pd_data[current_x_axis].to_list()))
         if (len(shared) / len(unioned)) < 0.7:
             QMessageBox.warning(self,"Warning","axis seems doesn't match \nShared percentage of axis is below 70%")
-
-
-
 
     def y_axis_changed(self, state):
         if not state:
@@ -406,7 +407,7 @@ class Viewer(QtWidgets.QWidget):
             dc.azavg_file_path = data_azav_files[i]
             dcs.append(dc)
 
-        self.menu_save_intensity_profile.setEnabled(True)
+        self.menu_save_intensity_profile_avg.setEnabled(True)
         self.open_stack(dcs)
 
 
@@ -539,7 +540,7 @@ class Viewer(QtWidgets.QWidget):
         self.menu_open_preset = QtWidgets.QAction("preset", self.mainWindow)
         self.menu_open_preset.setDisabled(True)
         self.menu_open_gr = QtWidgets.QAction("gr", self.mainWindow)
-        self.menu_open_custom = QtWidgets.QAction("Custom Name", self.mainWindow)
+        self.menu_open_custom = QtWidgets.QAction("Custom name", self.mainWindow)
 
 
 
@@ -557,11 +558,11 @@ class Viewer(QtWidgets.QWidget):
         open_menu.addSeparator()
 
         self.menu_save_current = QtWidgets.QAction("Save current graphs", self.mainWindow)
-        self.menu_save_intensity_profile = QtWidgets.QAction("Save intensity profile", self.mainWindow)
+        self.menu_save_intensity_profile_avg = QtWidgets.QAction("Save intensity profile averaging", self.mainWindow)
         save_menu = self.menubar.addMenu("     &Save     ")
         save_menu.addAction(self.menu_save_current)
-        save_menu.addAction(self.menu_save_intensity_profile)
-        self.menu_save_intensity_profile.setEnabled(False)
+        save_menu.addAction(self.menu_save_intensity_profile_avg)
+        self.menu_save_intensity_profile_avg.setEnabled(False)
 
         return self.menubar
 
@@ -656,7 +657,8 @@ class GraphPanel(QtWidgets.QWidget):
         super().__init__()
         self.layout = QtWidgets.QVBoxLayout()
         self.setLayout(self.layout)
-        self.graphView = ui_util.CoordinatesPlotWidget(title='G(r)', setYScaling=False, button1mode=True)
+        self.layout.setContentsMargins(5,5,5,5)
+        self.graphView = ui_util.CoordinatesPlotWidget(setYScaling=False, button1mode=True)
         self.axis1 = pg.InfiniteLine(angle=0)
         self.graphView.addItem(self.axis1)
         self.layout.addWidget(self.graphView)
@@ -668,6 +670,7 @@ class LeftPanel(QtWidgets.QWidget):
         self.splitter_left_vertical = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         self.layout = QtWidgets.QHBoxLayout()
         self.setLayout(self.layout)
+        self.layout.setContentsMargins(5,5,5,5)
 
         self.graph_list_area = self.GraphListArea()
         self.graph_ops_select_area = self.GraphOpsArea()

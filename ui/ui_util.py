@@ -9,6 +9,7 @@ from pyqtgraph.graphicsItems.LegendItem import LegendItem
 import pyqtgraph as pg
 from calculate.pdf_calculator import pixel_to_q, q_to_pixel
 import platform
+import definitions
 
 
 class binding():
@@ -82,7 +83,6 @@ class CoordinatesPlotWidget(pg.PlotWidget):
         # self.addItem(self.coor_label)
         # self.coor_label.setParentItem(self.getViewBox())
         # self.coor_label.setPos(10,10)
-
         # self.cross_hair = self.plot()
         self.crosshair_plot = None
         self.graph_legend = self.getPlotItem().addLegend(offset=(-3, 3))
@@ -277,9 +277,12 @@ class CoordinatesPlotWidget(pg.PlotWidget):
         self.setAutoVisible(y=True)
 
 class HoverableCurveItem(pg.PlotCurveItem):
-    sigCurveHovered = QtCore.Signal(object, object)
-    sigCurveNotHovered = QtCore.Signal(object, object)
-    sigCurveClicked = QtCore.Signal(object, object)
+    # sigCurveHovered = QtCore.Signal(object, object)
+    # sigCurveNotHovered = QtCore.Signal(object, object)
+    # sigCurveClicked = QtCore.Signal(object, object)
+    sigCurveHovered = QtCore.pyqtSignal(object, object)
+    sigCurveNotHovered = QtCore.pyqtSignal(object, object)
+    sigCurveClicked = QtCore.pyqtSignal(object, object)
 
     def __init__(self, hoverable=True, *args, **kwargs):
         super(HoverableCurveItem, self).__init__(*args, **kwargs)
@@ -512,3 +515,14 @@ class ProfileGraphPanel(QtWidgets.QWidget):
             self.layout.addWidget(self.button_end)
             self.layout.addWidget(self.button_select)
             # self.button_grp_widget.layout.addStretch(1)
+
+def get_style_sheet(template=None):
+    style_sheet = open(definitions.THEME_PATH, 'r').read()+open(definitions.STYLE_PATH, 'r').read()
+    style_sheet = style_sheet.replace("image: url(","image: url("+definitions.ROOT_DIR+"/")
+    return style_sheet
+
+def get_style_sheet_dark():
+    style_sheet = open(definitions.THEME_PATH2, 'r').read()+open(definitions.STYLE_PATH, 'r').read()
+    style_sheet = style_sheet.replace("image: url(","image: url("+definitions.ROOT_DIR+"/")
+    return style_sheet
+
