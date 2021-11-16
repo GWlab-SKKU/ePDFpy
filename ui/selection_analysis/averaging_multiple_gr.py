@@ -628,8 +628,8 @@ class GrCube(datacube.DataCube):
 
     def binding_event(self):
         # widget enter event
-        self.chkbox_module.enterEvent_list.append(self.hover_in)
-        self.chkbox_module.leaveEvent_list.append(self.hover_out)
+        self.chkbox_module.sigEntered.connect(self.hover_in)
+        self.chkbox_module.sigLeaved.connect(self.hover_out)
         self.plotItem.sigCurveHovered.connect(self.hover_in)
         self.plotItem.sigCurveNotHovered.connect(self.hover_out)
         self.plotItem.sigCurveClicked.connect(lambda: self.chkbox_module.setChecked(False))
@@ -802,26 +802,19 @@ class LeftPanel(QtWidgets.QWidget):
 
 
 class GraphCheckBox(QtWidgets.QCheckBox):
+    sigEntered = QtCore.pyqtSignal(object, object)
+    sigLeaved = QtCore.pyqtSignal(object, object)
     def __init__(self):
         super().__init__()
-        self.enterEvent_list = []
-        self.leaveEvent_list = []
-
         self.setChecked(True)
-        self.color = None
-        self.color_txt = None
-        self.dark_color_txt = None
-        self.bright_color_txt = None
 
     def enterEvent(self, a0: QtCore.QEvent) -> None:
         super().enterEvent(a0)
-        for func in self.enterEvent_list:
-            func()
+        self.sigEntered.emit(self,a0)
 
     def leaveEvent(self, a0: QtCore.QEvent) -> None:
         super().leaveEvent(a0)
-        for func in self.leaveEvent_list:
-            func()
+        self.sigLeaved.emit(self,a0)
 
 
 
