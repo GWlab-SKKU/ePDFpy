@@ -690,7 +690,6 @@ class LeftPanel(QtWidgets.QWidget):
         self.graph_y_data_select_area = self.GraphYDataSelectArea()
         self.graph_range_area = self.GraphRangeArea()
         self.graph_x_data_select_area = self.GraphXDataSelectArea()
-        # self.btn_group = self.ButtonListWidget()
 
         # self.splitter_left_vertical.addWidget(self.graph_list_area)
         # self.splitter_left_vertical.addWidget(self.graph_ops_select_area)
@@ -782,23 +781,6 @@ class LeftPanel(QtWidgets.QWidget):
             module.setText(text)
             self.graph_group_widget.layout.insertWidget(0, module)
             return module
-
-    class ButtonListWidget(QtWidgets.QWidget):
-        def __init__(self):
-            super().__init__()
-            self.btn_open_folder = QtWidgets.QPushButton("Open Folder")
-            self.btn_save_gr_avg = QtWidgets.QPushButton("save G(r) avg")
-            self.btn_save_intensity_avg = QtWidgets.QPushButton("save selected intensity avg")
-            self.btn_open_analyzer = QtWidgets.QPushButton("Open analyzer")
-
-            self.layout = QtWidgets.QVBoxLayout()
-            self.layout.setContentsMargins(0, 0, 0, 0)
-            self.setLayout(self.layout)
-
-            self.layout.addWidget(self.btn_open_folder)
-            self.layout.addWidget(self.btn_save_gr_avg)
-            self.layout.addWidget(self.btn_save_intensity_avg)
-            self.layout.addWidget(self.btn_open_analyzer)
 
 
 class GraphCheckBox(QtWidgets.QCheckBox):
