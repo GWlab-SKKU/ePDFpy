@@ -236,6 +236,7 @@ class Viewer(QtWidgets.QWidget):
         #### grcube load ####
         for grCube in self.grCubes:
             grCube.clear()
+        self.rightPanel.legend.clear()
         self.grCubes.clear()
         self.grCubes.extend(dcs)
 
