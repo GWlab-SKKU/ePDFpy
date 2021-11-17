@@ -5,6 +5,7 @@ import os
 import cv2
 import numpy as np
 import time
+import pandas as pd
 
 class DataCube:
     _use_cupy = False
@@ -56,6 +57,7 @@ class DataCube:
         self.scattering_factor = None
         self.electron_voltage = None
 
+        self.original_data = None
 
         self.load_file_path = file_path
         self.preset_file_path = None
@@ -70,6 +72,27 @@ class DataCube:
         elif file_type == "image":
             self.mrc_file_path = self.load_file_path
             # file.load_mrc_img(self,self.mrc_file_path)
+
+        self.load_data()
+
+    def load_data(self):
+        if self.load_file_path is None:
+            return
+        if os.path.splitext(self.load_file_path)[1] not in ['.csv','.txt']:
+            return
+        fname = os.path.split(self.load_file_path)[1]
+        df = pd.read_csv(self.load_file_path, header=None)
+        self.original_data_has_column = False
+        try:
+            # test if there is column that have strings
+            for column in df.columns:
+                float(df[column][0])
+        except:
+            df = pd.read_csv(self.load_file_path)
+            self.original_data_has_column = True
+        df.columns = df.columns.astype(str)
+        self.pd_data = df
+        self.original_data = df.to_numpy()
 
 
     def image_ready(self):

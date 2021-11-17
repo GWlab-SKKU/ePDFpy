@@ -119,6 +119,17 @@ def get_multiple_dc(folder_path):
     pass
 
 
+def xor(lst):
+    if (len(lst) == np.sum(lst)) or (0 == np.sum(lst)):
+        return True
+    else:
+        return False
+
+def find_nearest(array, value):
+    array = np.asarray(array)
+    idx = (np.abs(array - value)).argmin()
+    return idx, array[idx]
+
 class DefaultSetting:
     def __init__(self):
         self.intensity_range_1 = None

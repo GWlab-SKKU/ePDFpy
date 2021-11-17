@@ -1,16 +1,15 @@
 from PyQt5 import QtCore, QtWidgets, QtGui
-import os, sys
+import sys
 import pyqtgraph as pg
 import file
-import numpy as np
 import util
 from datacube import DataCube
 from typing import List
 from ui.pdfanalysis import PdfAnalysis
-from calculate import pdf_calculator, image_process, q_range_selector
 from PyQt5.QtWidgets import QMessageBox
-import ui.averaging_multiple_gr as averaging_multiple_gr
+import ui.selection_analysis.averaging_multiple_gr as averaging_multiple_gr
 from ui import ui_util
+
 pg.setConfigOptions(antialias=True)
 import definitions
 from ui.profile_extraction import ProfileExtraction
@@ -29,9 +28,7 @@ class DataViewer(QtWidgets.QMainWindow):
 
         self.dcs: List[DataCube] = []
 
-        style_sheet = open(definitions.THEME_PATH, 'r').read()+open(definitions.STYLE_PATH, 'r').read()
-        style_sheet = style_sheet.replace("image: url(","image: url("+definitions.ROOT_DIR+"/")
-        self.setStyleSheet(style_sheet)
+        self.setStyleSheet(ui_util.get_style_sheet())
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.top_menu)
@@ -80,7 +77,7 @@ class DataViewer(QtWidgets.QMainWindow):
             self.save_preset_option.setDisabled(True)
             self.open_azavg_only = QtWidgets.QAction("Open &azavg only", self)
             self.save_azavg_only = QtWidgets.QAction("Save &azavg only", self)
-            self.averaging_gr = QtWidgets.QAction("Averaging multiple G(r)", self)
+            self.averaging_gr = QtWidgets.QAction("Selection Analysis", self)
 
             open_menu = menubar.addMenu("     &Open     ")
             open_menu.addAction(self.open_img_file)

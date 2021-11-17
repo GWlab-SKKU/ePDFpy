@@ -9,6 +9,7 @@ from pyqtgraph.graphicsItems.LegendItem import LegendItem
 import pyqtgraph as pg
 from calculate.pdf_calculator import pixel_to_q, q_to_pixel
 import platform
+import definitions
 
 
 class binding():
@@ -74,7 +75,7 @@ class IntLineEdit(QtWidgets.QLineEdit):
 
 
 class CoordinatesPlotWidget(pg.PlotWidget):
-    def __init__(self, setYScaling=False, parent=None, background='default', offset=None, plotItem=None, **kargs):
+    def __init__(self, setYScaling=False, parent=None, background='default', offset=None, plotItem=None, button1mode=False, **kargs):
         super().__init__(parent, background, plotItem, **kargs)
 
         # self.setRange(QRectF(-50, -50, 100, 100))
@@ -82,7 +83,6 @@ class CoordinatesPlotWidget(pg.PlotWidget):
         # self.addItem(self.coor_label)
         # self.coor_label.setParentItem(self.getViewBox())
         # self.coor_label.setPos(10,10)
-
         # self.cross_hair = self.plot()
         self.crosshair_plot = None
         self.graph_legend = self.getPlotItem().addLegend(offset=(-3, 3))
@@ -105,6 +105,9 @@ class CoordinatesPlotWidget(pg.PlotWidget):
         if setYScaling:
             self.sigXRangeChanged.connect(self.YScaling)
 
+        if button1mode:
+            self.plotItem.vb.setLeftButtonAction('rect')
+
     def mouseMoveEvent(self, ev):
         if self.coor_update_toggle:
             qp = self.plotItem.vb.mapSceneToView(ev.localPos())
@@ -114,35 +117,7 @@ class CoordinatesPlotWidget(pg.PlotWidget):
             y = y[:y.find('.') + 1] + y[y.find('.') + 1:][:4]
             self.legend_labelitem.setText("x:{} \ny:{}".format(x,y))
         # self.coor_label.setText("x:{} \ny:{}".format(str(qp.x())[:8],str(qp.y())[:8]))
-        return super(CoordinatesPlotWidget, self).mouseMoveEvent(ev)
-
-    def mousePressEvent(self, ev):
-        qp = self.plotItem.vb.mapSceneToView(ev.localPos())
-
-        try:  # some qt version use different path
-            modifiers = QtGui.QApplication.keyboardModifiers()
-        except:
-            modifiers = QtWidgets.QApplication.keyboardModifiers()
-
-        if modifiers == QtCore.Qt.ShiftModifier:
-            # shift click
-            self.coor_update_toggle = not self.coor_update_toggle
-        elif modifiers == QtCore.Qt.ControlModifier:
-            # ctrl click
-            if hasattr(self, 'crosshair_plot') and self.crosshair_plot is not None:
-                self.removeItem(self.crosshair_plot)
-                self.crosshair_plot = None
-                self.crosshair_legend.hide()
-            else:
-                self.crosshair_curve_dataItem, self.crosshair_idx = self.find_closest_coor(qp.x(), qp.y())
-                self.create_cross_hair()
-        elif modifiers == (QtCore.Qt.ControlModifier | QtCore.Qt.ShiftModifier):
-            # shift + ctrl click
-            pass
-        else:
-            pass
-        # print(self.getPlotItem().dataItems[0].xDisp) # xData, yData, xDisp, yDisp
-        return super().mousePressEvent(ev)
+        return super().mouseMoveEvent(ev)
 
     def mouseDoubleClickEvent(self, ev):
         mouseMode = self.getPlotItem().getViewBox().getState()['mouseMode']
@@ -175,6 +150,34 @@ class CoordinatesPlotWidget(pg.PlotWidget):
             self.setRange(xRange=x, yRange=y, padding=0)
 
         super().mouseDoubleClickEvent(ev)
+
+    def mousePressEvent(self, ev):
+        qp = self.plotItem.vb.mapSceneToView(ev.localPos())
+
+        try:  # some qt version use different path
+            modifiers = QtGui.QApplication.keyboardModifiers()
+        except:
+            modifiers = QtWidgets.QApplication.keyboardModifiers()
+
+        if modifiers == QtCore.Qt.ShiftModifier:
+            # shift click
+            self.coor_update_toggle = not self.coor_update_toggle
+        elif modifiers == QtCore.Qt.ControlModifier:
+            # ctrl click
+            if hasattr(self, 'crosshair_plot') and self.crosshair_plot is not None:
+                self.removeItem(self.crosshair_plot)
+                self.crosshair_plot = None
+                self.crosshair_legend.hide()
+            else:
+                self.crosshair_curve_dataItem, self.crosshair_idx = self.find_closest_coor(qp.x(), qp.y())
+                self.create_cross_hair()
+        elif modifiers == (QtCore.Qt.ControlModifier | QtCore.Qt.ShiftModifier):
+            # shift + ctrl click
+            pass
+        else:
+            pass
+        # print(self.getPlotItem().dataItems[0].xDisp) # xData, yData, xDisp, yDisp
+        return super().mousePressEvent(ev)
 
 
     def keyPressEvent(self, ev):
@@ -222,6 +225,22 @@ class CoordinatesPlotWidget(pg.PlotWidget):
         str_y = str(np.round(y,2))
         self.crosshair_legend_label.setText("x:{},y:{}".format(str_x, str_y))
 
+    def save_intensity_avg(self):
+        fp, ext = QtWidgets.QFileDialog.getSaveFileName(self, filter="text file (*.txt);;All Files (*)")
+        if fp == "":
+            return
+        azavg_list = []
+        shortest_end = 1000000
+        for grCube in self.grCubes:
+            azavg = np.loadtxt(grCube.azavg_file_path)
+            if shortest_end > len(azavg):
+                shortest_end = len(azavg)
+            azavg_list.append(azavg)
+        azavg_list = [azavg[:shortest_end] for azavg in azavg_list]
+        avg_azavg = np.average(np.array(azavg_list), axis=0).transpose()
+        np.savetxt(fp+".txt", avg_azavg)
+
+
     def find_closest_coor(self, x,y):
         """
         :param x:
@@ -256,6 +275,37 @@ class CoordinatesPlotWidget(pg.PlotWidget):
     def YScaling(self):
         self.enableAutoRange(axis='y')
         self.setAutoVisible(y=True)
+
+class HoverableCurveItem(pg.PlotCurveItem):
+    # sigCurveHovered = QtCore.Signal(object, object)
+    # sigCurveNotHovered = QtCore.Signal(object, object)
+    # sigCurveClicked = QtCore.Signal(object, object)
+    sigCurveHovered = QtCore.pyqtSignal(object, object)
+    sigCurveNotHovered = QtCore.pyqtSignal(object, object)
+    sigCurveClicked = QtCore.pyqtSignal(object, object)
+
+    def __init__(self, hoverable=True, *args, **kwargs):
+        super(HoverableCurveItem, self).__init__(*args, **kwargs)
+
+    def hoverEvent(self, ev):
+        if ev.exit is False:
+            if self.mouseShape().contains(ev.pos()):
+                self.sigCurveHovered.emit(self, ev)
+            else:
+                self.sigCurveNotHovered.emit(self, ev)
+        if ev.exit is True:
+            self.sigCurveNotHovered.emit(self, ev)
+
+    def mouseClickEvent(self, ev):
+        try:  # some qt version use different path
+            modifiers = QtGui.QApplication.keyboardModifiers()
+        except:
+            modifiers = QtWidgets.QApplication.keyboardModifiers()
+        if modifiers == QtCore.Qt.AltModifier:
+            if self.mouseShape().contains(ev.pos()):
+                self.sigCurveClicked.emit(self, ev)
+            return super().mouseClickEvent(ev)
+
 
 
 class IntensityPlotWidget(CoordinatesPlotWidget):
@@ -394,7 +444,6 @@ class ProfileGraphPanel(QtWidgets.QWidget):
         self.datacube.pixel_end_n = q_to_pixel(right,self.datacube.ds)
         self.setting.lbl_pixel_range.setText("({},{})".format(self.datacube.pixel_start_n, self.datacube.pixel_end_n))
 
-
     def btn_range_start_clicked(self):
         # left = q_range_selector.find_first_nonzero_idx(self.dc.azavg)
         left = self.setting.spinBox_range_left.value()
@@ -423,7 +472,6 @@ class ProfileGraphPanel(QtWidgets.QWidget):
         self.plotWidget.setXRange(l, r, padding=0.1)
         # self.graphPanel.plot_azav.setYRange(mn, mx, padding=0.1)
 
-
     def update_graph(self, dat):
         # self.plotWindow.layout.setSpacing(0)
         # self.plotWindow.layout.setContentsMargins(0,0,0,0)
@@ -431,7 +479,6 @@ class ProfileGraphPanel(QtWidgets.QWidget):
         # self.plotWindow.layout.addWidget(self.plot_azav)
         # self.plotWindow.setLayout(self.plotWindow.layout)
         self.plot_azav_curr.setData(dat)
-
         # self.plotWindow.resize(1000,350)
 
     class Setting(QtWidgets.QGroupBox):
@@ -476,3 +523,14 @@ class ProfileGraphPanel(QtWidgets.QWidget):
             self.layout.addWidget(self.button_end)
             self.layout.addWidget(self.button_select)
             # self.button_grp_widget.layout.addStretch(1)
+
+def get_style_sheet(template=None):
+    style_sheet = open(definitions.THEME_PATH, 'r').read()+open(definitions.STYLE_PATH, 'r').read()
+    style_sheet = style_sheet.replace("image: url(","image: url("+definitions.ROOT_DIR+"/")
+    return style_sheet
+
+def get_style_sheet_dark():
+    style_sheet = open(definitions.THEME_PATH2, 'r').read()+open(definitions.STYLE_PATH, 'r').read()
+    style_sheet = style_sheet.replace("image: url(","image: url("+definitions.ROOT_DIR+"/")
+    return style_sheet
+
