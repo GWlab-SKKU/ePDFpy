@@ -239,8 +239,8 @@ class Viewer(QtWidgets.QWidget):
         self.grCubes.clear()
         self.grCubes.extend(dcs)
 
-        # cut data
-        self.data_cut(dcs)
+        # # cut data
+        # self.data_cut(dcs)
 
         # set x axis
         lst_set = [set(dc.pd_data.columns) for dc in dcs]
@@ -343,11 +343,10 @@ class Viewer(QtWidgets.QWidget):
         if self.grCubes[0].plotItem is None:
             return
 
-        idx_l, value_l = util.find_nearest(self.grCubes[0].data_x, l)
-        idx_r, value_r = util.find_nearest(self.grCubes[0].data_x, r)
-
-        range_slice = slice(idx_l,idx_r+1)
         for grCube in self.grCubes:
+            idx_l, value_l = util.find_nearest(grCube.data_x, l)
+            idx_r, value_r = util.find_nearest(grCube.data_x, r)
+            range_slice = slice(idx_l, idx_r + 1)
             grCube.plotItem.setData(grCube.data_x[range_slice],grCube.data_y[range_slice])
 
         # average
@@ -376,10 +375,16 @@ class Viewer(QtWidgets.QWidget):
         if x_axis == "None":
             l = 0
             r = len(self.grCubes[0].pd_data)-1
+            for grCube in self.grCubes:
+                r = max(r,len(grCube.pd_data)-1)
         else:
             nparr = self.grCubes[0].pd_data[x_axis].to_numpy()
             l = nparr.min()
             r = nparr.max()
+            for grCube in self.grCubes:
+                nparr = grCube.pd_data[x_axis].to_numpy()
+                l = min(l,nparr.min())
+                r = max(r,nparr.max())
         self.leftPanel.graph_range_area.spinbox_range_min.blockSignals(True)
         self.leftPanel.graph_range_area.spinbox_range_max.blockSignals(True)
         self.leftPanel.graph_range_area.spinbox_range_min.setMinimum(l)
@@ -395,8 +400,8 @@ class Viewer(QtWidgets.QWidget):
         self.data_range_r = r
 
     def set_data(self):
-        button = self.leftPanel.graph_y_data_select_area.radio_grp.checkedButton()
-        if button is None:
+        radio_btn = self.leftPanel.graph_y_data_select_area.radio_grp.checkedButton()
+        if radio_btn is None:
             return
         for grcube in self.grCubes:
             str_xaxis = self.leftPanel.graph_x_data_select_area.cmb_x_data.currentText()
@@ -404,7 +409,7 @@ class Viewer(QtWidgets.QWidget):
                 grcube.data_x = np.arange(0,len(grcube.pd_data))
             else:
                 grcube.data_x = grcube.pd_data[str_xaxis].to_numpy()
-            str_yaxis = button.text()
+            str_yaxis = radio_btn.text()
             grcube.data_y = grcube.pd_data[str_yaxis].to_numpy()
 
     def open_gr_clicked(self):
