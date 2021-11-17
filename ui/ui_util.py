@@ -288,9 +288,12 @@ class HoverableCurveItem(pg.PlotCurveItem):
         super(HoverableCurveItem, self).__init__(*args, **kwargs)
 
     def hoverEvent(self, ev):
-        if self.mouseShape().contains(ev.pos()):
-            self.sigCurveHovered.emit(self, ev)
-        else:
+        if ev.exit is False:
+            if self.mouseShape().contains(ev.pos()):
+                self.sigCurveHovered.emit(self, ev)
+            else:
+                self.sigCurveNotHovered.emit(self, ev)
+        if ev.exit is True:
             self.sigCurveNotHovered.emit(self, ev)
 
     def mouseClickEvent(self, ev):
