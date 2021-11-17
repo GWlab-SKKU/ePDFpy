@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore, QtGui
 from ui import main
 import pyqtgraph as pg
 import os
@@ -591,6 +591,7 @@ class Viewer(QtWidgets.QWidget):
 
 
 class GrCube(datacube.DataCube):
+    color_cnt = 0
     def __init__(self,*args, **kwargs):
         super().__init__(*args, **kwargs)
         self.r_file_path = None
@@ -605,9 +606,15 @@ class GrCube(datacube.DataCube):
         self.chkbox_module.deleteLater()
         self.chkbox_module = None
 
-    def set_color(self, int):
+    def set_color(self, color_int=None, color=None):
         ## color ##
-        self.color = pg.intColor(int, minValue=200, alpha=255)
+        if color_int is not None:
+            self.color = pg.intColor(color_int, minValue=200, alpha=255)
+        if color is not None:
+            self.color = color
+        if color_int is None and color is None:
+            GrCube.color_cnt += 1
+            self.color = pg.intColor(GrCube.color_cnt, minValue=200, alpha=255)
         # self.color_dark = self.color.darker(50)
         # self.color_bright = self.color.lighter(50)
         self.color_txt = "rgba({}, {}, {}, {});".format(self.color.red(), self.color.green(), self.color.blue(), self.color.alpha())
@@ -642,9 +649,16 @@ class GrCube(datacube.DataCube):
         # widget enter event
         self.chkbox_module.sigEntered.connect(self.hover_in)
         self.chkbox_module.sigLeaved.connect(self.hover_out)
+        self.chkbox_module.mouseRightClicked.connect(self.change_color)
         self.plotItem.sigCurveHovered.connect(self.hover_in)
         self.plotItem.sigCurveNotHovered.connect(self.hover_out)
         self.plotItem.sigCurveClicked.connect(lambda: self.chkbox_module.setChecked(False))
+
+    def change_color(self, ev):
+        color = QtWidgets.QColorDialog.getColor(initial=self.color)
+        if not color.isValid():
+            return
+        self.set_color(color=color)
 
     def hover_in(self):
         ### graph ###
@@ -803,6 +817,7 @@ class LeftPanel(QtWidgets.QWidget):
 class GraphCheckBox(QtWidgets.QCheckBox):
     sigEntered = QtCore.pyqtSignal(object, object)
     sigLeaved = QtCore.pyqtSignal(object, object)
+    mouseRightClicked = QtCore.pyqtSignal(object, object)
     def __init__(self):
         super().__init__()
         self.setChecked(True)
@@ -814,6 +829,11 @@ class GraphCheckBox(QtWidgets.QCheckBox):
     def leaveEvent(self, a0: QtCore.QEvent) -> None:
         super().leaveEvent(a0)
         self.sigLeaved.emit(self,a0)
+
+    def mouseReleaseEvent(self, e: QtGui.QMouseEvent) -> None:
+        if e.button() == QtCore.Qt.RightButton:
+            self.mouseRightClicked.emit(self, e)
+        super().mouseReleaseEvent(e)
 
 
 
