@@ -260,9 +260,8 @@ class Viewer(QtWidgets.QWidget):
         self.set_data()
 
         for idx, grCube in enumerate(self.grCubes):
-
-
-            grCube.plotItem = ui_util.HoverableCurveItem(grCube.data_x, grCube.data_y)
+            title = os.path.splitext(os.path.split(grCube.load_file_path)[1])[0]
+            grCube.plotItem = ui_util.HoverableCurveItem(grCube.data_x, grCube.data_y, name=title)
             self.rightPanel.graphView.addItem(grCube.plotItem)
             grCube.chkbox_module = self.leftPanel.graph_list_area.add_module(grCube.load_file_path)
             grCube.set_color(idx)
@@ -672,6 +671,8 @@ class GraphPanel(QtWidgets.QWidget):
         self.graphView = ui_util.CoordinatesPlotWidget(setYScaling=False, button1mode=True)
         self.axis1 = pg.InfiniteLine(angle=0)
         self.graphView.addItem(self.axis1)
+        self.legend = self.graphView.addLegend()
+        self.legend.setEnabled(False)
         self.layout.addWidget(self.graphView)
 
 
