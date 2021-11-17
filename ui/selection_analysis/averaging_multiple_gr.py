@@ -79,12 +79,19 @@ class Viewer(QtWidgets.QWidget):
         self.leftPanel.graph_x_data_select_area.cmb_x_data.currentTextChanged.connect(self.x_axis_changed)
         self.leftPanel.graph_range_area.spinbox_range_min.valueChanged.connect(self.update_graph)
         self.leftPanel.graph_range_area.spinbox_range_max.valueChanged.connect(self.update_graph)
+        self.leftPanel.graph_range_area.chkbox_legend.toggled.connect(self.update_legend)
         self.leftPanel.graph_ops_select_area.chkbox_average.clicked.connect(self.update_graph)
         self.leftPanel.graph_ops_select_area.chkbox_std.clicked.connect(self.update_graph)
 
         # self.leftPanel.btn_group.btn_save_gr_avg.clicked.connect(self.save_gr_avg)
         # self.leftPanel.btn_group.btn_save_intensity_avg.clicked.connect(self.save_intensity_avg)
         # self.leftPanel.btn_group.btn_open_analyzer.clicked.connect(self.open_analyzer)
+    def update_legend(self):
+        checked = self.leftPanel.graph_range_area.chkbox_legend.isChecked()
+        if checked:
+            self.rightPanel.legend.setVisible(True)
+        else:
+            self.rightPanel.legend.setVisible(False)
 
     def save_current_graphs(self):
         plot_to_save = {}
@@ -673,6 +680,7 @@ class GraphPanel(QtWidgets.QWidget):
         self.graphView.addItem(self.axis1)
         self.legend = self.graphView.addLegend()
         self.legend.setEnabled(False)
+        self.legend.setVisible(False)
         self.layout.addWidget(self.graphView)
 
 
@@ -727,8 +735,10 @@ class LeftPanel(QtWidgets.QWidget):
             self.setLayout(self.layout)
             self.spinbox_range_min = QtWidgets.QDoubleSpinBox()
             self.spinbox_range_max = QtWidgets.QDoubleSpinBox()
+            self.chkbox_legend = QtWidgets.QCheckBox("Show legend")
             self.layout.addWidget(self.spinbox_range_min)
             self.layout.addWidget(self.spinbox_range_max)
+            self.layout.addWidget(self.chkbox_legend)
 
     class GraphOpsArea(QtWidgets.QGroupBox):
         def __init__(self):
