@@ -76,7 +76,9 @@ class DataCube:
         self.load_data()
 
     def load_data(self):
-        if self.load_file_path == None:
+        if self.load_file_path is None:
+            return
+        if os.path.splitext(self.load_file_path)[1] not in ['.csv','.txt']:
             return
         fname = os.path.split(self.load_file_path)[1]
         df = pd.read_csv(self.load_file_path, header=None)
