@@ -138,9 +138,7 @@ class Viewer(QtWidgets.QWidget):
         fp, ext = QtWidgets.QFileDialog.getSaveFileName(self, filter="CSV Files (*.csv)")
         if fp == '':
             return
-        if ext == '':
-            fp = fp+'.csv'
-        df.to_csv(fp, index=None)
+        df.to_csv(fp+'.csv', index=None)
 
     def save_intensity_avg(self):
         fp, ext = QtWidgets.QFileDialog.getSaveFileName(self, filter="text file (*.txt);;All Files (*)")
