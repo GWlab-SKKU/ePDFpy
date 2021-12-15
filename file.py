@@ -225,7 +225,7 @@ def save_pdf_setting_manual(dc_file_path):
 
 def load_element_preset():
     if not os.path.isfile(definitions.ELEMENT_PRESETS_PATH):
-        element_preset = [None]*5
+        element_preset = dict()
         json.dump(element_preset, open(definitions.ELEMENT_PRESETS_PATH, 'w'), indent=2)
         return element_preset
     return json.load(open(definitions.ELEMENT_PRESETS_PATH))

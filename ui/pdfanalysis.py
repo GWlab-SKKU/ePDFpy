@@ -32,7 +32,6 @@ class PdfAnalysis(QtWidgets.QWidget):
         self.initui()
         self.initgraph()
         self.element_presets = file.load_element_preset()
-        self.update_preset_enablility()
 
         # datacube control
         self.load_default_setting()
@@ -40,6 +39,7 @@ class PdfAnalysis(QtWidgets.QWidget):
         self.update_initial_iq()
 
         self.sig_binding()
+        self.element_initial_load()
 
         # self.update_parameter()
 
@@ -197,52 +197,78 @@ class PdfAnalysis(QtWidgets.QWidget):
         if util.default_setting.rmax_step is not None:
             self.controlPanel.fitting_factors.spinbox_rmax_step.setText(util.default_setting.rmax_step)
 
-    def save_element(self, preset_num):
-        text, ok = QtWidgets.QInputDialog.getText(self, 'Input Dialog', 'Enter preset name:')
+    def element_initial_load(self):
+        self.element_presets = file.load_element_preset()
+        self.controlPanel.fitting_elements.update_menu(self.element_presets)
+        self.element_binding()
+
+    def element_binding(self):
+        for action in self.controlPanel.fitting_elements.load_menu.actions():
+            action.triggered.connect(lambda state, x=action.text(): (self.element_load(x), self.instantfit()))
+        for action in self.controlPanel.fitting_elements.save_menu.actions():
+            if action.text() == "[New]":
+                action.triggered.connect(lambda state: (self.element_save(), self.instantfit()))
+            else:
+                action.triggered.connect(lambda state, x=action.text(): (self.element_save(x), self.instantfit()))
+        for action in self.controlPanel.fitting_elements.del_menu.actions():
+            action.triggered.connect(lambda state, x=action.text(): (self.element_del(x), self.instantfit()))
+
+    def element_save(self, name=None):
+        # input dialog
+        if name is not None:
+            default_text = name
+        else:
+            default_text = ''
+        text, ok = QtWidgets.QInputDialog.getText(self, 'Input Dialog', 'Enter preset name:', text=default_text)
+
+        # user cancel
         if ok is False:
             return
-        data = {}
-        for idx, widget in enumerate(self.controlPanel.fitting_elements.element_group_widgets):
-            data.update({"element" + str(idx):[widget.combobox.currentIndex(), widget.element_ratio.value()]})
-        self.element_presets[preset_num] = [text, data]
-        file.save_element_preset(self.element_presets)
-        self.update_preset_enablility()
 
-    def load_element(self, preset_num):
-        data = self.element_presets[preset_num][1]
+        # check existence
+        if text in self.element_presets.keys() and name is None:
+            QtWidgets.QMessageBox.about(None,"Error","{} is already in the list".format(text))
+            return
+
+        # load elements data
+        elements_data = {}
         for idx, widget in enumerate(self.controlPanel.fitting_elements.element_group_widgets):
-            if "element"+str(idx) in data.keys():
-                ui_util.update_value(widget.combobox, data["element"+str(idx)][0])
-                ui_util.update_value(widget.element_ratio, data["element"+str(idx)][1])
+            elements_data.update({"element" + str(idx+1):[widget.combobox.currentIndex(), widget.element_ratio.value()]})
+
+        # save preset data
+        new_element_presets = {}
+        if name is not None:
+            for k,v in self.element_presets.items():
+                if name == k:
+                    new_element_presets.update({text: elements_data})
+                else:
+                    new_element_presets.update({k: v})
+            self.element_presets.clear()
+            self.element_presets.update(new_element_presets)
+        else:
+            self.element_presets.update({text: elements_data})
+
+        file.save_element_preset(self.element_presets)
+        self.element_initial_load()
+
+    def element_load(self, name):
+        data = self.element_presets[name]
+        for idx, widget in enumerate(self.controlPanel.fitting_elements.element_group_widgets):
+            if "element"+str(idx+1) in data.keys():
+                ui_util.update_value(widget.combobox, data["element"+str(idx+1)][0])
+                ui_util.update_value(widget.element_ratio, data["element"+str(idx+1)][1])
             else:
                 ui_util.update_value(widget.combobox, 0)
                 ui_util.update_value(widget.element_ratio, 0)
 
-    def del_element(self, preset_num):
-        self.element_presets[preset_num] = None
-        file.save_element_preset(self.element_presets)
-        self.update_preset_enablility()
+        self.element_initial_load()
 
-    def update_preset_enablility(self):
-        for idx, action in enumerate(self.controlPanel.fitting_elements.actions_load_preset):
-            if self.element_presets[idx] is not None:
-                action.setDisabled(False)
-                action.setText(self.element_presets[idx][0])
-            else:
-                action.setDisabled(True)
-                action.setText('None')
-        for idx, action in enumerate(self.controlPanel.fitting_elements.actions_del_preset):
-            if self.element_presets[idx] is not None:
-                action.setDisabled(False)
-                action.setText(self.element_presets[idx][0])
-            else:
-                action.setDisabled(True)
-                action.setText('None')
-        for idx, action in enumerate(self.controlPanel.fitting_elements.actions_save_preset):
-            if self.element_presets[idx] is not None:
-                action.setText(self.element_presets[idx][0])
-            else:
-                action.setText('None')
+    def element_del(self, name):
+        self.element_presets.pop(name)
+
+        file.save_element_preset(self.element_presets)
+        self.element_initial_load()
+
 
     def put_data_to_ui(self):
         # elements
@@ -345,12 +371,6 @@ class PdfAnalysis(QtWidgets.QWidget):
         # self.controlPanel.fitting_factors.spinbox_q_range_left.valueChanged.connect(self.fitting_q_range_changed)
         # self.controlPanel.fitting_factors.spinbox_q_range_right.valueChanged.connect(self.fitting_q_range_changed)
 
-        for idx, action in enumerate(self.controlPanel.fitting_elements.actions_load_preset):
-            action.triggered.connect(lambda state, x=idx: (self.load_element(x),self.instantfit()))
-        for idx, action in enumerate(self.controlPanel.fitting_elements.actions_save_preset):
-            action.triggered.connect(lambda state, x=idx: self.save_element(x))
-        for idx, action in enumerate(self.controlPanel.fitting_elements.actions_del_preset):
-            action.triggered.connect(lambda state, x=idx: self.del_element(x))
 
     def btn_radiotail_clicked(self):
         if hasattr(self.graphPanel.graph_Iq, "region") and self.graphPanel.graph_Iq.region is not None:
@@ -640,28 +660,47 @@ class ControlPanel(QtWidgets.QWidget):
             menubar.setNativeMenuBar(False)
             # menu_frame_widget_layout.setSpacing(0)
 
-            load_menu = menubar.addMenu("  &Load  ")
-            self.actions_load_preset = []
-            preset_num = 5
-            for i in range(preset_num):
-                self.actions_load_preset.append(QtWidgets.QAction("None", self))
-                load_menu.addAction(self.actions_load_preset[i])
-
-            save_menu = menubar.addMenu("  &Save  ")
-            self.actions_save_preset = []
-            for i in range(preset_num):
-                self.actions_save_preset.append(QtWidgets.QAction("None", self))
-                save_menu.addAction(self.actions_save_preset[i])
-
-            del_menu = menubar.addMenu("  &Del  ")
-            self.actions_del_preset = []
-            for i in range(preset_num):
-                self.actions_del_preset.append(QtWidgets.QAction("None", self))
-                del_menu.addAction(self.actions_del_preset[i])
+            self.load_menu = menubar.addMenu("  &Load  ")
+            self.save_menu = menubar.addMenu("  &Save  ")
+            self.actions_new_preset = QtWidgets.QAction("[New]", self)
+            self.save_menu.addAction(self.actions_new_preset)
+            self.del_menu = menubar.addMenu("  &Del  ")
 
             menubar.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
 
             return menubar
+
+        def update_menu(self, data: dict):
+            # clear menu
+            self.load_menu.clear()
+            self.save_menu.clear()
+            self.del_menu.clear()
+            # for action in self.load_menu.actions():
+            #     self.load_menu.removeAction(action)
+            # for action in self.save_menu.actions():
+            #     self.save_menu.removeAction(action)
+            # for action in self.del_menu.actions():
+            #     self.del_menu.removeAction(action)
+
+            # add menu
+            for k,v in data.items():
+                action_load = QtWidgets.QAction(k, self)
+                self.load_menu.addAction(action_load)
+                # self.actions_load_preset.append(action_load)
+
+                action_save = QtWidgets.QAction(k, self)
+                self.save_menu.addAction(action_save)
+                # self.actions_save_preset.append(action_save)
+
+                action_del = QtWidgets.QAction(k, self)
+                self.del_menu.addAction(action_del)
+                # self.actions_del_preset.append(action_del)
+            ## add new in save menu
+            self.actions_new_preset = QtWidgets.QAction("[New]", self)
+            self.save_menu.addAction(self.actions_new_preset)
+            # self.save_menu.addAction(self.actions_new_preset)
+
+
 
     class FittingFactors(QtWidgets.QGroupBox):
         def __init__(self):
