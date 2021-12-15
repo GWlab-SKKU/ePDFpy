@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore, QtGui
 from ui import main
 import pyqtgraph as pg
 import os
@@ -74,7 +74,8 @@ class Viewer(QtWidgets.QWidget):
         self.menu_open_csv.triggered.connect(self.open_csv_clicked)
         self.menu_open_txt.triggered.connect(self.open_txt_clicked)
         self.menu_open_custom.triggered.connect(self.open_custom_clicked)
-        self.menu_save_current.triggered.connect(self.save_current_graphs)
+        self.menu_save_selected.triggered.connect(self.save_selected_graphs)
+        self.menu_save_avg_std.triggered.connect(self.save_avg_std)
         self.menu_save_intensity_profile_avg.triggered.connect(self.save_intensity_avg)
         self.leftPanel.graph_x_data_select_area.cmb_x_data.currentTextChanged.connect(self.x_axis_changed)
         self.leftPanel.graph_range_area.spinbox_range_min.valueChanged.connect(self.update_graph)
@@ -93,52 +94,52 @@ class Viewer(QtWidgets.QWidget):
         else:
             self.rightPanel.legend.setVisible(False)
 
-    def save_current_graphs(self):
-        plot_to_save = {}
-
+    def save_selected_graphs(self):
         if len(self.grCubes) == 0:
             return
 
-        # x data
-        str_xaxis = self.leftPanel.graph_x_data_select_area.cmb_x_data.currentText()
-        if str_xaxis == "None":
-            x = np.arange(len(self.grCubes[0].pd_data))
-        else:
-            x = self.grCubes[0].pd_data[str_xaxis]
-        plot_to_save.update({"x":x})
+        save_df = []
+        df_sum = self.sum_data_table()
 
-        # y data
-        str_yaxis = self.leftPanel.graph_y_data_select_area.radio_grp.checkedButton().text()
-        for grCube in self.grCubes:
-            if grCube.chkbox_module.isChecked() == True:
-                y = grCube.pd_data[str_yaxis]
-                plot_to_save.update({grCube.load_file_path:y})
-
-        # average
         if self.leftPanel.graph_ops_select_area.chkbox_average.isChecked():
-            avg_lst = [grCube.pd_data[str_yaxis] for grCube in self.grCubes if grCube.plotItem.isVisible()]
-            avg = np.average(np.array(avg_lst).transpose(), axis=1)
-            plot_to_save.update({"average":avg})
+            df_mean = df_sum.mean(axis=1)
+            df_mean.name = 'average'
+            save_df.append(df_mean)
 
         if self.leftPanel.graph_ops_select_area.chkbox_std.isChecked():
-            std_lst = [grCube.pd_data[str_yaxis] for grCube in self.grCubes if grCube.plotItem.isVisible()]
-            std_ = np.std(np.array(std_lst).transpose(), axis=1)
-            plot_to_save.update({"std": std_})
+            df_std = df_sum.std(axis=1)
+            df_std.name = 'std'
+            save_df.append(df_std)
 
-        df = pd.DataFrame(plot_to_save)
-        cols = df.columns.to_list()
-        if "std" in cols:
-            cols.remove("std")
-            cols.insert(1,"std")
-        if "average" in cols:
-            cols.remove("average")
-            cols.insert(1,"average")
-        df.columns = cols
+        save_df.append(df_sum)  # put last due to order
+
+        df = pd.concat(save_df, axis=1)
 
         fp, ext = QtWidgets.QFileDialog.getSaveFileName(self, filter="CSV Files (*.csv)")
         if fp == '':
             return
-        df.to_csv(fp, index=None)
+        index_column = self.leftPanel.graph_x_data_select_area.cmb_x_data.currentText()
+        if index_column == "None":
+            index_column = "pixel"
+        df.to_csv(fp+'.csv', index=True, index_label=index_column)
+
+    def save_avg_std(self):
+        if len(self.grCubes) == 0:
+            return
+        df_sum = self.sum_data_table()
+        df_mean = df_sum.mean(axis=1)
+        df_mean.name = 'average'
+        df_std = df_sum.std(axis=1)
+        df_std.name = 'std'
+        df = pd.concat([df_mean,df_std], axis=1)
+
+        fp, ext = QtWidgets.QFileDialog.getSaveFileName(self, filter="CSV Files (*.csv)")
+        if fp == '':
+            return
+        index_column = self.leftPanel.graph_x_data_select_area.cmb_x_data.currentText()
+        if index_column == "None":
+            index_column = "pixel"
+        df.to_csv(fp+'.csv', index=True, index_label=index_column)
 
     def save_intensity_avg(self):
         fp, ext = QtWidgets.QFileDialog.getSaveFileName(self, filter="text file (*.txt);;All Files (*)")
@@ -236,11 +237,12 @@ class Viewer(QtWidgets.QWidget):
         #### grcube load ####
         for grCube in self.grCubes:
             grCube.clear()
+        self.rightPanel.legend.clear()
         self.grCubes.clear()
         self.grCubes.extend(dcs)
 
-        # cut data
-        self.data_cut(dcs)
+        # # cut data
+        # self.data_cut(dcs)
 
         # set x axis
         lst_set = [set(dc.pd_data.columns) for dc in dcs]
@@ -287,6 +289,7 @@ class Viewer(QtWidgets.QWidget):
             if self.leftPanel.graph_ops_select_area.chkbox_average.isChecked():
                 self.calculate_average()
             else:
+                self.avg_x, self.avg_y = None, None
                 self.average_plot.hide()
             if self.leftPanel.graph_ops_select_area.chkbox_std.isChecked():
                 self.calculate_std()
@@ -343,17 +346,19 @@ class Viewer(QtWidgets.QWidget):
         if self.grCubes[0].plotItem is None:
             return
 
-        idx_l, value_l = util.find_nearest(self.grCubes[0].data_x, l)
-        idx_r, value_r = util.find_nearest(self.grCubes[0].data_x, r)
-
-        range_slice = slice(idx_l,idx_r+1)
         for grCube in self.grCubes:
+            idx_l, value_l = util.find_nearest(grCube.data_x, l)
+            idx_r, value_r = util.find_nearest(grCube.data_x, r)
+            range_slice = slice(idx_l, idx_r + 1)
             grCube.plotItem.setData(grCube.data_x[range_slice],grCube.data_y[range_slice])
 
         # average
         if self.leftPanel.graph_ops_select_area.chkbox_average.isChecked():
             self.average_plot.setVisible(True)
             self.calculate_average()
+            idx_l, value_l = util.find_nearest(self.avg_x, l)
+            idx_r, value_r = util.find_nearest(self.avg_x, r)
+            range_slice = slice(idx_l, idx_r + 1)
             self.average_plot.setData(self.avg_x[range_slice], self.avg_y[range_slice])
         else:
             self.average_plot.setVisible(False)
@@ -361,6 +366,9 @@ class Viewer(QtWidgets.QWidget):
         if self.leftPanel.graph_ops_select_area.chkbox_std.isChecked():
             self.std_plot.setVisible(True)
             self.calculate_std()
+            idx_l, value_l = util.find_nearest(self.std_x, l)
+            idx_r, value_r = util.find_nearest(self.std_x, r)
+            range_slice = slice(idx_l, idx_r + 1)
             self.std_plot.setData(self.std_x[range_slice], self.std_y[range_slice])
         else:
             self.std_plot.setVisible(False)
@@ -376,10 +384,16 @@ class Viewer(QtWidgets.QWidget):
         if x_axis == "None":
             l = 0
             r = len(self.grCubes[0].pd_data)-1
+            for grCube in self.grCubes:
+                r = max(r,len(grCube.pd_data)-1)
         else:
             nparr = self.grCubes[0].pd_data[x_axis].to_numpy()
             l = nparr.min()
             r = nparr.max()
+            for grCube in self.grCubes:
+                nparr = grCube.pd_data[x_axis].to_numpy()
+                l = min(l,nparr.min())
+                r = max(r,nparr.max())
         self.leftPanel.graph_range_area.spinbox_range_min.blockSignals(True)
         self.leftPanel.graph_range_area.spinbox_range_max.blockSignals(True)
         self.leftPanel.graph_range_area.spinbox_range_min.setMinimum(l)
@@ -395,8 +409,8 @@ class Viewer(QtWidgets.QWidget):
         self.data_range_r = r
 
     def set_data(self):
-        button = self.leftPanel.graph_y_data_select_area.radio_grp.checkedButton()
-        if button is None:
+        radio_btn = self.leftPanel.graph_y_data_select_area.radio_grp.checkedButton()
+        if radio_btn is None:
             return
         for grcube in self.grCubes:
             str_xaxis = self.leftPanel.graph_x_data_select_area.cmb_x_data.currentText()
@@ -404,7 +418,7 @@ class Viewer(QtWidgets.QWidget):
                 grcube.data_x = np.arange(0,len(grcube.pd_data))
             else:
                 grcube.data_x = grcube.pd_data[str_xaxis].to_numpy()
-            str_yaxis = button.text()
+            str_yaxis = radio_btn.text()
             grcube.data_y = grcube.pd_data[str_yaxis].to_numpy()
 
     def open_gr_clicked(self):
@@ -514,23 +528,20 @@ class Viewer(QtWidgets.QWidget):
         return gr_path_list, azavg_path_lst
 
     def calculate_average(self):
-        df_sum = pd.DataFrame()
-        str_xaxis = self.leftPanel.graph_x_data_select_area.cmb_x_data.currentText()
-        str_yaxis = self.leftPanel.graph_y_data_select_area.radio_grp.checkedButton().text()
-        for grCube in self.grCubes:
-            if grCube.chkbox_module.isChecked() == False:
-                continue
-            if str_xaxis == 'None':
-                df = pd.DataFrame(grCube.pd_data[str_yaxis])
-            else:
-                df = pd.DataFrame(grCube.pd_data[str_yaxis].values,index=grCube.pd_data[str_xaxis])
-            df_sum = pd.concat([df_sum,df],axis=1)
+        df_sum = self.sum_data_table()
         df_mean = df_sum.mean(axis=1)
         self.avg_x = df_mean.index.to_numpy()
         self.avg_y = df_mean.to_numpy().squeeze()
         return self.avg_x, self.avg_y
 
     def calculate_std(self):
+        df_sum = self.sum_data_table()
+        df_std = df_sum.std(axis=1)
+        self.std_x = df_std.index.to_numpy()
+        self.std_y = df_std.to_numpy().squeeze()
+        return self.std_x, self.std_y
+
+    def sum_data_table(self):
         df_sum = pd.DataFrame()
         str_xaxis = self.leftPanel.graph_x_data_select_area.cmb_x_data.currentText()
         str_yaxis = self.leftPanel.graph_y_data_select_area.radio_grp.checkedButton().text()
@@ -538,14 +549,11 @@ class Viewer(QtWidgets.QWidget):
             if grCube.chkbox_module.isChecked() == False:
                 continue
             if str_xaxis == 'None':
-                df = pd.DataFrame(grCube.pd_data[str_yaxis])
+                df = pd.DataFrame(grCube.pd_data[str_yaxis].values, columns=[grCube.load_file_path])
             else:
-                df = pd.DataFrame(grCube.pd_data[str_yaxis].values,index=grCube.pd_data[str_xaxis])
-            df_sum = pd.concat([df_sum,df],axis=1)
-        df_std = df_sum.std(axis=1)
-        self.std_x = df_std.index.to_numpy()
-        self.std_y = df_std.to_numpy().squeeze()
-        return self.std_x, self.std_y
+                df = pd.DataFrame(grCube.pd_data[str_yaxis].values, columns=[grCube.load_file_path], index=grCube.pd_data[str_xaxis])
+            df_sum = pd.concat([df_sum, df], axis=1)
+        return df_sum
 
     def create_menu_bar(self):
         self.mainWindow = self.mainWindow
@@ -574,10 +582,13 @@ class Viewer(QtWidgets.QWidget):
         open_menu.addAction(self.menu_open_custom)
         open_menu.addSeparator()
 
-        self.menu_save_current = QtWidgets.QAction("Save current graphs", self.mainWindow)
+        self.menu_save_selected = QtWidgets.QAction("Save selected graphs", self.mainWindow)
+        self.menu_save_avg_std = QtWidgets.QAction("Save average,std only", self.mainWindow)
         self.menu_save_intensity_profile_avg = QtWidgets.QAction("Save intensity profile averaging", self.mainWindow)
+
         save_menu = self.menubar.addMenu("     &Save     ")
-        save_menu.addAction(self.menu_save_current)
+        save_menu.addAction(self.menu_save_selected)
+        save_menu.addAction(self.menu_save_avg_std)
         save_menu.addAction(self.menu_save_intensity_profile_avg)
         self.menu_save_intensity_profile_avg.setEnabled(False)
 
@@ -585,6 +596,7 @@ class Viewer(QtWidgets.QWidget):
 
 
 class GrCube(datacube.DataCube):
+    color_cnt = 0
     def __init__(self,*args, **kwargs):
         super().__init__(*args, **kwargs)
         self.r_file_path = None
@@ -599,9 +611,15 @@ class GrCube(datacube.DataCube):
         self.chkbox_module.deleteLater()
         self.chkbox_module = None
 
-    def set_color(self, int):
+    def set_color(self, color_int=None, color=None):
         ## color ##
-        self.color = pg.intColor(int, minValue=200, alpha=255)
+        if color_int is not None:
+            self.color = pg.intColor(color_int, minValue=200, alpha=255)
+        if color is not None:
+            self.color = color
+        if color_int is None and color is None:
+            GrCube.color_cnt += 1
+            self.color = pg.intColor(GrCube.color_cnt, minValue=200, alpha=255)
         # self.color_dark = self.color.darker(50)
         # self.color_bright = self.color.lighter(50)
         self.color_txt = "rgba({}, {}, {}, {});".format(self.color.red(), self.color.green(), self.color.blue(), self.color.alpha())
@@ -636,9 +654,16 @@ class GrCube(datacube.DataCube):
         # widget enter event
         self.chkbox_module.sigEntered.connect(self.hover_in)
         self.chkbox_module.sigLeaved.connect(self.hover_out)
+        self.chkbox_module.mouseRightClicked.connect(self.change_color)
         self.plotItem.sigCurveHovered.connect(self.hover_in)
         self.plotItem.sigCurveNotHovered.connect(self.hover_out)
         self.plotItem.sigCurveClicked.connect(lambda: self.chkbox_module.setChecked(False))
+
+    def change_color(self, ev):
+        color = QtWidgets.QColorDialog.getColor(initial=self.color)
+        if not color.isValid():
+            return
+        self.set_color(color=color)
 
     def hover_in(self):
         ### graph ###
@@ -797,6 +822,7 @@ class LeftPanel(QtWidgets.QWidget):
 class GraphCheckBox(QtWidgets.QCheckBox):
     sigEntered = QtCore.pyqtSignal(object, object)
     sigLeaved = QtCore.pyqtSignal(object, object)
+    mouseRightClicked = QtCore.pyqtSignal(object, object)
     def __init__(self):
         super().__init__()
         self.setChecked(True)
@@ -808,6 +834,11 @@ class GraphCheckBox(QtWidgets.QCheckBox):
     def leaveEvent(self, a0: QtCore.QEvent) -> None:
         super().leaveEvent(a0)
         self.sigLeaved.emit(self,a0)
+
+    def mouseReleaseEvent(self, e: QtGui.QMouseEvent) -> None:
+        if e.button() == QtCore.Qt.RightButton:
+            self.mouseRightClicked.emit(self, e)
+        super().mouseReleaseEvent(e)
 
 
 
