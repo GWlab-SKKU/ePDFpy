@@ -26,9 +26,10 @@ def draw_center_line(img, center):
 
 
 def calculate_center(img, intensity_range, step_size):
-    initial_center = _calculate_initial_center(img)
+    image = img.copy()
+    initial_center = _calculate_initial_center(image)
     print("initial center is ", initial_center)
-    rect = _get_rectangle_from_intensity(img, intensity_range)
+    rect = _get_rectangle_from_intensity(image, intensity_range)
 
     #################
     find_range = 10
