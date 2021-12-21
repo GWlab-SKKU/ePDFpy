@@ -79,8 +79,7 @@ def calculate_center_gradient(img, intensity_range, step_size):
 def _calculate_initial_center(img):
     if not len(img.shape) == 2:
         raise ValueError()
-    if np.array(img).min() < 0 or np.array(img).max() > 255:
-        img = cv2.normalize(img,img,0,255,cv2.NORM_MINMAX)
+    img = cv2.normalize(img,img,0,255,cv2.NORM_MINMAX)
     if img[0][0].dtype != np.uint8:
         img = img.astype(np.uint8)
 
