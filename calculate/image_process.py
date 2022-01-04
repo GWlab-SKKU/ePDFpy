@@ -4,6 +4,8 @@ import time
 import util
 import definitions
 from scipy import ndimage
+from calculate import polar_transform
+
 
 try:
     import cupy as cp
@@ -25,32 +27,61 @@ def draw_center_line(img, center):
     return rs
 
 
-def calculate_center(img, intensity_range, step_size):
-    image = img.copy()
-    initial_center = _calculate_initial_center(image)
+###################### calculate center #####################
+def calculate_center(img):
+
+    # blur
+    blur_img = cv2.GaussianBlur(img, (0,0), 1)
+
+    # initial center
+    initial_center = _calculate_initial_center(blur_img)
     print("initial center is ", initial_center)
-    rect = _get_rectangle_from_intensity(image, intensity_range)
 
-    #################
-    find_range = 10
-    #################
-    evaluated_center = np.zeros((find_range * 2, find_range * 2))
-    for x in range(-find_range, find_range):
-        for y in range(-find_range, find_range):
-            center_xy = (initial_center[0] + x, initial_center[1] + y)
-            evaluated_center[x + find_range, y + find_range] = _evaluate_center_slice_range(img, center_xy, rect,
-                                                                                            intensity_range, step_size)
+    # minimum distance
+    search_length = 5
+    edge = [[0,blur_img.shape[1]],[blur_img.shape[0],0]]
+    minimum_d = np.floor(np.min(np.abs(edge - np.array(initial_center)))).astype(int)
+    minimum_d = minimum_d - search_length
+    print("minimum_d is",minimum_d)
 
-    min_index = np.unravel_index(evaluated_center.argmin(), evaluated_center.shape)
-    real_index = np.zeros(2)
-    real_index[0] = min_index[0] - find_range
-    real_index[1] = min_index[1] - find_range
-    center = np.add(initial_center, real_index).astype('int')
+    # evaluate center
+    cost_array = _evaluate_center_local_area(blur_img, initial_center, search_length, minimum_d)
 
-    # plt.imshow(evaluated_center)
-    # plt.show()
+    # recover center index
+    min_index = np.unravel_index(cost_array.argmin(), cost_array.shape)
+    real_index = np.array(min_index) - search_length
+    center = np.round(np.add(initial_center, real_index)).astype('int')
     print("calculated center is ", center)
+
     return center
+
+def _evaluate_center_local_area(img, initial_center, search_length, maximum_d):
+    """
+    :param img: numpy array
+    :param initial_center: coordinate tuple
+    :param search_length:
+    :param maximum_d: when evaluate_center
+    :return: search_length*2 x search_length*2
+    """
+    cost_img = np.zeros((search_length * 2, search_length * 2))
+    for x in range(-search_length, search_length):
+        for y in range(-search_length, search_length):
+            center_xy = (initial_center[0] + x, initial_center[1] + y)
+            cost_img[x + search_length, y + search_length] \
+                = _evaluate_center(img, center_xy, maximum_d)
+    return cost_img
+
+def _evaluate_center(img, center, max_d=None):
+    dr = 1
+    dphi = np.radians(2)
+
+    polar_img = polar_transform.cartesian_to_polarelliptical_transform(img,[center[1],center[0],1,1,0], dr=dr, dphi=dphi, mask=~mask)
+    # polar_img = cartesian_to_polarelliptical_transform(img,[center[1],center[0],1,1,0],dphi=np.radians(0.5), mask = ~mask)
+    norm_std_graph = np.std(polar_img[0],axis=0)/np.average(polar_img[0],axis=0)
+    if max_d is not None:
+        return np.sum(norm_std_graph[:max_d])
+    else:
+        return np.sum(norm_std_graph)
 
 def calculate_center_gradient(img, intensity_range, step_size):
     cost_img = np.empty(img.shape)
@@ -412,6 +443,8 @@ def _calculate_azimuthal_average_cuda_deprecated(raw_image, center):
     return azav, azvar
 
 
+def polar_transformation():
+    pass
 
 
 
