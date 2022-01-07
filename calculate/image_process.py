@@ -114,7 +114,7 @@ def calculate_center_gradient(img):
                 cost_img[x, y] = _evaluate_center(img, (x, y), minimum_d)
         #         print("xy loop:",x,y,cost_img[x, y])
         # print(cnt)
-        if cost_img[cursor] != np.nanmin(cost_img):
+        if cost_img[cursor[0],cursor[1]] != np.nanmin(cost_img):
             cursor = np.unravel_index(np.nanargmin(cost_img), cost_img.shape)
             cnt = cnt + 1
         else:
