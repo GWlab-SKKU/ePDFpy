@@ -42,7 +42,7 @@ def calculate_center_with_cost(img):
     print("initial center is ", initial_center)
 
     # minimum distance
-    search_length = 5
+    search_length = 10
     edge = [[0,blur_img.shape[1]],[blur_img.shape[0],0]]
     minimum_d = np.floor(np.min(np.abs(edge - np.array(initial_center)))).astype(int)
     minimum_d = minimum_d - search_length
