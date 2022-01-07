@@ -33,23 +33,24 @@ def calculate_center(img):
     return center
 
 def calculate_center_with_cost(img):
+    image = img.copy()
 
     # blur
-    blur_img = cv2.GaussianBlur(img, (0,0), 1)
+    # image = cv2.GaussianBlur(image, (0,0), 1)
 
     # initial center
-    initial_center = np.round(_calculate_initial_center(blur_img)).astype(int)
+    initial_center = np.round(_calculate_initial_center(image)).astype(int)
     print("initial center is ", initial_center)
 
     # minimum distance
     search_length = 10
-    edge = [[0,blur_img.shape[1]],[blur_img.shape[0],0]]
+    edge = [[0,image.shape[1]],[image.shape[0],0]]
     minimum_d = np.floor(np.min(np.abs(edge - np.array(initial_center)))).astype(int)
     minimum_d = minimum_d - search_length
     print("minimum_d is",minimum_d)
 
     # evaluate center
-    cost_array = _evaluate_center_local_area(blur_img, initial_center, search_length, minimum_d)
+    cost_array = _evaluate_center_local_area(image, initial_center, search_length, minimum_d)
 
     # recover center index
     min_index = np.unravel_index(cost_array.argmin(), cost_array.shape)
