@@ -29,6 +29,10 @@ def draw_center_line(img, center):
 
 ###################### calculate center #####################
 def calculate_center(img):
+    center, cost = calculate_center_with_cost(img)
+    return center
+
+def calculate_center_with_cost(img):
 
     # blur
     blur_img = cv2.GaussianBlur(img, (0,0), 1)
@@ -53,7 +57,8 @@ def calculate_center(img):
     center = np.round(np.add(initial_center, real_index)).astype('int')
     print("calculated center is ", center)
 
-    return center
+    return center, cost_array
+
 
 def _evaluate_center_local_area(img, initial_center, search_length, maximum_d):
     """
