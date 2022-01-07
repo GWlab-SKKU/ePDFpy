@@ -38,7 +38,7 @@ def calculate_center_with_cost(img):
     blur_img = cv2.GaussianBlur(img, (0,0), 1)
 
     # initial center
-    initial_center = _calculate_initial_center(blur_img)
+    initial_center = np.round(_calculate_initial_center(blur_img)).astype(int)
     print("initial center is ", initial_center)
 
     # minimum distance
@@ -76,6 +76,7 @@ def _evaluate_center_local_area(img, initial_center, search_length, maximum_d):
                 = _evaluate_center(img, center_xy, maximum_d)
     return cost_img
 
+
 def _evaluate_center(img, center, max_d=None):
     dr = 1
     dphi = np.radians(2)
@@ -94,8 +95,7 @@ def calculate_center_gradient(img):
     cost_img[:] = np.NaN
 
     # minimum distance
-    cursor = _calculate_initial_center(img)
-    cursor = (int(cursor[0]), int(cursor[1]))
+    cursor = np.around(_calculate_initial_center(img)).astype(int)
     print("initial center is ", cursor)
 
     search_length = 10
