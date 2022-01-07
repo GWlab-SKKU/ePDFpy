@@ -83,28 +83,38 @@ def _evaluate_center(img, center, max_d=None):
     else:
         return np.sum(norm_std_graph)
 
-def calculate_center_gradient(img, intensity_range, step_size):
+
+def calculate_center_gradient(img):
     cost_img = np.empty(img.shape)
     cost_img[:] = np.NaN
-    cursor = _calculate_initial_center(img)
-    cursor = (int(cursor[0]),int(cursor[1]))
-    print("initial center is ", cursor)
-    rect = _get_rectangle_from_intensity(img, intensity_range)
-    cnt = 0
 
-    while(cnt < 15):
-        for x in range(cursor[0]-1,cursor[0]+2):
-            for y in range(cursor[1] - 1, cursor[1] + 2):
+    # minimum distance
+    cursor = _calculate_initial_center(img)
+    cursor = (int(cursor[0]), int(cursor[1]))
+    print("initial center is ", cursor)
+
+    search_length = 10
+    edge = [[0, img.shape[1]], [img.shape[0], 0]]
+    minimum_d = np.floor(np.min(np.abs(edge - np.array(cursor)))).astype(int)
+    minimum_d = minimum_d - search_length
+    print("minimum_d is", minimum_d)
+
+    cnt = 0
+    while (cnt < 15):
+        search_rect_width = 3
+        for x in range(cursor[0] - search_rect_width // 2, cursor[0] + search_rect_width // 2 + 1):
+            for y in range(cursor[1] - search_rect_width // 2, cursor[1] + search_rect_width // 2 + 1):
                 if not np.isnan(cost_img[x, y]):
                     continue
-                cost_img[x, y] = _evaluate_center_slice_range(img, (x, y), rect, intensity_range, step_size)
+                cost_img[x, y] = _evaluate_center(img, (x, y), minimum_d)
+        #         print("xy loop:",x,y,cost_img[x, y])
+        # print(cnt)
         if cost_img[cursor] != np.nanmin(cost_img):
             cursor = np.unravel_index(np.nanargmin(cost_img), cost_img.shape)
             cnt = cnt + 1
         else:
+            print("calculated center is",cursor)
             return cursor
-
-    return calculate_center(img, intensity_range, step_size)
 
 
 def _calculate_initial_center(img):
