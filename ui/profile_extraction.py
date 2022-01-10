@@ -255,82 +255,6 @@ class ControlPanel(QtWidgets.QWidget):
         layout.addWidget(self.operationPanel)
         self.setLayout(layout)
 
-    # class OpenFilePanel(QtWidgets.QGroupBox):
-    #     def __init__(self,arg,mainWindow: QtWidgets.QMainWindow):
-    #         QtWidgets.QGroupBox.__init__(self,arg)
-    #         layout = QtWidgets.QGridLayout()
-    #
-    #         radio_grp = QtWidgets.QGroupBox()
-    #         self.radio_folder = QtWidgets.QRadioButton("Folder")
-    #         self.radio_file = QtWidgets.QRadioButton("File")
-    #         radio_grp_layout = QtWidgets.QBoxLayout(QtWidgets.QBoxLayout.LeftToRight)
-    #         radio_grp.setLayout(radio_grp_layout)
-    #         radio_grp_layout.addWidget(self.radio_folder)
-    #         radio_grp_layout.addWidget(self.radio_file)
-    #         self.radio_file.setChecked(True)
-    #
-    #         self.lbl_path = QtWidgets.QLabel("/")
-    #         self.btn_path = QtWidgets.QPushButton("open")
-    #         # self.lbl_path.setFixedHeight(ControlPanel.text_fixed_height)
-    #         self.lbl_path.setMaximumWidth(300)
-    #
-    #
-    #         layout.addWidget(radio_grp, 0, 0)
-    #         layout.addWidget(self.btn_path, 0, 1)
-    #         layout.addWidget(self.lbl_path, 1, 0, 1, 2)
-    #         self.setLayout(layout)
-
-    class OpenFilePanel(QtWidgets.QGroupBox):
-        def __init__(self, arg, mainWindow: QtWidgets.QMainWindow):
-            QtWidgets.QGroupBox.__init__(self)
-            self.setTitle(arg)
-            layout = QtWidgets.QGridLayout()
-            layout = QtWidgets.QHBoxLayout()
-            self.menu_file = self.create_menu(mainWindow)
-            self.lbl_file_name = QtWidgets.QLabel("...")
-            layout.addWidget(self.menu_file)
-            layout.addWidget(self.lbl_file_name)
-            layout.addWidget(self.menu_file, 0, 0, 1, 1)
-            layout.addWidget(self.lbl_file_name, 0, 1, 1, 2)
-
-            self.lbl_data_quality = QtWidgets.QLabel("Data Quality")
-            self.combo_dataQuality = QtWidgets.QComboBox()
-            quality_list = ["None", "Auto"]
-            quality_list.extend(util.df_data_quality['label'].to_list())  # [None,Auto,L1,L2,L3,L4]
-            self.combo_dataQuality.addItems(quality_list)
-            layout.addWidget(self.combo_dataQuality, 1, 1, 1, 1)
-            layout.addWidget(self.lbl_data_quality, 1, 0, 1, 1)
-
-            self.setLayout(layout)
-
-        def create_menu(self, mainWindow: QtWidgets.QMainWindow):
-            menubar = mainWindow.menuBar()
-            menubar.setNativeMenuBar(False)
-            self.open_img_file = QtWidgets.QAction("Open &image file", self)
-            self.open_img_stack = QtWidgets.QAction("Open &image stack", self)
-            self.open_preset = QtWidgets.QAction("Open preset &file", self)
-            self.save_preset = QtWidgets.QAction("Save preset &file", self)
-            self.open_preset_stack = QtWidgets.QAction("Open preset &stack", self)
-            self.save_preset_stack = QtWidgets.QAction("Save preset &stack", self)
-            self.open_azavg_only = QtWidgets.QAction("Open &azavg only", self)
-            self.save_azavg_only = QtWidgets.QAction("Save &azavg only", self)
-
-            open_menu = menubar.addMenu("     &Open     ")
-            open_menu.addAction(self.open_img_file)
-            open_menu.addAction(self.open_img_stack)
-            open_menu.addSeparator()
-            open_menu.addAction(self.open_preset)
-            open_menu.addAction(self.open_preset_stack)
-            open_menu.addSeparator()
-            open_menu.addAction(self.open_azavg_only)
-
-            open_menu = menubar.addMenu("     &Save     ")
-            open_menu.addAction(self.save_preset)
-            open_menu.addAction(self.save_preset_stack)
-            open_menu.addAction(self.save_azavg_only)
-
-            menubar.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-            return menubar
 
     class SettingPanel(QtWidgets.QGroupBox):
         def __init__(self, arg):
@@ -482,10 +406,6 @@ class PolarImagePanel(QtWidgets.QWidget):
         self.setLayout(self.layout)
         self.cmap = pg.ColorMap(np.linspace(0, 1, len(image_process.colorcube)), color=image_process.colorcube)
         self.imageView.setColorMap(self.cmap)
-
-
-
-
 
     def update_img(self, img):
         self._current_data = img

@@ -47,6 +47,9 @@ class RoiCreater(QtWidgets.QWidget):
         self.func_after_mask_selected = func_after_mask_selected
         self.setWindowFlags(self.windowFlags() | Qt.Qt.Window)
 
+        if isinstance(image, pg.ImageView):
+            image = image.image
+
         layout = QtWidgets.QVBoxLayout()
         self.imageView = pg.ImageView()
         self.save_mask_folder = save_mask_folder
@@ -80,7 +83,8 @@ class RoiCreater(QtWidgets.QWidget):
 
     def image_load(self, img):
         self.imageView.setImage(img)
-        pass
+
+
 
     def draw_roi(self):
         self.poly_line_roi = pg.PolyLineROI([[0,0], [10,10], [10,30], [30,10]], closed=True)
@@ -123,7 +127,7 @@ class MaskDropdown(QtWidgets.QComboBox):
     def __init__(self, image, mask_folder, func_after_mask_selected=None):
         """
         Args:
-            image: 2d numpy array
+            image: 2d numpy array or pyqtgraph.ImageViewer
             mask_save_folder_path: folder where mask array will be saved
             after_mask_selected: function that will be excu
         """
@@ -134,7 +138,6 @@ class MaskDropdown(QtWidgets.QComboBox):
         self.func_after_mask_selected = self.mask_load
 
         self.mask_dict = None
-        self.current_mask = None
         self.mask_widget = None
 
         self.mask_load()
@@ -158,13 +161,23 @@ class MaskDropdown(QtWidgets.QComboBox):
 
     def mask_reload(self):
         self.clear()
+        self.addItem("None")
         self.addItems(self.mask_dict.keys())
         self.addItem("Edit ...")
+
+    def get_current_mask(self):
+        if not self.mask_dict:
+            return
+        if self.currentIndex() in [0, len(self.mask_dict)+1]:
+            return
+        if self.mask_dict[self.currentText()]['data'] is None:
+            self.mask_dict[self.currentText()]['data'] = np.loadtxt(self.mask_dict[self.currentText()]['fp'],delimiter=',').astype(np.uint8)
+        return self.mask_dict[self.currentText()]['data']
 
 
 
     def dropdown_event(self, idx):
-        if idx == len(self.mask_dict):
+        if idx == len(self.mask_dict)+1:
             #todo: finish list view
             # self.listWidget = ListWidget(list(self.mask_dict.keys()))
             # self.listWidget.show()
