@@ -17,7 +17,7 @@ def get_sample_img():
 
 
 # def get_mask_data():
-#     return np.loadtxt('./assets/mask_data.txt',delimiter=',').astype(np.uint8)
+#     return np.loadtxt('./assets/mask_data.csv',delimiter=',').astype(np.uint8)
 
 def get_sample_azimuthal_average():
     return np.loadtxt('./assets/sample_azavg.csv', delimiter=',')
@@ -174,7 +174,7 @@ default_setting = DefaultSetting()
 
 if __name__ == '__main__':
     # mask = create_estimated_mask()
-    # np.savetxt('./assets/mask_data.txt',mask,fmt='%i',delimiter=',')
+    # np.savetxt('./assets/mask_data.csv',mask,fmt='%i',delimiter=',')
 
     # print(settings['show_center_line']==True)
     print(get_atomic_number_symbol())
