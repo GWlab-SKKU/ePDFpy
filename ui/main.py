@@ -243,6 +243,12 @@ class DataViewer(QtWidgets.QMainWindow):
         # Set index label
         self.top_menu.lbl_current_num.setText(str(self.current_page + 1) + "/" + str(len(self.dcs)))
 
+    def apply_element_to_all(self, datacube):
+        for dc in self.dcs:
+            dc.ds = datacube.ds
+            dc.element_nums = datacube.element_nums
+            dc.element_ratio = datacube.element_ratio
+
 
     def menu_open_image_file(self):
         load_paths = []

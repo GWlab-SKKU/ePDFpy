@@ -8,7 +8,7 @@ import time
 from datacube import DataCube
 from typing import List
 from ui.pdfanalysis import PdfAnalysis
-from calculate import pdf_calculator, image_process, q_range_selector
+from calculate import pdf_calculator, image_process, q_range_selector, polar_transform
 from PyQt5.QtWidgets import QMessageBox
 from ui import ui_util
 pg.setConfigOptions(antialias=True)
@@ -35,12 +35,12 @@ class ProfileExtraction(QtWidgets.QWidget):
         self.control_panel = ControlPanel()
         self.img_panel = ImgPanel()
         self.profile_graph_panel = IntensityProfilePanel()
-        self.std_graph_panel = StdGraphPanel()
+        self.polar_image_panel = PolarImagePanel()
 
         self.upper_left = self.control_panel
         self.bottom_left = self.img_panel
         self.upper_right = self.profile_graph_panel
-        self.bottom_right = self.std_graph_panel
+        self.bottom_right = self.polar_image_panel
 
         self.splitter_left_vertical = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         self.splitter_left_vertical.addWidget(self.upper_left)
@@ -134,7 +134,6 @@ class ProfileExtraction(QtWidgets.QWidget):
 
         # update ui
         self.update_azavg_graph()
-        self.update_std_graph()
         self.Dataviewer.PDF_analyser.update_initial_iq()
         self.Dataviewer.PDF_analyser.update_initial_iq_graph()
         self.update_center_spinBox()
@@ -145,11 +144,12 @@ class ProfileExtraction(QtWidgets.QWidget):
             return
         self.profile_graph_panel.update_graph(self.dc.azavg)
 
-    def update_std_graph(self):
-        if self.dc.azvar is None:
+    def update_polar_img(self):
+        if self.dc.center[0] is None:
             return
-        self.std_graph_panel.update_graph(self.dc.azvar)
-
+        p_ellipse = [self.dc.center[1],self.dc.center[0],1,1,0]
+        polar_img, _, _ = polar_transform.cartesian_to_polarelliptical_transform(self.dc.img,p_ellipse, dphi=np.radians(0.5))
+        self.polar_image_panel.update_img(polar_img)
 
     def find_center(self):
         i1 = self.control_panel.settingPanel.spinBox_irange1.value()
@@ -179,7 +179,7 @@ class ProfileExtraction(QtWidgets.QWidget):
 
         # update graph
         self.update_azavg_graph()
-        self.update_std_graph()
+        self.update_polar_img()
 
         # update spinbox and settings
         self.update_center_spinBox()
@@ -213,6 +213,7 @@ class ProfileExtraction(QtWidgets.QWidget):
         if self.dc.center[0] is not None and self.control_panel.settingPanel.chkBox_show_centerLine.isChecked():
             img = image_process.draw_center_line(img, self.dc.center)
         self.img_panel.update_img(img)
+        self.update_polar_img()
 
     def set_data_quality(self):
         # set auto(data quality) combolist and save to datacube
@@ -425,14 +426,14 @@ class ImgPanel(QtWidgets.QWidget):
         self.setLayout(layout)
         self._current_data = None
         self.cmap = pg.ColorMap(np.linspace(0, 1, len(image_process.colorcube)), color=image_process.colorcube)
+        self.imageView.setColorMap(self.cmap)
 
     def update_img(self, img):
-        self.imageView.setColorMap(self.cmap)
         self._current_data = img
         if len(img.shape) == 2:
-            self.imageView.setImage(self._current_data.transpose(1, 0))
+            self.imageView.setImage(self._current_data.transpose(1, 0), autoRange=False)
         if len(img.shape) == 3:
-            self.imageView.setImage(self._current_data.transpose(1, 0, 2))
+            self.imageView.setImage(self._current_data.transpose(1, 0, 2), autoRange=False)
 
     def clear_img(self):
         self.imageView.clear()
@@ -467,28 +468,34 @@ class IntensityProfilePanel(QtWidgets.QWidget):
             self.plot_curr.setData(self.curr_dat)
             self.plot_prev.setData(self.prev_dat)
 
-class StdGraphPanel(QtWidgets.QWidget):
+class PolarImagePanel(QtWidgets.QWidget):
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
-        self.plot_widget = ui_util.IntensityPlotWidget(title='Normalized std')
-        self.plot_widget.setYScaling(False)
+
+        plot = pg.PlotItem()
+        plot.setLabel(axis='left')
+        plot.setLabel(axis='bottom')
+
+        self.imageView = pg.ImageView(view=plot)
         self.layout = QtWidgets.QHBoxLayout()
-        self.layout.addWidget(self.plot_widget)
+        self.layout.addWidget(self.imageView)
         self.setLayout(self.layout)
-
-        self.curr_dat = None
-        self.prev_dat = None
-        self.plot_widget.addLegend(offset=(-30, 30))
-        self.plot_prev = self.plot_widget.plot(pen=pg.mkPen(100, 100, 100, width=2), name='previous')
-        self.plot_curr = self.plot_widget.plot(pen=pg.mkPen(255, 0, 0, width=2), name='current')
+        self.cmap = pg.ColorMap(np.linspace(0, 1, len(image_process.colorcube)), color=image_process.colorcube)
+        self.imageView.setColorMap(self.cmap)
 
 
-    def update_graph(self, dat):
-        if self.curr_dat is None:
-            self.curr_dat = dat
-            self.plot_curr.setData(self.curr_dat)
-        else:
-            self.prev_dat = self.curr_dat
-            self.curr_dat = dat
-            self.plot_curr.setData(self.curr_dat)
-            self.plot_prev.setData(self.prev_dat)
+
+
+
+    def update_img(self, img):
+        self._current_data = img
+        if len(img.shape) == 2:
+            self.imageView.setImage(self._current_data.transpose(1, 0), autoRange=False)
+        if len(img.shape) == 3:
+            self.imageView.setImage(self._current_data.transpose(1, 0, 2), autoRange=False)
+
+    def clear_img(self):
+        self.imageView.clear()
+
+    def get_img(self):
+        return self._current_data

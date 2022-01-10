@@ -4,6 +4,8 @@ import time
 import util
 import definitions
 from scipy import ndimage
+from calculate import polar_transform
+
 
 try:
     import cupy as cp
@@ -25,61 +27,106 @@ def draw_center_line(img, center):
     return rs
 
 
-def calculate_center(img, intensity_range, step_size):
-    initial_center = _calculate_initial_center(img)
-    print("initial center is ", initial_center)
-    rect = _get_rectangle_from_intensity(img, intensity_range)
-
-    #################
-    find_range = 10
-    #################
-    evaluated_center = np.zeros((find_range * 2, find_range * 2))
-    for x in range(-find_range, find_range):
-        for y in range(-find_range, find_range):
-            center_xy = (initial_center[0] + x, initial_center[1] + y)
-            evaluated_center[x + find_range, y + find_range] = _evaluate_center_slice_range(img, center_xy, rect,
-                                                                                            intensity_range, step_size)
-
-    min_index = np.unravel_index(evaluated_center.argmin(), evaluated_center.shape)
-    real_index = np.zeros(2)
-    real_index[0] = min_index[0] - find_range
-    real_index[1] = min_index[1] - find_range
-    center = np.add(initial_center, real_index).astype('int')
-
-    # plt.imshow(evaluated_center)
-    # plt.show()
-    print("calculated center is ", center)
+###################### calculate center #####################
+def calculate_center(img):
+    center, cost = calculate_center_with_cost(img)
     return center
 
-def calculate_center_gradient(img, intensity_range, step_size):
+def calculate_center_with_cost(img):
+    image = img.copy()
+
+    # blur
+    # image = cv2.GaussianBlur(image, (0,0), 1)
+
+    # initial center
+    initial_center = np.round(_calculate_initial_center(image)).astype(int)
+    print("initial center is ", initial_center)
+
+    # minimum distance
+    search_length = 15
+    edge = [[0,image.shape[1]],[image.shape[0],0]]
+    minimum_d = np.floor(np.min(np.abs(edge - np.array(initial_center)))).astype(int)
+    minimum_d = minimum_d - search_length
+    print("minimum_d is",minimum_d)
+
+    # evaluate center
+    cost_array = _evaluate_center_local_area(image, initial_center, search_length, minimum_d)
+
+    # recover center index
+    min_index = np.unravel_index(cost_array.argmin(), cost_array.shape)
+    real_index = np.array(min_index) - search_length
+    center = np.round(np.add(initial_center, real_index)).astype('int')
+    print("calculated center is ", center)
+
+    return center, cost_array
+
+
+def _evaluate_center_local_area(img, initial_center, search_length, maximum_d):
+    """
+    :param img: numpy array
+    :param initial_center: coordinate tuple
+    :param search_length:
+    :param maximum_d: when evaluate_center
+    :return: search_length*2 x search_length*2
+    """
+    cost_img = np.zeros((search_length * 2, search_length * 2))
+    for x in range(-search_length, search_length):
+        for y in range(-search_length, search_length):
+            center_xy = (initial_center[0] + x, initial_center[1] + y)
+            cost_img[x + search_length, y + search_length] \
+                = _evaluate_center(img, center_xy, maximum_d)
+    return cost_img
+
+
+def _evaluate_center(img, center, max_d=None):
+    dr = 1
+    dphi = np.radians(2)
+
+    polar_img = polar_transform.cartesian_to_polarelliptical_transform(img,[center[1],center[0],1,1,0], dr=dr, dphi=dphi, mask=~mask)
+    # polar_img = cartesian_to_polarelliptical_transform(img,[center[1],center[0],1,1,0],dphi=np.radians(0.5), mask = ~mask)
+    norm_std_graph = np.std(polar_img[0],axis=0)/np.average(polar_img[0],axis=0)
+    if max_d is not None:
+        return np.sum(norm_std_graph[:max_d])
+    else:
+        return np.sum(norm_std_graph)
+
+
+def calculate_center_gradient(img):
     cost_img = np.empty(img.shape)
     cost_img[:] = np.NaN
-    cursor = _calculate_initial_center(img)
-    cursor = (int(cursor[0]),int(cursor[1]))
-    print("initial center is ", cursor)
-    rect = _get_rectangle_from_intensity(img, intensity_range)
-    cnt = 0
 
-    while(cnt < 15):
-        for x in range(cursor[0]-1,cursor[0]+2):
-            for y in range(cursor[1] - 1, cursor[1] + 2):
+    # minimum distance
+    cursor = np.around(_calculate_initial_center(img)).astype(int)
+    print("initial center is ", cursor)
+
+    search_length = 10
+    edge = [[0, img.shape[1]], [img.shape[0], 0]]
+    minimum_d = np.floor(np.min(np.abs(edge - np.array(cursor)))).astype(int)
+    minimum_d = minimum_d - search_length
+    print("minimum_d is", minimum_d)
+
+    cnt = 0
+    while (cnt < 15):
+        search_rect_width = 3
+        for x in range(cursor[0] - search_rect_width // 2, cursor[0] + search_rect_width // 2 + 1):
+            for y in range(cursor[1] - search_rect_width // 2, cursor[1] + search_rect_width // 2 + 1):
                 if not np.isnan(cost_img[x, y]):
                     continue
-                cost_img[x, y] = _evaluate_center_slice_range(img, (x, y), rect, intensity_range, step_size)
-        if cost_img[cursor] != np.nanmin(cost_img):
+                cost_img[x, y] = _evaluate_center(img, (x, y), minimum_d)
+        #         print("xy loop:",x,y,cost_img[x, y])
+        # print(cnt)
+        if cost_img[cursor[0],cursor[1]] != np.nanmin(cost_img):
             cursor = np.unravel_index(np.nanargmin(cost_img), cost_img.shape)
             cnt = cnt + 1
         else:
+            print("calculated center is",cursor)
             return cursor
-
-    return calculate_center(img, intensity_range, step_size)
 
 
 def _calculate_initial_center(img):
     if not len(img.shape) == 2:
         raise ValueError()
-    if np.array(img).min() < 0 or np.array(img).max() > 255:
-        img = cv2.normalize(img,img,0,255,cv2.NORM_MINMAX)
+    img = cv2.normalize(img,img,0,255,cv2.NORM_MINMAX)
     if img[0][0].dtype != np.uint8:
         img = img.astype(np.uint8)
 
@@ -412,6 +459,8 @@ def _calculate_azimuthal_average_cuda_deprecated(raw_image, center):
     return azav, azvar
 
 
+def polar_transformation():
+    pass
 
 
 

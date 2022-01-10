@@ -10,6 +10,7 @@ import pandas as pd
 from pathlib import Path
 import definitions
 import re
+import cv2
 
 ePDFpy_analysis_folder_name = "Analysis ePDFpy"
 preset_ext = ".preset.json"
@@ -25,7 +26,7 @@ def load_mrc_img(fp):
         raw_img = mrc.data
     easy_img = np.log(np.abs(raw_img) + 1)
     easy_img = easy_img / easy_img.max() * 255
-    easy_img = easy_img.astype('uint8')
+    # easy_img = easy_img.astype('uint8')
     return raw_img, easy_img
 
 
@@ -225,7 +226,7 @@ def save_pdf_setting_manual(dc_file_path):
 
 def load_element_preset():
     if not os.path.isfile(definitions.ELEMENT_PRESETS_PATH):
-        element_preset = [None]*5
+        element_preset = dict()
         json.dump(element_preset, open(definitions.ELEMENT_PRESETS_PATH, 'w'), indent=2)
         return element_preset
     return json.load(open(definitions.ELEMENT_PRESETS_PATH))

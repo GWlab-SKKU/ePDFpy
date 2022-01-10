@@ -108,8 +108,7 @@ class DataCube:
     def calculate_center(self, intensity_range, step_size):
         if self.img is None:
             return
-        self.center = list(image_process.calculate_center_gradient(self.img, intensity_range, step_size))
-        print("selected center: ", self.center)
+        self.center = list(image_process.calculate_center(self.img))
         return self.center
 
     def calculate_azimuthal_average(self, intensity_range=None, step_size=None):
