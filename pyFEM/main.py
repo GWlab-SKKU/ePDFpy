@@ -4,7 +4,7 @@ from PyQt5 import QtWidgets
 import pyqtgraph as pg
 import numpy as np
 import pandas as pd
-from calculate import image_process, polar_transform
+from calculate import image_process, polar_transform, fem_calculation
 from ui import ui_util
 from ui.roi_selector import roi_selector
 import definitions
@@ -97,6 +97,36 @@ class MainViewer(QMainWindow):
         self.control_panel.grp_mask.cmb_mask.currentIndexChanged.connect(self.update_img)
         self.control_panel.grp_mask.chk_mask_inverse.toggled.connect(self.update_img)
         self.top_menu.open_img_file.triggered.connect(self.file_load)
+        self.control_panel.grp_ellipse.btn_autofit.clicked.connect(self.autofit)
+        self.control_panel.grp_ellipse.btn_manualfit.clicked.connect(self.manualfit)
+        self.control_panel.grp_operation.btn_fem.clicked.connect(self.run_fem)
+
+        self.control_panel.grp_ellipse.spinbox_x.valueChanged.connect(self.manualfit)
+        self.control_panel.grp_ellipse.spinbox_y.valueChanged.connect(self.manualfit)
+        self.control_panel.grp_ellipse.spinbox_a.valueChanged.connect(self.manualfit)
+        self.control_panel.grp_ellipse.spinbox_b.valueChanged.connect(self.manualfit)
+        self.control_panel.grp_ellipse.spinbox_phi.valueChanged.connect(self.manualfit)
+
+    def autofit(self):
+        rs = fem_calculation.autofit(self.dc, mask=self.mask_data)
+        ui_util.update_value(self.control_panel.grp_ellipse.spinbox_x, rs[0])
+        ui_util.update_value(self.control_panel.grp_ellipse.spinbox_y, rs[1])
+        ui_util.update_value(self.control_panel.grp_ellipse.spinbox_a, rs[2])
+        ui_util.update_value(self.control_panel.grp_ellipse.spinbox_b, rs[3])
+        ui_util.update_value(self.control_panel.grp_ellipse.spinbox_phi, rs[4])
+        self.update_img()
+
+    def run_fem(self):
+        rs = [self.control_panel.grp_ellipse.spinbox_x.value(),
+              self.control_panel.grp_ellipse.spinbox_y.value(),
+              self.control_panel.grp_ellipse.spinbox_a.value(),
+              self.control_panel.grp_ellipse.spinbox_b.value(),
+              self.control_panel.grp_ellipse.spinbox_phi.value()]
+        rs_fem = fem_calculation.get_FEM(self.dc, self.mask_data, rs)
+        self.profile_graph_panel.update_graph(rs_fem)
+
+    def manualfit(self):
+        self.update_img()
 
     def update_raw_img(self):
         self.img_integration_mode = self.control_panel.grp_view.grp_img_integration.checkedButton().text()
@@ -193,11 +223,16 @@ class ControlPanel(QWidget):
             lbl_ellipse_phi = QLabel("phi")
             self.spinbox_x = QDoubleSpinBox()
             self.spinbox_x.setMaximum(10e5)
+            self.spinbox_x.setDecimals(4)
             self.spinbox_y = QDoubleSpinBox()
             self.spinbox_y.setMaximum(10e5)
+            self.spinbox_y.setDecimals(4)
             self.spinbox_a = QDoubleSpinBox()
+            self.spinbox_a.setDecimals(4)
             self.spinbox_b = QDoubleSpinBox()
+            self.spinbox_b.setDecimals(4)
             self.spinbox_phi = QDoubleSpinBox()
+            self.spinbox_phi.setDecimals(4)
             layout.addWidget(self.btn_autofit,0,0,1,2)
             layout.addWidget(lbl_ellipse_x, 1, 0)
             layout.addWidget(lbl_ellipse_y, 2, 0)
@@ -276,10 +311,12 @@ class TopMenu(QWidget):
         super().__init__()
         self.mainWindow = mainWindow
         self.open_img_file = QtWidgets.QAction("Open &image file", self)
+        self.save_fem_graph = QtWidgets.QAction("Save &fem graph", self)
 
         menubar = mainWindow.menuBar()
         file_menu = menubar.addMenu("\t&File\t")
         file_menu.addAction(self.open_img_file)
+        file_menu.addAction(self.save_fem_graph)
 
 
 class ImgPanel(QtWidgets.QWidget):
@@ -343,7 +380,7 @@ class PolarImagePanel(QtWidgets.QWidget):
 class IntensityProfilePanel(QtWidgets.QWidget):
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
-        self.plot_widget = ui_util.IntensityPlotWidget(title='Intensity Profile')
+        self.plot_widget = ui_util.IntensityPlotWidget(title='FEM')
         self.plot_widget.setYScaling(False)
         self.layout = QtWidgets.QHBoxLayout()
         self.layout.addWidget(self.plot_widget)
