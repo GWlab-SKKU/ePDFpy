@@ -72,7 +72,7 @@ class MainViewer(QMainWindow):
         if len(path) == 0:
             return
         if ".h5" in os.path.splitext(path)[1]:
-            f = h5py.File(r"/mnt/experiment/TEM diffraction/211209/211209_Si_100ms_128x128/211209_Si_100ms_128x128.h5",
+            f = h5py.File(path,
                           'r')
             dc1 = np.array(f['4DSTEM_experiment']['data']['datacubes']['datacube_0']['data'])
             self.dc = dc1.reshape([-1, dc1.shape[0], dc1.shape[1]])

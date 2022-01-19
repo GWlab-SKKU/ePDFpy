@@ -8,7 +8,7 @@
   "calibration_factor": 0.0032,
   "calibration_factor_step": "0.00001",
   "fit_at_q_step": "0.02",
-  "N_step": "1",
+  "N_step": "5",
   "dr": 0.01,
   "dr_step": "0.01",
   "damping": 0.15,
