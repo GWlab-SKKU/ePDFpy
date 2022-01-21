@@ -22,6 +22,7 @@ image_ext = ".img.png"
 rdf_screen_ext = ".rdf.png"
 
 def load_mrc_img(fp):
+    print("Loading file:",fp)
     with mrcfile.open(fp) as mrc:
         raw_img = mrc.data
     easy_img = np.log(np.abs(raw_img) + 1)
