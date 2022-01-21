@@ -50,6 +50,8 @@ class ProfileExtraction(QtWidgets.QWidget):
         self.splitter_right_vertical = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         self.splitter_right_vertical.addWidget(self.upper_right)
         self.splitter_right_vertical.addWidget(self.bottom_right)
+        # self.splitter_right_vertical.setStretchFactor(0, 1)
+        self.splitter_right_vertical.setStretchFactor(1, 1)
 
         self.left = self.splitter_left_vertical
         self.right = self.splitter_right_vertical
