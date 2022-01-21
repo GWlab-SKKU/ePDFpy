@@ -87,18 +87,23 @@ class PdfAnalysis(QtWidgets.QWidget):
     def update_initial_iq(self):
         if self.datacube.azavg is None:
             return
+        # pixel start n
         if self.datacube.pixel_start_n is None:
-            self.datacube.pixel_start_n = find_first_peak(self.datacube.azavg)
-            if self.datacube.pixel_start_n is not 0:
-                self.datacube.pixel_start_n = self.datacube.pixel_start_n - 1 # why ?
-            self.datacube.pixel_end_n = len(self.datacube.azavg) - 1
-
-        azavg_px = np.arange(len(self.datacube.azavg))
-        self.datacube.all_q = pdf_calculator.pixel_to_q(azavg_px,self.datacube.ds)
+            if self.datacube.q is None:
+                self.datacube.pixel_start_n = find_first_peak(self.datacube.azavg)
+                if self.datacube.pixel_start_n is not 0:
+                    self.datacube.pixel_start_n = self.datacube.pixel_start_n - 1 # why ?
+                self.datacube.pixel_end_n = len(self.datacube.azavg) - 1
+            else:
+                self.datacube.pixel_start_n = pdf_calculator.q_to_pixel(self.datacube.q[0],self.datacube.ds)
+                self.datacube.pixel_end_n = pdf_calculator.q_to_pixel(self.datacube.q[-1],self.datacube.ds)
 
         self.datacube.Iq = self.datacube.azavg[self.datacube.pixel_start_n:self.datacube.pixel_end_n+1]
         px = np.arange(self.datacube.pixel_start_n,self.datacube.pixel_end_n+1)
         self.datacube.q = pdf_calculator.pixel_to_q(px,self.datacube.ds)
+
+        azavg_px = np.arange(len(self.datacube.azavg))
+        self.datacube.all_q = pdf_calculator.pixel_to_q(azavg_px,self.datacube.ds)
 
     def update_initial_iq_graph(self):
         if self.datacube.all_q is None:
@@ -113,6 +118,7 @@ class PdfAnalysis(QtWidgets.QWidget):
         self.graph_Iq_panel.setting.spinBox_range_right.blockSignals(False)
         ui_util.update_value(self.graph_Iq_panel.region,
                              pdf_calculator.pixel_to_q([self.datacube.pixel_start_n,self.datacube.pixel_end_n],self.datacube.ds))
+        self.graph_Iq_panel.range_to_dialog()
 
     def initui(self):
         self.controlPanel = ControlPanel(self.Dataviewer)
@@ -311,8 +317,6 @@ class PdfAnalysis(QtWidgets.QWidget):
             ui_util.update_value(self.graph_Iq_panel.setting.spinBox_range_left, q_l)
             ui_util.update_value(self.graph_Iq_panel.setting.spinBox_range_right, q_r)
             ui_util.update_value(self.graph_Iq_panel.region,[q_l,q_r])
-
-
 
     def update_graph(self):
         ######## graph I(q) ########
