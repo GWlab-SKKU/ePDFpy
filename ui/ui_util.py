@@ -526,7 +526,7 @@ class ProfileGraphPanel(QtWidgets.QWidget):
 
 def get_style_sheet(template=None):
     style_sheet = open(definitions.THEME_PATH, 'r').read()+open(definitions.STYLE_PATH, 'r').read()
-    style_sheet = style_sheet.replace("image: url(","image: url("+definitions.ROOT_DIR+"/")
+    style_sheet = style_sheet.replace("image: url(","image: url(" + definitions.ROOT_DIR.replace("\\","/")+"/")
     return style_sheet
 
 def get_style_sheet_dark():
