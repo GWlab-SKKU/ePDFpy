@@ -244,7 +244,7 @@ def _calculate_azimuthal_average_deprecated(raw_image, center):
     return mean, var
 
 
-def calculate_azimuthal_average(raw_image, center):
+def calculate_azimuthal_average_with_std(raw_image, center):
     raw_min = raw_image.min()
     raw_image_abs = raw_image.copy()
     if raw_min < 0:
@@ -277,6 +277,29 @@ def calculate_azimuthal_average(raw_image, center):
     normalized_std = np.zeros(radial_mean.shape)
     normalized_std[first_peak:] = std[first_peak:] / corrected_mean[first_peak:]
     return radial_mean, normalized_std
+
+
+def calculate_azimuthal_average(raw_image, center):
+    raw_min = raw_image.min()
+    raw_image_abs = raw_image.copy()
+    if raw_min < 0:
+        raw_image_abs = raw_image_abs+np.abs(raw_min)+1
+
+    mesh = np.meshgrid(range(raw_image.shape[1]), range(raw_image.shape[0]))
+    mesh_x = mesh[0] - center[0]
+    mesh_y = mesh[1] - center[1]
+    rr = np.power(np.square(mesh_x) + np.square(mesh_y), 0.5)
+    rr = cv2.bitwise_and(rr, rr, mask=np.bitwise_not(mask))
+    rr = np.rint(rr).astype('uint16')
+    n_rr = np.uint16(rr.max())
+
+
+    #### radial mean ####
+    radial_mean = ndimage.mean(raw_image, labels=rr, index=np.arange(1, n_rr + 1))
+    radial_mean = np.nan_to_num(radial_mean, 0)
+
+    return radial_mean
+
 
 def calculate_azimuthal_average_(raw_image, center):
     raw_image = raw_image.copy()
