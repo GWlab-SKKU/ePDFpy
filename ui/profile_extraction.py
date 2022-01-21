@@ -407,6 +407,16 @@ class PolarImagePanel(QtWidgets.QWidget):
         self.cmap = pg.ColorMap(np.linspace(0, 1, len(image_process.colorcube)), color=image_process.colorcube)
         self.imageView.setColorMap(self.cmap)
 
+        show_histogram = False
+        if show_histogram:
+            self.imageView.ui.histogram.show()
+            self.imageView.ui.roiBtn.show()
+            self.imageView.ui.menuBtn.show()
+        else:
+            self.imageView.ui.histogram.hide()
+            self.imageView.ui.roiBtn.hide()
+            self.imageView.ui.menuBtn.hide()
+
     def update_img(self, img):
         self._current_data = img
         if len(img.shape) == 2:
