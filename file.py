@@ -149,7 +149,7 @@ def save_preset_default(datacube, main_window):
 
     # remove data that not support to save as json
     for key, value in dict(presets).items():
-        if type(value) not in [int, str, float, list, np.float64, np.int64]:
+        if type(value) not in [int, str, float, list, np.float64, np.float32, np.int64, np.int32, np.uint]:
             del presets[key]
 
     # Don't save in preset file
@@ -158,11 +158,11 @@ def save_preset_default(datacube, main_window):
         if remove_item in dict(presets).keys():
             del presets[remove_item]
 
-    # int64 exception handling
+    # type exception handling
     for key, value in presets.items():
-        if type(value) == np.int64:
+        if type(value) in [np.int64, np.int32, np.uint]:
             presets[key] = int(value)
-        if type(value) == np.float64:
+        if type(value) in [np.float64, np.float32]:
             presets[key] = float(value)
 
     if presets['center'][0] is not None:
