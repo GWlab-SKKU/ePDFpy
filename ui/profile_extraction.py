@@ -144,6 +144,7 @@ class ProfileExtraction(QtWidgets.QWidget):
     def update_azavg_graph(self):
         if self.dc.azavg is None:
             return
+
         self.profile_graph_panel.update_graph(self.dc.azavg)
 
     def update_polar_img(self):

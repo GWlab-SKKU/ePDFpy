@@ -22,13 +22,14 @@ class DataCube:
         """
         self.raw_img = None
         self.img = None
+        self.display_img = None
         self.center = [None,None]
         self.azavg = None
         self.azvar = None
+
         self.pixel_start_n = None
         self.pixel_end_n = None
         self.ds = None
-        self.display_img = None
         self.data_quality = None
         self.data_quality_idx = None
 
@@ -39,13 +40,14 @@ class DataCube:
         self.dr = None
         self.is_full_q = None
 
-        self.q = None
+
         self.r = None
+        self.Gr = None
 
         self.all_q = None
 
+        self.q = None
         self.Iq = None
-        self.Gr = None
 
         self.SS = None
         self.phiq = None
@@ -74,6 +76,16 @@ class DataCube:
             # file.load_mrc_img(self,self.mrc_file_path)
 
         self.load_data()
+
+    def initialize_pdf_parameter(self):
+        self.pixel_start_n = None
+        self.pixel_end_n = None
+        self.fit_at_q = None
+        self.N = None
+        self.damping = None
+        self.rmax = None
+        self.dr = None
+        self.is_full_q = None
 
     def load_data(self):
         if self.load_file_path is None:
@@ -120,10 +132,10 @@ class DataCube:
             else:
                 raise Exception("You need to calculate center first")
         tic = time.time()
-        self.azavg, self.azvar = image_process.calculate_azimuthal_average(self.raw_img, self.center)
+        self.azavg = image_process.calculate_azimuthal_average(self.raw_img, self.center)
         toc = time.time()
         print("Time to get azavg:",toc-tic)
-        return self.azavg, self.azvar
+        return self.azavg
 
     # def save_azimuthal_data(self, intensity_start, intensity_end, intensity_slice, imgPanel=None, draw_center_line=False, masking=False):
     #     if self.center[0] is None:
