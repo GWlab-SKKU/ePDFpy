@@ -68,7 +68,6 @@ class DataViewer(QtWidgets.QMainWindow):
             menubar = mainWindow.menuBar()
             menubar.setNativeMenuBar(False)
             self.open_img_file = QtWidgets.QAction("Open &image file", self)
-            self.open_img_stack = QtWidgets.QAction("Open &image stack", self)
             self.open_preset = QtWidgets.QAction("Open preset &file", self)
             self.save_preset = QtWidgets.QAction("Save preset &file", self)
             self.open_preset_stack = QtWidgets.QAction("Open preset &stack", self)
@@ -81,12 +80,33 @@ class DataViewer(QtWidgets.QMainWindow):
 
             open_menu = menubar.addMenu("     &Open     ")
             open_menu.addAction(self.open_img_file)
-            open_menu.addAction(self.open_img_stack)
+            self.open_img_stack = open_menu.addMenu("Open image stack")
+            # open_menu.addAction(self.open_img_stack)
             open_menu.addSeparator()
             open_menu.addAction(self.open_preset)
             open_menu.addAction(self.open_preset_stack)
             open_menu.addSeparator()
             open_menu.addAction(self.open_azavg_only)
+
+
+
+            self.open_img_stack_mrc = QtWidgets.QAction("mrc file stack", self)
+            self.open_img_stack_txt = QtWidgets.QAction("txt file stack", self)
+            self.open_img_stack_csv = QtWidgets.QAction("csv file stack", self)
+            self.open_img_stack_tiff = QtWidgets.QAction("tiff file stack", self)
+            self.open_img_stack_jpg = QtWidgets.QAction("jpg file stack", self)
+            self.open_img_stack_jpeg = QtWidgets.QAction("jpeg file stack", self)
+            self.open_img_stack_png = QtWidgets.QAction("png file stack", self)
+            self.open_img_stack_custom = QtWidgets.QAction("Custom ...", self)
+            self.open_img_stack.addAction(self.open_img_stack_mrc)
+            self.open_img_stack.addAction(self.open_img_stack_txt)
+            self.open_img_stack.addAction(self.open_img_stack_csv)
+            self.open_img_stack.addAction(self.open_img_stack_tiff)
+            self.open_img_stack.addAction(self.open_img_stack_jpg)
+            self.open_img_stack.addAction(self.open_img_stack_jpeg)
+            self.open_img_stack.addAction(self.open_img_stack_png)
+            self.open_img_stack.addAction(self.open_img_stack_custom)
+
 
             save_menu = menubar.addMenu("     &Save     ")
             save_menu.addAction(self.save_preset)
@@ -193,9 +213,19 @@ class DataViewer(QtWidgets.QMainWindow):
         self.top_menu.combo_dataQuality.setItemText(1, "Auto({})".format(txt_auto_quality))
         return txt_auto_quality
 
+
     def sig_binding(self):
         self.top_menu.open_img_file.triggered.connect(self.menu_open_image_file)
-        self.top_menu.open_img_stack.triggered.connect(self.menu_open_image_stack)
+        self.top_menu.open_img_stack_mrc.triggered.connect(lambda: self.menu_open_image_stack('.mrc'))
+        self.top_menu.open_img_stack_csv.triggered.connect(lambda: self.menu_open_image_stack('.csv'))
+        self.top_menu.open_img_stack_tiff.triggered.connect(lambda: self.menu_open_image_stack('.tiff'))
+        self.top_menu.open_img_stack_png.triggered.connect(lambda: self.menu_open_image_stack('.png'))
+        self.top_menu.open_img_stack_txt.triggered.connect(lambda: self.menu_open_image_stack('.txt'))
+        self.top_menu.open_img_stack_custom.triggered.connect(lambda: self.menu_open_image_stack('.custom'))
+        self.top_menu.open_img_stack_jpg.triggered.connect(lambda: self.menu_open_image_stack('.jpg'))
+        self.top_menu.open_img_stack_jpg.triggered.connect(lambda: self.menu_open_image_stack('.jpeg'))
+
+
         self.top_menu.open_preset.triggered.connect(self.menu_load_preset)
         self.top_menu.save_preset.triggered.connect(self.menu_save_preset)
         self.top_menu.open_preset_stack.triggered.connect(self.menu_open_preset_stack)
@@ -260,17 +290,18 @@ class DataViewer(QtWidgets.QMainWindow):
         self.dcs.extend([DataCube(path,'image') for path in load_paths])
         self.load_dc(0)
 
-    def menu_open_image_stack(self):
+    def menu_open_image_stack(self, file_type):
         load_paths = []
-        path = QtWidgets.QFileDialog.getExistingDirectory(self,'open')
-        if len(path) == 0:
-            return
-        load_paths.extend(file.get_file_list_from_path(path,'.mrc'))
+        path = QtWidgets.QFileDialog.getExistingDirectory(None, 'open')
+        load_paths.extend(file.get_file_list_from_path(path, file_type))
         if len(load_paths) == 0:
-            QMessageBox.about(self,"No file found","No file found")
+            QtWidgets.QMessageBox.about(None, "No file found", "No file found")
+            return
+        dcs = [DataCube(path, 'image') for path in load_paths]
+        if dcs is None:
             return
         self.dcs.clear()
-        self.dcs.extend([DataCube(path,'image') for path in load_paths])
+        self.dcs.extend(dcs)
         self.load_dc(0)
 
     def menu_open_preset_stack(self):

@@ -11,6 +11,7 @@ from pathlib import Path
 import definitions
 import re
 import cv2
+from PIL import Image
 
 ePDFpy_analysis_folder_name = "Analysis ePDFpy"
 preset_ext = ".preset.json"
@@ -21,15 +22,56 @@ data_r_ext = ".r.csv"
 image_ext = ".img.png"
 rdf_screen_ext = ".rdf.png"
 
+def load_img(fp):
+    ext = os.path.splitext(fp)[1]
+    if not os.path.isfile(fp):
+        return
+    if ext in ['.jpg','.jpeg','.tiff','.png']:
+        raw_img, easy_img = load_PIL_img(fp)
+    elif ext in ['.mrc']:
+        raw_img, easy_img = load_mrc_img(fp)
+    elif ext in ['.dm3']:
+        pass
+    elif ext in ['.txt','.csv']:
+        raw_img, easy_img = None
+        pass
+    else:
+        print("Error, Non support data type")
+    return raw_img, easy_img
+
+def load_txt_img(fp):
+    ext = os.path.splitext(fp)[1]
+    if ext == '.csv':
+        raw_img = np.loadtxt(fp)
+    if ext == '.txt':
+        raw_img = np.loadtxt(fp)
+    if np.min(raw_img) > 1:
+        easy_img = np.log(raw_img)
+    else:
+        easy_img = np.log(np.abs(raw_img) + 1)
+    easy_img = easy_img / easy_img.max() * 255
+    return raw_img, easy_img
+
 def load_mrc_img(fp):
     print("Loading file:",fp)
     with mrcfile.open(fp) as mrc:
         raw_img = mrc.data
-    easy_img = np.log(np.abs(raw_img) + 1)
+    if np.min(raw_img) > 1:
+        easy_img = np.log(raw_img)
+    else:
+        easy_img = np.log(np.abs(raw_img) + 1)
     easy_img = easy_img / easy_img.max() * 255
     # easy_img = easy_img.astype('uint8')
     return raw_img, easy_img
 
+def load_PIL_img(path):
+    img = Image.open(path).convert("L")
+    raw_img = np.array(img)
+    if np.min(raw_img) > 1:
+        easy_img = np.log(raw_img)
+    else:
+        easy_img = np.log(np.abs(raw_img) + 1)
+    return raw_img, easy_img
 
 def get_file_list_from_path(fp, extension=None):
     files = Path(fp).rglob("*" + extension)
@@ -79,16 +121,16 @@ def save_preset_default(datacube, main_window):
         current_folder_path, file_name = os.path.split(datacube.azavg_file_path)
         file_short_name, file_ext = os.path.splitext(file_name)
         analysis_folder_path = current_folder_path
-    if datacube.mrc_file_path is None and datacube.azavg_file_path is None:
+    if datacube.img_file_path is None and datacube.azavg_file_path is None:
         # When there is no source ( when load from other program )
         fp, _ = QFileDialog.getSaveFileName(filter="preset Files (*.preset.json)")
         current_folder_path, file_name = os.path.split(fp)
         file_short_name = str(file_name)[:str(file_name).find(preset_ext)]
         analysis_folder_path = current_folder_path
-    if datacube.mrc_file_path is not None:
+    if datacube.img_file_path is not None:
         # When you load img files
         if datacube.preset_file_path is None:
-            current_folder_path, file_name = os.path.split(datacube.mrc_file_path)
+            current_folder_path, file_name = os.path.split(datacube.img_file_path)
             file_short_name, file_ext = os.path.splitext(file_name)
             analysis_folder_path = os.path.join(current_folder_path,
                                                 ePDFpy_analysis_folder_name,
@@ -144,7 +186,7 @@ def save_preset_default(datacube, main_window):
 
     # convert to relative path
     if presets['mrc_file_path'] is not None:
-        presets['mrc_file_path'] = os.path.relpath(datacube.mrc_file_path, os.path.split(preset_path)[0])
+        presets['mrc_file_path'] = os.path.relpath(datacube.img_file_path, os.path.split(preset_path)[0])
         presets['mrc_file_path'] = presets['mrc_file_path'].replace('\\', '/')  # compatibility between windows and linux
 
     # remove data that not support to save as json
