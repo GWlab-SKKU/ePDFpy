@@ -88,8 +88,6 @@ class DataViewer(QtWidgets.QMainWindow):
             open_menu.addSeparator()
             open_menu.addAction(self.open_azavg_only)
 
-
-
             self.open_img_stack_mrc = QtWidgets.QAction("mrc file stack", self)
             self.open_img_stack_txt = QtWidgets.QAction("txt file stack", self)
             self.open_img_stack_csv = QtWidgets.QAction("csv file stack", self)
@@ -368,10 +366,10 @@ class DataViewer(QtWidgets.QMainWindow):
             self.btn_page_right_clicked()
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
-        util.default_setting.intensity_range_1 = self.profile_extraction.control_panel.settingPanel.spinBox_irange1.value()
-        util.default_setting.intensity_range_2 = self.profile_extraction.control_panel.settingPanel.spinBox_irange2.value()
-        util.default_setting.slice_count = self.profile_extraction.control_panel.settingPanel.spinBox_slice_count.value()
-        util.default_setting.show_center_line = self.profile_extraction.control_panel.settingPanel.chkBox_show_centerLine.isChecked()
+        util.default_setting.intensity_range_1 = self.profile_extraction.control_panel.centerFindingPanel.spinBox_irange1.value()
+        util.default_setting.intensity_range_2 = self.profile_extraction.control_panel.centerFindingPanel.spinBox_irange2.value()
+        util.default_setting.slice_count = self.profile_extraction.control_panel.centerFindingPanel.spinBox_slice_count.value()
+        util.default_setting.show_center_line = self.profile_extraction.control_panel.centerFindingPanel.chkBox_show_centerLine.isChecked()
         util.default_setting.save_settings()
         super().closeEvent(a0)
 

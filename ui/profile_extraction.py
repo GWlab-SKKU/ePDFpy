@@ -70,15 +70,15 @@ class ProfileExtraction(QtWidgets.QWidget):
 
     def load_default(self):
         if util.default_setting.intensity_range_1 is not None:
-            self.control_panel.settingPanel.spinBox_irange1.setValue(util.default_setting.intensity_range_1)
+            self.control_panel.centerFindingPanel.spinBox_irange1.setValue(util.default_setting.intensity_range_1)
         if util.default_setting.intensity_range_2 is not None:
-            self.control_panel.settingPanel.spinBox_irange2.setValue(util.default_setting.intensity_range_2)
+            self.control_panel.centerFindingPanel.spinBox_irange2.setValue(util.default_setting.intensity_range_2)
         if util.default_setting.slice_count is not None:
-            self.control_panel.settingPanel.spinBox_slice_count.setValue(util.default_setting.slice_count)
+            self.control_panel.centerFindingPanel.spinBox_slice_count.setValue(util.default_setting.slice_count)
         if util.default_setting.show_center_line is not None:
-            self.control_panel.settingPanel.chkBox_show_centerLine.setChecked(util.default_setting.show_center_line)
+            self.control_panel.centerFindingPanel.chkBox_show_centerLine.setChecked(util.default_setting.show_center_line)
         if util.default_setting.show_beam_stopper_mask is not None:
-            self.control_panel.settingPanel.chkBox_show_beam_stopper_mask.setChecked(
+            self.control_panel.centerFindingPanel.chkBox_show_beam_stopper_mask.setChecked(
                 util.default_setting.show_beam_stopper_mask)
 
     def sig_binding(self):
@@ -94,15 +94,15 @@ class ProfileExtraction(QtWidgets.QWidget):
 
         self.control_panel.operationPanel.btn_find_center.clicked.connect(lambda: (self.find_center(),self.update_img()))
         self.control_panel.operationPanel.btn_get_azimuthal_avg.clicked.connect(self.get_azimuthal_value)
-        self.control_panel.settingPanel.spinBox_center_x.valueChanged.connect(self.spinbox_changed_event)
-        self.control_panel.settingPanel.spinBox_center_y.valueChanged.connect(self.spinbox_changed_event)
+        self.control_panel.centerFindingPanel.spinBox_center_x.valueChanged.connect(self.spinbox_changed_event)
+        self.control_panel.centerFindingPanel.spinBox_center_y.valueChanged.connect(self.spinbox_changed_event)
         self.control_panel.operationPanel.btn_calculate_all_azimuthal.clicked.connect(self.calculate_all_azimuthal)
-        self.control_panel.settingPanel.chkBox_show_centerLine.stateChanged.connect(self.update_img)
-        self.control_panel.settingPanel.chkBox_show_beam_stopper_mask.stateChanged.connect(self.update_img)
+        self.control_panel.centerFindingPanel.chkBox_show_centerLine.stateChanged.connect(self.update_img)
+        self.control_panel.centerFindingPanel.chkBox_show_beam_stopper_mask.stateChanged.connect(self.update_img)
 
     def spinbox_changed_event(self):
-        x = self.control_panel.settingPanel.spinBox_center_x.value()
-        y = self.control_panel.settingPanel.spinBox_center_y.value()
+        x = self.control_panel.centerFindingPanel.spinBox_center_x.value()
+        y = self.control_panel.centerFindingPanel.spinBox_center_y.value()
         self.dc.center = (x, y)
         self.update_img()
 
@@ -128,10 +128,10 @@ class ProfileExtraction(QtWidgets.QWidget):
     def get_azimuthal_value(self):
 
         # calculate azavg
-        i1 = self.control_panel.settingPanel.spinBox_irange1.value()
-        i2 = self.control_panel.settingPanel.spinBox_irange2.value()
+        i1 = self.control_panel.centerFindingPanel.spinBox_irange1.value()
+        i2 = self.control_panel.centerFindingPanel.spinBox_irange2.value()
         intensity_range = (i1, i2)
-        slice_count = int(self.control_panel.settingPanel.spinBox_slice_count.value())
+        slice_count = int(self.control_panel.centerFindingPanel.spinBox_slice_count.value())
         self.dc.calculate_azimuthal_average(intensity_range, slice_count)
 
         # update ui
@@ -155,10 +155,10 @@ class ProfileExtraction(QtWidgets.QWidget):
         self.polar_image_panel.update_img(polar_img)
 
     def find_center(self):
-        i1 = self.control_panel.settingPanel.spinBox_irange1.value()
-        i2 = self.control_panel.settingPanel.spinBox_irange2.value()
+        i1 = self.control_panel.centerFindingPanel.spinBox_irange1.value()
+        i2 = self.control_panel.centerFindingPanel.spinBox_irange2.value()
         intensity_range = (i1, i2)
-        slice_count = int(self.control_panel.settingPanel.spinBox_slice_count.value())
+        slice_count = int(self.control_panel.centerFindingPanel.spinBox_slice_count.value())
         self.dc.calculate_center(intensity_range, slice_count)
         self.update_center_spinBox()
         # you must use self.draw_center() after find_center
@@ -199,21 +199,21 @@ class ProfileExtraction(QtWidgets.QWidget):
 
     def update_center_spinBox(self):
         if not self.dc.img is None:
-            self.control_panel.settingPanel.spinBox_center_x.setMaximum(self.dc.img.shape[0])  # todo : confusing x,y
-            self.control_panel.settingPanel.spinBox_center_y.setMaximum(self.dc.img.shape[1])
+            self.control_panel.centerFindingPanel.spinBox_center_x.setMaximum(self.dc.img.shape[0])  # todo : confusing x,y
+            self.control_panel.centerFindingPanel.spinBox_center_y.setMaximum(self.dc.img.shape[1])
 
         if not self.dc.center[0] is None:
-            ui_util.update_value(self.control_panel.settingPanel.spinBox_center_x, self.dc.center[0])
-            ui_util.update_value(self.control_panel.settingPanel.spinBox_center_y, self.dc.center[1])
+            ui_util.update_value(self.control_panel.centerFindingPanel.spinBox_center_x, self.dc.center[0])
+            ui_util.update_value(self.control_panel.centerFindingPanel.spinBox_center_y, self.dc.center[1])
 
     def update_img(self):
         if self.dc.img is None:
             self.img_panel.clear_img()
             return
         img = self.dc.img.copy()
-        if self.control_panel.settingPanel.chkBox_show_beam_stopper_mask.isChecked():
+        if self.control_panel.centerFindingPanel.chkBox_show_beam_stopper_mask.isChecked():
             img = cv2.bitwise_and(img, img, mask=np.bitwise_not(image_process.mask))
-        if self.dc.center[0] is not None and self.control_panel.settingPanel.chkBox_show_centerLine.isChecked():
+        if self.dc.center[0] is not None and self.control_panel.centerFindingPanel.chkBox_show_centerLine.isChecked():
             img = image_process.draw_center_line(img, self.dc.center)
         self.img_panel.update_img(img)
         self.update_polar_img()
@@ -249,17 +249,25 @@ class ControlPanel(QtWidgets.QWidget):
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
         # self.openFilePanel = self.OpenFilePanel("OpenFile", mainWindow)
-        self.settingPanel = self.SettingPanel("Center finding setting")
+        self.maskPanel = self.MaskPanel("Mask setting")
+        self.centerFindingPanel = self.CenterFindingPanel("Center finding setting")
+        self.ellipticalFittingPanel = self.EllipticalFittingPanel("Elliptical fitting")
         self.operationPanel = self.OperationPanel("Operation")
 
-        layout = QtWidgets.QHBoxLayout()
+        outer_layout = QtWidgets.QHBoxLayout()
+        left_layout = QtWidgets.QVBoxLayout()
+        left_layout.addWidget(self.maskPanel)
+        left_layout.addWidget(self.centerFindingPanel)
+        right_layout = QtWidgets.QVBoxLayout()
+        right_layout.addWidget(self.ellipticalFittingPanel)
+        right_layout.addWidget(self.operationPanel)
         # layout.addWidget(self.openFilePanel)
-        layout.addWidget(self.settingPanel)
-        layout.addWidget(self.operationPanel)
-        self.setLayout(layout)
+        outer_layout.addLayout(left_layout)
+        outer_layout.addLayout(right_layout)
+        self.setLayout(outer_layout)
 
 
-    class SettingPanel(QtWidgets.QGroupBox):
+    class CenterFindingPanel(QtWidgets.QGroupBox):
         def __init__(self, arg):
             QtWidgets.QGroupBox.__init__(self, arg)
             layout = QtWidgets.QGridLayout()
@@ -312,7 +320,7 @@ class ControlPanel(QtWidgets.QWidget):
             layout.addWidget(self.spinBox_center_x, 3, 2)
             layout.addWidget(self.spinBox_center_y, 3, 3)
             layout.addWidget(self.chkBox_show_centerLine, 4, 0, 1, 4)
-            layout.addWidget(self.chkBox_show_beam_stopper_mask, 5, 0, 1, 4)
+            # layout.addWidget(self.chkBox_show_beam_stopper_mask, 5, 0, 1, 4)
 
             # lbl_pixel_range = QtWidgets.QLabel("pixel Range")
             # self.spinBox_pixel_range_left = QtWidgets.QSpinBox()
@@ -330,6 +338,7 @@ class ControlPanel(QtWidgets.QWidget):
             layout = QtWidgets.QGridLayout()
             self.btn_find_center = QtWidgets.QPushButton("Find center")
             self.btn_get_azimuthal_avg = QtWidgets.QPushButton("Get azimuthal data")
+            self.btn_elliptical_fitting = QtWidgets.QPushButton("Elliptical fitting")
             self.btn_calculate_all_azimuthal = QtWidgets.QPushButton("Calculate all data")
             self.progress_bar = QtWidgets.QProgressBar()
             self.progress_bar.setValue(0)
@@ -341,6 +350,34 @@ class ControlPanel(QtWidgets.QWidget):
             layout.addWidget(self.progress_bar, 3, 0, 1, 2)
 
             self.setLayout(layout)
+
+
+    class MaskPanel(QtWidgets.QGroupBox):
+        def __init__(self, arg):
+            QtWidgets.QGroupBox.__init__(self, arg)
+
+    class EllipticalFittingPanel(QtWidgets.QGroupBox):
+        def __init__(self, arg):
+            QtWidgets.QGroupBox.__init__(self, arg)
+            layout = QtWidgets.QGridLayout()
+            self.setLayout(layout)
+            lbl_a = QtWidgets.QLabel("a")
+            self.spinbox_a = QtWidgets.QDoubleSpinBox()
+            lbl_b = QtWidgets.QLabel("b")
+            self.spinbox_b = QtWidgets.QDoubleSpinBox()
+            lbl_phi = QtWidgets.QLabel("phi")
+            self.spinbox_phi = QtWidgets.QDoubleSpinBox()
+
+            self.chkbox_center_fixed = QtWidgets.QCheckBox("Center fixed")
+            self.chkbox_center_fixed.setChecked(True)
+
+            layout.addWidget(lbl_a,0,0)
+            layout.addWidget(lbl_b, 0, 2)
+            layout.addWidget(lbl_phi, 1, 0)
+            layout.addWidget(self.spinbox_a,0,1)
+            layout.addWidget(self.spinbox_b, 0, 3)
+            layout.addWidget(self.spinbox_phi, 1, 1)
+            layout.addWidget(self.chkbox_center_fixed, 1,2,1,2)
 
 
 
