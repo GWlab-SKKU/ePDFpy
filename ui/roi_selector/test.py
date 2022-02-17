@@ -26,7 +26,7 @@ def sample_image_load():
 
 def fem_sample_load():
     # fp = r'/mnt/experiment/TEM diffraction/2022Berkeley02/FEM data/20220204/sample6_postE/220204_5_aSi_AD_postE_30x20_ss=5nm_C2=40um_alpha=0p63urad_spot11_500ms_CL=245_bin=4_300kV.dm4'
-    fp = r'V:\experiment\FEM\FEM_raw\2022Berkeley02\FEM data\20220204\sample6_postE\220204_5_aSi_AD_postE_30x20_ss=5nm_C2=40um_alpha=0p63urad_spot11_500ms_CL=245_bin=4_300kV.dm4'
+    fp = r'V:\experiment\TEM diffraction\2022Berkeley02\FEM data\20220204\sample6_postE\220204_5_aSi_AD_postE_30x20_ss=5nm_C2=40um_alpha=0p63urad_spot11_500ms_CL=245_bin=4_300kV.dm4'
     file = hs.load(fp)
     dc = file.data
     std_img = np.std(dc, axis=0)
@@ -39,12 +39,9 @@ if __name__ == '__main__':
     qw.setLayout(qw.layout)
     img = fem_sample_load()
     print("load finished")
-    import mask_module
-    module = mask_module.MaskModule()
-    module.update_img(img)
-    qw.layout.addWidget(module.dropdown)
-    qw.show()
-    # roi_selector.RoiCreater(img).show()
+    # dropdown = roi_selector.MaskDropdown(image=img, mask_folder=definitions.MASK_FOLDER_PATH)
+    # qw.layout.addWidget(dropdown)
+    roi_selector.RoiCreater(img).show()
 
 
     app.exec_()
