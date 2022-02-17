@@ -11,7 +11,7 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 import os
 import numpy as np
 import definitions
-from calculate.q_range_selector import find_first_peak
+from calculate import q_range_selector
 
 pg.setConfigOptions(antialias=True)
 
@@ -57,32 +57,38 @@ class PdfAnalysis(QtWidgets.QWidget):
         self.controlPanel.blockSignals(False)
 
     def btn_select_clicked(self):
-        azavg = self.dc.azavg
-        if self.dc.azavg is None:
+        azavg = self.datacube.azavg
+        if self.datacube.azavg is None:
             return
-        first_peak_idx, second_peak_idx = q_range_selector.find_multiple_peaks(self.dc.azavg)
-        self.profile_graph_panel.plotWidget.create_circle([first_peak_idx, azavg[first_peak_idx]],
-                                                          [second_peak_idx, azavg[second_peak_idx]])
+        first_peak_idx, second_peak_idx = q_range_selector.find_multiple_peaks(self.datacube.azavg)
+        self.graph_Iq_panel.plotWidget.create_circle([ui_util.pixel_to_q(first_peak_idx, self.datacube.ds), azavg[first_peak_idx]],
+                                                          [ui_util.pixel_to_q(second_peak_idx, self.datacube.ds), azavg[second_peak_idx]])
 
-        #
-        self.left.hide()
+        self.azav_select_enter_event()
 
-        l = q_range_selector.find_first_nonzero_idx(self.dc.azavg)
-        r = l + int((len(self.dc.azavg) - l) / 4)
-        self.profile_graph_panel.plotWidget.setXRange(l, r, padding=0.1)
+        l = q_range_selector.find_first_nonzero_idx(self.datacube.azavg)
+        l = ui_util.pixel_to_q(l, self.datacube.ds)
+        r = l + int((len(self.datacube.azavg) - l) / 4)
+        r = ui_util.pixel_to_q(r, self.datacube.ds)
+        self.graph_Iq_panel.plotWidget.setXRange(l, r, padding=0.1)
+        self.graph_Iq_panel.plotWidget.select_event = self.azav_select_exit_event
 
-        self.profile_graph_panel.plotWidget.select_mode = True
-        self.profile_graph_panel.plotWidget.select_event = self.azav_select_event
-        #
-        # self.left.show()
+    def azav_select_exit_event(self):
+        self.controlPanel.show()
+        self.graph_phiq_panel.show()
+        self.graph_Gr_panel.show()
+        self.graph_Iq_panel.plotWidget.select_mode = False
+        self.graph_Iq_panel.plotWidget.first_dev_plot.clear()
+        self.graph_Iq_panel.plotWidget.first_dev_plot = None
+        self.graph_Iq_panel.plotWidget.second_dev_plot.clear()
+        self.graph_Iq_panel.plotWidget.second_dev_plot = None
 
-    def azav_select_event(self):
-        self.left.show()
-        self.profile_graph_panel.plotWidget.select_mode = False
-        self.profile_graph_panel.plotWidget.first_dev_plot.clear()
-        self.profile_graph_panel.plotWidget.first_dev_plot = None
-        self.profile_graph_panel.plotWidget.second_dev_plot.clear()
-        self.profile_graph_panel.plotWidget.second_dev_plot = None
+    def azav_select_enter_event(self):
+        self.controlPanel.hide()
+        self.graph_phiq_panel.hide()
+        self.graph_Gr_panel.hide()
+        self.graph_Iq_panel.plotWidget.select_mode = True
+
 
     def update_initial_iq(self):
         if self.datacube.azavg is None:
@@ -90,7 +96,7 @@ class PdfAnalysis(QtWidgets.QWidget):
         # pixel start n
         if self.datacube.pixel_start_n is None:
             if self.datacube.q is None:
-                self.datacube.pixel_start_n = find_first_peak(self.datacube.azavg)
+                self.datacube.pixel_start_n = q_range_selector.find_first_peak(self.datacube.azavg)
                 if self.datacube.pixel_start_n is not 0:
                     self.datacube.pixel_start_n = self.datacube.pixel_start_n - 1 # why ?
                 self.datacube.pixel_end_n = len(self.datacube.azavg) - 1
@@ -372,6 +378,7 @@ class PdfAnalysis(QtWidgets.QWidget):
         self.controlPanel.fitting_factors.spinbox_electron_voltage.textChanged.connect(self.instantfit)
         self.controlPanel.fitting_factors.radio_tail.clicked.connect(self.btn_radiotail_clicked)
         self.controlPanel.fitting_factors.radio_full_range.clicked.connect(self.btn_ratiofull_clicked)
+        self.graph_Iq_panel.setting.button_select.clicked.connect(self.btn_select_clicked)
         # self.controlPanel.fitting_factors.spinbox_q_range_left.valueChanged.connect(self.fitting_q_range_changed)
         # self.controlPanel.fitting_factors.spinbox_q_range_right.valueChanged.connect(self.fitting_q_range_changed)
 

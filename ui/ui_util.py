@@ -324,7 +324,6 @@ class IntensityPlotWidget(CoordinatesPlotWidget):
 
     def create_circle(self,first_dev,second_dev):
         if not hasattr(self,'first_dev_plot') or self.first_dev_plot is None:
-
             self.first_dev_plot = pg.ScatterPlotItem(size=10, brush='y')
             self.second_dev_plot = pg.ScatterPlotItem(size=10, brush='b')
             self.addItem(self.first_dev_plot)
@@ -335,7 +334,6 @@ class IntensityPlotWidget(CoordinatesPlotWidget):
             #                                 symbolBrush=('g'), name="second derivative")
         self.first_dev_plot.setData(first_dev[0], first_dev[1])
         self.second_dev_plot.setData(second_dev[0],second_dev[1])
-        pass
 
 
 def update_value(widget:QtWidgets.QWidget, value):
@@ -431,7 +429,7 @@ class ProfileGraphPanel(QtWidgets.QWidget):
         if self.integer:
             left = int(np.round(left))
             right = int(np.round(right))
-        maxes = [dataItem.xData[-1] for dataItem in self.plotWidget.getPlotItem().dataItems]
+        maxes = [dataItem.xData[-1] for dataItem in self.plotWidget.getPlotItem().dataItems[0:2]]
         max = np.max(maxes)
         if right > max:
             right = max
@@ -517,7 +515,6 @@ class ProfileGraphPanel(QtWidgets.QWidget):
             self.button_end = QtWidgets.QPushButton("─╢")
             self.button_end.setMaximumWidth(maximum_width)
             self.button_select = QtWidgets.QPushButton("Select")
-            self.button_select.setDisabled(True)
             self.layout.addWidget(self.button_start)
             self.layout.addWidget(self.button_all)
             self.layout.addWidget(self.button_end)
