@@ -57,6 +57,9 @@ class PdfAnalysis(QtWidgets.QWidget):
         self.controlPanel.blockSignals(False)
 
     def btn_select_clicked(self):
+        if hasattr(self.graph_Iq_panel.plotWidget,"select_mode") and self.graph_Iq_panel.plotWidget.select_mode is True:
+            self.azav_select_exit_event()
+            return
         azavg = self.datacube.azavg
         if self.datacube.azavg is None:
             return
