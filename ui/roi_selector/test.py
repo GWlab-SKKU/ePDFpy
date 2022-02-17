@@ -24,18 +24,25 @@ def sample_image_load():
         easy_img = np.log(np.abs(data) + 1)
         return easy_img
 
+def fem_sample_load():
+    # fp = r'/mnt/experiment/TEM diffraction/2022Berkeley02/FEM data/20220204/sample6_postE/220204_5_aSi_AD_postE_30x20_ss=5nm_C2=40um_alpha=0p63urad_spot11_500ms_CL=245_bin=4_300kV.dm4'
+    fp = r'V:\experiment\TEM diffraction\2022Berkeley02\FEM data\20220204\sample6_postE\220204_5_aSi_AD_postE_30x20_ss=5nm_C2=40um_alpha=0p63urad_spot11_500ms_CL=245_bin=4_300kV.dm4'
+    file = hs.load(fp)
+    dc = file.data
+    std_img = np.std(dc, axis=0)
+    return std_img
+
 if __name__ == '__main__':
     app = QApplication([])
     qw = QWidget()
     qw.layout = QHBoxLayout()
     qw.setLayout(qw.layout)
-    img = sample_image_load()
+    img = fem_sample_load()
     print("load finished")
-    dropdown = roi_selector.MaskDropdown(image=img, mask_folder=definitions.MASK_FOLDER_PATH)
-    qw.layout.addWidget(dropdown)
+    # dropdown = roi_selector.MaskDropdown(image=img, mask_folder=definitions.MASK_FOLDER_PATH)
+    # qw.layout.addWidget(dropdown)
+    roi_selector.RoiCreater(img).show()
 
-    qw.show()
-    qw.update()
 
     app.exec_()
 

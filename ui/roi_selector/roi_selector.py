@@ -49,6 +49,8 @@ class RoiCreater(QtWidgets.QWidget):
 
         if isinstance(image, pg.ImageView):
             self.image = image.image
+        else:
+            self.image = image
 
         layout = QtWidgets.QVBoxLayout()
         self.imageView = pg.ImageView()
@@ -141,7 +143,8 @@ class RoiCreater(QtWidgets.QWidget):
             fp = fp + ".csv"
         np.savetxt(fp, img, delimiter=',', fmt='%s')
         print("save to {}".format(fp))
-        self.func_after_mask_selected()
+        if self.func_after_mask_selected is not None:
+            self.func_after_mask_selected()
         self.close()
         return
 
