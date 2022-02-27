@@ -61,8 +61,8 @@ def calculation(ds, px_start_num, px_end_num, element_nums, ratio, azavg, is_ful
 
     # added code
     if fit_at_q is not None:
-        search_q = q[q <= fit_at_q + 0.01]  # todo
-    else :
+        search_q = q[q <= fit_at_q + ds/2]
+    else:
         search_q = q
     fit_at_q, qpos = search_q.max(), search_q.argmax()  # qmax = q_fix
     # end
