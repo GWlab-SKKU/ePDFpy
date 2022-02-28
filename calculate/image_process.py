@@ -260,13 +260,13 @@ def calculate_azimuthal_average_with_std(raw_image, center):
 
 
     #### radial mean ####
-    radial_mean = ndimage.mean(raw_image, labels=rr, index=np.arange(1, n_rr + 1))
+    radial_mean = ndimage.mean(raw_image, labels=rr, index=np.arange(0, n_rr + 1))
     radial_mean = np.nan_to_num(radial_mean, 0)
 
     #### std ####
     # todo: algo duplicated
-    corrected_mean = ndimage.mean(raw_image_abs, labels=rr, index=np.arange(1, n_rr + 1))
-    std = ndimage.standard_deviation(raw_image_abs, labels=rr, index=np.arange(1, n_rr + 1))
+    corrected_mean = ndimage.mean(raw_image_abs, labels=rr, index=np.arange(0, n_rr + 1))
+    std = ndimage.standard_deviation(raw_image_abs, labels=rr, index=np.arange(0, n_rr + 1))
 
     first_peak = 0
     for i in range(len(radial_mean)):
