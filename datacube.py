@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 import time
 import pandas as pd
+from PIL import Image
 
 class DataCube:
     _use_cupy = False
@@ -64,7 +65,7 @@ class DataCube:
         self.load_file_path = file_path
         self.preset_file_path = None
         self.azavg_file_path = None
-        self.mrc_file_path = None
+        self.img_file_path = None
         if file_type == "preset":
             self.preset_file_path = self.load_file_path
             file.load_preset(self,self.preset_file_path)
@@ -72,7 +73,8 @@ class DataCube:
             self.azavg_file_path = self.load_file_path
             self.azavg = file.load_azavg(self.azavg_file_path)
         elif file_type == "image":
-            self.mrc_file_path = self.load_file_path
+            self.img_file_path = self.load_file_path
+
             # file.load_mrc_img(self,self.mrc_file_path)
 
         self.load_data()
@@ -106,13 +108,14 @@ class DataCube:
         self.pd_data = df
         self.original_data = df.to_numpy()
 
-
     def image_ready(self):
-        if self.mrc_file_path is not None and os.path.isfile(self.mrc_file_path):
-            self.raw_img, self.img = file.load_mrc_img(self.mrc_file_path)
-            return True
-        else:
+        if self.img_file_path is None or not os.path.isfile(self.img_file_path):
             return False
+        self.raw_img, self.img = file.load_img(self.img_file_path)
+        return True
+
+
+
 
     def release(self):
         self.raw_img, self.img = None, None

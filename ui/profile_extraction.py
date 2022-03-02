@@ -109,7 +109,7 @@ class ProfileExtraction(QtWidgets.QWidget):
     def calculate_all_azimuthal(self):
         tic = time.time()
         for i in range(len(self.Dataviewer.dcs)):
-            print("processing azimuthal values", self.dc.mrc_file_path)
+            print("processing azimuthal values", self.dc.img_file_path)
             self.Dataviewer.load_dc(i)
             if self.Dataviewer.dcs[i].img is not None and self.Dataviewer.dcs[i].center[0] is None:
                 self.find_center()
