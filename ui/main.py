@@ -75,7 +75,6 @@ class DataViewer(QtWidgets.QMainWindow):
             self.save_preset_option = QtWidgets.QAction("Save preset &option setting", self)
             self.save_preset_option.setDisabled(True)
             self.open_azavg_only = QtWidgets.QAction("Open &azavg only", self)
-            self.open_azavg_stack = QtWidgets.QAction("Open &azavg stack", self)
             self.save_azavg_only = QtWidgets.QAction("Save &azavg only", self)
             self.averaging_gr = QtWidgets.QAction("Selection Analysis", self)
 
@@ -88,8 +87,7 @@ class DataViewer(QtWidgets.QMainWindow):
             open_menu.addAction(self.open_preset_stack)
             open_menu.addSeparator()
             open_menu.addAction(self.open_azavg_only)
-            open_menu.addAction(self.open_azavg_stack)
-
+            self.open_azavg_stack = open_menu.addMenu("Open azavg stack")
 
 
             self.open_img_stack_mrc = QtWidgets.QAction("mrc file stack", self)
@@ -109,6 +107,14 @@ class DataViewer(QtWidgets.QMainWindow):
             self.open_img_stack.addAction(self.open_img_stack_png)
             self.open_img_stack.addAction(self.open_img_stack_custom)
 
+            self.open_azavg_stack_csv = QtWidgets.QAction("csv", self)
+            self.open_azavg_stack_txt = QtWidgets.QAction("txt", self)
+            self.open_azavg_stack_azavg_txt = QtWidgets.QAction("azavg.txt", self)
+            self.open_azavg_stack_azavg_csv = QtWidgets.QAction("azavg.csv", self)
+            self.open_azavg_stack.addAction(self.open_azavg_stack_csv)
+            self.open_azavg_stack.addAction(self.open_azavg_stack_txt)
+            self.open_azavg_stack.addAction(self.open_azavg_stack_azavg_txt)
+            self.open_azavg_stack.addAction(self.open_azavg_stack_azavg_csv)
 
             save_menu = menubar.addMenu("     &Save     ")
             save_menu.addAction(self.save_preset)
@@ -233,7 +239,10 @@ class DataViewer(QtWidgets.QMainWindow):
         self.top_menu.open_preset_stack.triggered.connect(self.menu_open_preset_stack)
         self.top_menu.save_preset_stack.triggered.connect(self.menu_save_presets)
         self.top_menu.open_azavg_only.triggered.connect(self.menu_open_azavg_only)
-        self.top_menu.open_azavg_stack.triggered.connect(self.menu_open_azavg_stack)
+        self.top_menu.open_azavg_stack_csv.triggered.connect(lambda : self.menu_open_azavg_stack("csv"))
+        self.top_menu.open_azavg_stack_txt.triggered.connect(lambda: self.menu_open_azavg_stack("txt"))
+        self.top_menu.open_azavg_stack_azavg_csv.triggered.connect(lambda: self.menu_open_azavg_stack("azavg.csv"))
+        self.top_menu.open_azavg_stack_azavg_txt.triggered.connect(lambda: self.menu_open_azavg_stack("azavg.txt"))
         self.top_menu.save_azavg_only.triggered.connect(self.menu_save_azavg_only)
         self.top_menu.combo_dataQuality.currentIndexChanged.connect(self.set_data_quality)
         self.top_menu.averaging_gr.triggered.connect(self.menu_util_averaging_gr)
@@ -334,13 +343,11 @@ class DataViewer(QtWidgets.QMainWindow):
             self.dcs[0].azavg = azavg
         self.load_dc(0)
 
-    def menu_open_azavg_stack(self):  # azavg arguments is for averaging_multiple_gr.py
+    def menu_open_azavg_stack(self, ext):  # azavg arguments is for averaging_multiple_gr.py
         dirpth = QtWidgets.QFileDialog.getExistingDirectory(self, '')
         if dirpth is '':
             return
-        lst1 = file.get_file_list_from_path(dirpth, "azavg.csv")
-        lst2 = file.get_file_list_from_path(dirpth, "azavg.txt")
-        lst1.extend(lst2)
+        lst1 = file.get_file_list_from_path(dirpth, ext)
 
         if len(lst1) == 0:
             QMessageBox.about(self, "", "No file detected")
