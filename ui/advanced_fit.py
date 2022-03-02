@@ -1,21 +1,8 @@
-from PyQt5 import QtWidgets
-import file
-from datacube import DataCube
-import pyqtgraph as pg
-import util
-from calculate import pdf_calculator
-from PyQt5.QtWidgets import QMessageBox
 import ui.ui_util as ui_util
 from PyQt5 import QtCore, QtWidgets, QtGui
-import os
 import numpy as np
-import definitions
-from calculate import q_range_selector
-from ui.autofit import Autofit_Kirkland
-import itertools
+from calculate.autofit import Autofit_Kirkland
 import pyqtgraph as pg
-import pandas as pd
-import pickle
 
 table_head_lst = ['min_q', 'max_q', 'fix_q', 'N', 'noise']
 
@@ -78,7 +65,7 @@ class AdvancedFitWindow(QtWidgets.QWidget):
         self.mainWindow.close()
 
     def fit_clicked(self):
-        Iq = self.dc.Iq
+        Iq = self.dc.azavg
         qkran_start = self.panel_control.spinBox_range1_l.value()
         qkran_end = self.panel_control.spinBox_range1_r.value()
         # qkran_step = self.panel_control.spinBox_range1_r.value()
