@@ -1,5 +1,6 @@
 import typing
 
+from ui.advanced_fit import AdvancedFitWindow, MainWindowAdvancedFit
 import file
 from datacube import DataCube
 import pyqtgraph as pg
@@ -362,6 +363,7 @@ class PdfAnalysis(QtWidgets.QWidget):
 
     def sig_binding(self):
         self.controlPanel.fitting_factors.btn_auto_fit.clicked.connect(self.autofit)
+        self.controlPanel.fitting_factors.btn_advanced_fit.clicked.connect(self.advancedfit)
         self.controlPanel.fitting_factors.btn_manual_fit.clicked.connect(self.manualfit)
 
         # instant fit
@@ -423,6 +425,20 @@ class PdfAnalysis(QtWidgets.QWidget):
         self.graphPanel.graph_Iq.region = None
         self.autofit()
 
+    def advancedfit(self):
+        self.advanced_fit_window = MainWindowAdvancedFit(self.datacube, self.advanced_fit_window_close_event)
+        self.advanced_fit_window.show()
+        pass
+
+    def advanced_fit_window_close_event(self, idx_N, idx_qk, idx_Max_pix):
+        if not self.check_condition_instant_fit():
+            self.autofit()
+        ui_util.update_value(self.controlPanel.fitting_factors.spinbox_N, idx_N)
+        ui_util.update_value(self.controlPanel.fitting_factors.spinbox_fit_at_q, idx_qk)
+        idx_Max_q = pdf_calculator.pixel_to_q(idx_Max_pix, self.datacube.ds)
+        self.graph_Iq_panel.setting.spinBox_range_right.setValue(idx_Max_q)
+        self.manualfit()
+        pass
 
     def dialog_to_range(self):
         left = self.controlPanel.fitting_factors.spinbox_q_range_left.value()
@@ -603,6 +619,7 @@ class PdfAnalysis(QtWidgets.QWidget):
             return False
         return True
 
+
 class GraphIqPanel(ui_util.ProfileGraphPanel):
     def __init__(self):
         ui_util.ProfileGraphPanel.__init__(self,"I(q)")
@@ -622,6 +639,7 @@ class GraphPhiqPanel(QtWidgets.QWidget):
         self.layout.addWidget(self.graph)
         self.layout.setContentsMargins(5,5,5,5)
         self.setLayout(self.layout)
+
 
 class GraphGrPanel(QtWidgets.QWidget):
     def __init__(self):
@@ -648,7 +666,6 @@ class ControlPanel(QtWidgets.QWidget):
         # self.resize(600,1000)
         self.setLayout(self.layout)
         self.layout.setContentsMargins(2,2,2,2)
-
 
 
     class FittingElements(QtWidgets.QGroupBox):
@@ -771,7 +788,11 @@ class ControlPanel(QtWidgets.QWidget):
             self.radio_tail.setDisabled(True)
             #############################################
 
+            autofit_button_layout = QtWidgets.QHBoxLayout()
             self.btn_auto_fit = QtWidgets.QPushButton("Auto fitting")
+            self.btn_advanced_fit = QtWidgets.QPushButton("Advanced fitting")
+            autofit_button_layout.addWidget(self.btn_auto_fit)
+            autofit_button_layout.addWidget(self.btn_advanced_fit)
             # self.btn_auto_fit.setMaximumWidth(30)
             # self.btn_auto_fit.setSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed,QtWidgets.QSizePolicy.Policy.Expanding)
 
@@ -849,7 +870,9 @@ class ControlPanel(QtWidgets.QWidget):
             layout.addWidget(self.spinbox_q_range_left, 1, 2, 1, 1)
             layout.addWidget(self.spinbox_q_range_right, 1, 3, 1, 1)
 
-            layout.addWidget(self.btn_auto_fit, 2, 0,1,5)
+            layout.addLayout(autofit_button_layout,2,0,1,5)
+            # layout.addWidget(self.btn_auto_fit, 2, 0,1,2)
+            # layout.addWidget(self.btn_advanced_fit, 2, 2, 1, 3)
 
             layout.addWidget(ui_util.QHLine(),3,0,1,5)
 
@@ -880,9 +903,6 @@ class ControlPanel(QtWidgets.QWidget):
             # layout.addWidget(ui_util.QHLine(), 10, 0, 1, 5)
             layout.addWidget(self.btn_manual_fit, 10, 0, 1, 5)
             # layout.addWidget(lbl_instant_update, 10, 0, 1, 2)
-
-
-
 
             layout.setSpacing(1)
             # layout.setContentsMargins(0,0,0,0)
