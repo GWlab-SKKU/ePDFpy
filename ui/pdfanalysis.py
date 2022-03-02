@@ -898,8 +898,6 @@ class ControlPanel(QtWidgets.QWidget):
 
             layout.addLayout(layout_last_line,9,0,1,5)
 
-
-
             # layout.addWidget(ui_util.QHLine(), 10, 0, 1, 5)
             layout.addWidget(self.btn_manual_fit, 10, 0, 1, 5)
             # layout.addWidget(lbl_instant_update, 10, 0, 1, 2)

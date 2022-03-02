@@ -32,29 +32,31 @@ class AdvancedFitWindow(QtWidgets.QWidget):
         self.dc = dc
         self.close_event = close_event
         self.color_int = 1
-        splitter_upper_horizontal = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
-        splitter_vertical = QtWidgets.QSplitter(QtCore.Qt.Vertical)
-        self.plot_lst = []
+        splitter_vertical = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+        splitter_left_horizontal = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        splitter_right_horizontal = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        splitter_vertical.addWidget(splitter_left_horizontal)
+        splitter_vertical.addWidget(splitter_right_horizontal)
+
+        self.gr_plot_lst = []
+        self.phiq_plot_lst = []
         self.panel_control = self.ControlPanel()
         self.panel_table = self.TablePanel()
-        btn_select = QtWidgets.QPushButton("S\ne\nl\ne\nc\nt")
-        btn_select.setMinimumWidth(25)
-        splitter_upper_horizontal.addWidget(self.panel_control)
-        splitter_upper_horizontal.addWidget(self.panel_table)
-        splitter_upper_horizontal.addWidget(btn_select)
-        splitter_upper_horizontal.setStretchFactor(0, 1)
-        splitter_upper_horizontal.setStretchFactor(1, 2)
+        self.panel_gr = self.GrPanel()
+        self.panel_phiq = self.PhiPanel()
 
-        self.panel_graph = self.GraphPanel()
-        splitter_vertical.addWidget(splitter_upper_horizontal)
-        splitter_vertical.addWidget(self.panel_graph)
+        splitter_left_horizontal.addWidget(self.panel_control)
+        splitter_left_horizontal.addWidget(self.panel_table)
+        splitter_right_horizontal.addWidget(self.panel_phiq)
+        splitter_right_horizontal.addWidget(self.panel_gr)
+
 
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(splitter_vertical)
         self.setLayout(layout)
 
         self.panel_control.btn_fit.clicked.connect(self.fit_clicked)
-        btn_select.clicked.connect(self.select)
+        self.panel_table.btn_select.clicked.connect(self.select)
 
     def select(self):
         row = self.panel_table.table.currentRow()
@@ -92,17 +94,28 @@ class AdvancedFitWindow(QtWidgets.QWidget):
         #     self.Candidates = pickle.load(file)
 
         self.draw_gr()
+        self.draw_phiq()
         self.draw_table()
 
     def draw_gr(self):
         cnt = self.panel_control.spinBox_result_count.value()
-        [plot.clear() for plot in self.plot_lst]
+        [plot.clear() for plot in self.gr_plot_lst]
         for i in range(cnt):
             color = pg.intColor(i, minValue=200, alpha=255)
             pen = pg.mkPen(color=color)
-            plot = self.panel_graph.graph.plot()
+            plot = self.panel_gr.graph.plot()
             plot.setData(self.Candidates[i, idx_r], self.Candidates[i, idx_g], pen=pen)
-            self.plot_lst.append(plot)
+            self.gr_plot_lst.append(plot)
+
+    def draw_phiq(self):
+        cnt = self.panel_control.spinBox_result_count.value()
+        [plot.clear() for plot in self.phiq_plot_lst]
+        for i in range(cnt):
+            color = pg.intColor(i, minValue=200, alpha=255)
+            pen = pg.mkPen(color=color)
+            plot = self.panel_phiq.graph.plot()
+            plot.setData(self.Candidates[i, idx_Q], self.Candidates[i, idx_phiq], pen=pen)
+            self.phiq_plot_lst.append(plot)
 
 
     def draw_table(self):
@@ -129,10 +142,12 @@ class AdvancedFitWindow(QtWidgets.QWidget):
             color = pg.intColor(irow, minValue=200, alpha=255)
             if irow == row:
                 pen = pg.mkPen(color=color, width=highlight_pen_thickness)
-                self.plot_lst[irow].setPen(pen)
+                self.gr_plot_lst[irow].setPen(pen)
+                self.phiq_plot_lst[irow].setPen(pen)
             else:
                 pen = pg.mkPen(color=color, width=default_pen_thickness)
-                self.plot_lst[irow].setPen(pen)
+                self.gr_plot_lst[irow].setPen(pen)
+                self.phiq_plot_lst[irow].setPen(pen)
 
 
 
@@ -164,7 +179,9 @@ class AdvancedFitWindow(QtWidgets.QWidget):
             self.btn_fit = QtWidgets.QPushButton("Autofit")
             lbl_result_count = QtWidgets.QLabel("How many results?")
             self.lbl_filtered_text = QtWidgets.QLabel("Filtered :")
-            self.lbl_filtered_count = QtWidgets.QLabel("?")
+            self.lbl_filtered_count = QtWidgets.QLabel("")
+            self.lbl_filtered_text.setMaximumHeight(30)
+            self.lbl_filtered_count.setMaximumHeight(30)
             self.spinBox_result_count = QtWidgets.QSpinBox()
             self.spinBox_result_count.setValue(5)
             self.spinBox_result_count.setMaximum(10)
@@ -184,28 +201,45 @@ class AdvancedFitWindow(QtWidgets.QWidget):
             layout.addWidget(lbl_result_count, 3, 0)
             layout.addWidget(self.spinBox_result_count, 3, 1)
             layout.addWidget(self.btn_fit, 4, 0, 1, 3)
-            layout.addWidget(self.lbl_filtered_text, 5, 0)
-            layout.addWidget(self.lbl_filtered_count, 5, 1)
+            layout.addWidget(self.lbl_filtered_text, 5, 0, 1, 1)
+            layout.addWidget(self.lbl_filtered_count, 5, 1, 1, 1)
 
     class TablePanel(QtWidgets.QWidget):
         def __init__(self):
             QtWidgets.QWidget.__init__(self)
             self.table = QtWidgets.QTableWidget()
-            layout = QtWidgets.QHBoxLayout()
+            layout = QtWidgets.QVBoxLayout()
             layout.addWidget(self.table)
             self.table.setRowCount(10)
-            self.table.setColumnCount(5)
+            column_count = 5
+            self.table.setColumnCount(column_count)
+            for i in range(column_count):
+                self.table.setColumnWidth(i,50)
             self.table.setHorizontalHeaderLabels(table_head_lst)
             self.table.setDragEnabled(False)
             self.table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
             self.setLayout(layout)
             self.table.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
             self.table.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
+            self.btn_select = QtWidgets.QPushButton("Select")
+            layout.addWidget(self.btn_select)
 
-    class GraphPanel(QtWidgets.QWidget):
+    class GrPanel(QtWidgets.QWidget):
         def __init__(self):
             QtWidgets.QWidget.__init__(self)
             self.graph = ui_util.CoordinatesPlotWidget(title='G(r)')
             layout = QtWidgets.QHBoxLayout()
             layout.addWidget(self.graph)
             self.setLayout(layout)
+            axis = pg.InfiniteLine(angle=0)
+            self.graph.addItem(axis)
+
+    class PhiPanel(QtWidgets.QWidget):
+        def __init__(self):
+            QtWidgets.QWidget.__init__(self)
+            self.graph = ui_util.CoordinatesPlotWidget(title='phi(q)')
+            layout = QtWidgets.QHBoxLayout()
+            layout.addWidget(self.graph)
+            self.setLayout(layout)
+            axis = pg.InfiniteLine(angle=0)
+            self.graph.addItem(axis)
