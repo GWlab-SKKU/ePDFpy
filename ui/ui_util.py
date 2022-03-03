@@ -14,7 +14,7 @@ import pandas as pd
 
 if platform.system() == 'Darwin':
     default_pen_thickness = 2
-    highlight_pen_thickness = 7
+    highlight_pen_thickness = 5
 else:
     default_pen_thickness = 1
     highlight_pen_thickness = 4
