@@ -63,7 +63,6 @@ class DataViewer(QtWidgets.QMainWindow):
             layout.setContentsMargins(0,0,0,0)
             self.setLayout(layout)
 
-
         def create_menu(self, mainWindow: QtWidgets.QMainWindow):
             menubar = mainWindow.menuBar()
             menubar.setNativeMenuBar(False)
@@ -88,7 +87,6 @@ class DataViewer(QtWidgets.QMainWindow):
             open_menu.addSeparator()
             open_menu.addAction(self.open_azavg_only)
             self.open_azavg_stack = open_menu.addMenu("Open azavg stack")
-
 
             self.open_img_stack_mrc = QtWidgets.QAction("mrc file stack", self)
             self.open_img_stack_txt = QtWidgets.QAction("txt file stack", self)
@@ -291,7 +289,6 @@ class DataViewer(QtWidgets.QMainWindow):
             dc.element_nums = datacube.element_nums
             dc.element_ratio = datacube.element_ratio
 
-
     def menu_open_image_file(self):
         load_paths = []
         path,_ = QtWidgets.QFileDialog.getOpenFileNames(self,'open')
@@ -305,6 +302,8 @@ class DataViewer(QtWidgets.QMainWindow):
     def menu_open_image_stack(self, file_type):
         load_paths = []
         path = QtWidgets.QFileDialog.getExistingDirectory(None, 'open')
+        if not path:
+            return
         load_paths.extend(file.get_file_list_from_path(path, file_type))
         if len(load_paths) == 0:
             QtWidgets.QMessageBox.about(None, "No file found", "No file found")

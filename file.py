@@ -185,9 +185,16 @@ def save_preset_default(datacube, main_window):
     presets = vars(copy.copy(datacube))
 
     # convert to relative path
-    if presets['mrc_file_path'] is not None:
-        presets['mrc_file_path'] = os.path.relpath(datacube.img_file_path, os.path.split(preset_path)[0])
-        presets['mrc_file_path'] = presets['mrc_file_path'].replace('\\', '/')  # compatibility between windows and linux
+    try:
+        # deprecated: mrc_file_path
+        if presets['img_file_path'] is not None:
+            presets['img_file_path'] = os.path.relpath(datacube.img_file_path, os.path.split(preset_path)[0])
+            presets['img_file_path'] = presets['img_file_path'].replace('\\', '/')  # compatibility between windows and linux
+    except:
+        if presets['mrc_file_path'] is not None:
+            presets['mrc_file_path'] = os.path.relpath(datacube.img_file_path, os.path.split(preset_path)[0])
+            presets['mrc_file_path'] = presets['mrc_file_path'].replace('\\', '/')  # compatibility between windows and linux
+
 
     # remove data that not support to save as json
     for key, value in dict(presets).items():
@@ -248,10 +255,14 @@ def load_preset(fp:str=None, dc:DataCube=None) -> DataCube:
         for column in df_q.columns:
             setattr(dc, column, df_q[column].to_numpy())
 
-    # convert relative path to absolute path
+    # deprecated: mrc_file_path
     if 'mrc_file_path' in content.keys():
         content['mrc_file_path'] = os.path.abspath(os.path.join(fp, "..", content['mrc_file_path']))
         content['mrc_file_path'] = os.path.abspath(os.path.join(fp, "..", content['mrc_file_path']))
+    # convert relative path to absolute path
+    if 'img_file_path' in content.keys():
+        content['img_file_path'] = os.path.abspath(os.path.join(fp, "..", content['img_file_path']))
+        content['img_file_path'] = os.path.abspath(os.path.join(fp, "..", content['img_file_path']))
 
     # put content in DataCube
     for key, value in content.items():
