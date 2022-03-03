@@ -305,6 +305,7 @@ def Autofit_Kirkland(Iq, qkran_start, qkran_end, qkran_step, pixran_start, pixra
     Phi_d = Phik_d.reshape(int(Phik_d.size / len(data_Q[0][0])), len(data_Q[0][0]))
     Phi = Phik.reshape(int(Phik.size / len(data_Q[0][0])), len(data_Q[0][0]))
     data_Q = data_Q.reshape(int(data_Q.size / len(data_Q[0][0])), len(data_Q[0][0]))
+    total_n = len(Gk)
 
     ################### Defining selection condition #########################
     noise_area = np.arange(0, 100, 1)
@@ -380,6 +381,6 @@ def Autofit_Kirkland(Iq, qkran_start, qkran_end, qkran_step, pixran_start, pixra
                                                           ascending=[False, False, False]).to_numpy()
         del (Results, Pre_Results, Pre_Results2)
 
-    return Candidates, qualitycheck  # Candidate: top 10 results in numpy array / qualitycheck: How many that passed the filters
+    return Candidates, qualitycheck, total_n  # Candidate: top 10 results in numpy array / qualitycheck: How many that passed the filters
 
 

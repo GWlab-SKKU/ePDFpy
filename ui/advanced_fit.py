@@ -3,8 +3,9 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 import numpy as np
 from calculate.autofit import Autofit_Kirkland
 import pyqtgraph as pg
+import pickle
 
-table_head_lst = ['min_q', 'max_q', 'fix_q', 'N', 'noise']
+table_head_lst = ['min_q', 'max_q', 'fix_q', 'N', 'noise1']
 
 idx_Min_pix = 0
 idx_Max_pix = 1
@@ -85,20 +86,21 @@ class AdvancedFitWindow(QtWidgets.QWidget):
         Select = 10
         use_lobato = True if self.dc.scattering_factor =='Lobato' else False
 
-        self.Candidates, qualitycheck = Autofit_Kirkland(Iq,qkran_start,qkran_end,qkran_step,pixran_start,pixran_end,pixran_step,Elem,Rat,
-            pixel_start_n,Calibration_factor,Damping_factor,Noise_threshold,Select,use_lobato)
-        print(qualitycheck)
-        self.panel_control.lbl_filtered_count.setText(str(qualitycheck))
+        # self.Candidates, qualitycheck, self.total_n = Autofit_Kirkland(Iq,qkran_start,qkran_end,qkran_step,pixran_start,pixran_end,pixran_step,Elem,Rat,
+        #     pixel_start_n,Calibration_factor,Damping_factor,Noise_threshold,Select,use_lobato)
 
-        # with open('candidates.p', 'rb') as file:
-        #     self.Candidates = pickle.load(file)
+        with open('candidates.p', 'rb') as file:
+            self.Candidates = pickle.load(file)
+        qualitycheck, self.total_n = 10, 200
+
+        self.panel_control.lbl_filtered_count.setText(f"{qualitycheck} / {self.total_n}", )
 
         self.draw_gr()
         self.draw_phiq()
         self.draw_table()
 
     def draw_gr(self):
-        cnt = self.panel_control.spinBox_result_count.value()
+        cnt = min(len(self.Candidates), self.panel_control.spinBox_result_count.value())
         [plot.clear() for plot in self.gr_plot_lst]
         for i in range(cnt):
             color = pg.intColor(i, minValue=200, alpha=255)
@@ -108,7 +110,7 @@ class AdvancedFitWindow(QtWidgets.QWidget):
             self.gr_plot_lst.append(plot)
 
     def draw_phiq(self):
-        cnt = self.panel_control.spinBox_result_count.value()
+        cnt = min(len(self.Candidates), self.panel_control.spinBox_result_count.value())
         [plot.clear() for plot in self.phiq_plot_lst]
         for i in range(cnt):
             color = pg.intColor(i, minValue=200, alpha=255)
@@ -119,20 +121,21 @@ class AdvancedFitWindow(QtWidgets.QWidget):
 
 
     def draw_table(self):
+
         self.panel_table.table.clear()
         self.panel_table.table.setHorizontalHeaderLabels(table_head_lst)
-        column_idx_lst = [0, 1, 2, 3]
-        row_idx_lst = np.arange(0, self.panel_control.spinBox_result_count.value()).astype(int)
+        column_idx_lst = [idx_Min_pix, idx_Max_pix, idx_qk, idx_N, 9]
+
+        # making pandas
+        tbl = self.Candidates[0:min(len(self.Candidates), self.panel_control.spinBox_result_count.value()), column_idx_lst]
         idx_pair = []
-        for column in column_idx_lst:
-            for row in row_idx_lst:
+        for row in np.arange(tbl.shape[0]):
+            for column in np.arange(tbl.shape[1]):
                 idx_pair.append([row, column])
+
         for row, column in idx_pair:
-            self.panel_table.table.setItem(row, column, QtWidgets.QTableWidgetItem(str(self.Candidates[row,column])))
-        # self.panel_table.table.cellClicked.connect(self.cell_clicked)
-            # self.panel_table.table.rowMoved.connect(self.cell_clicked)
-        # self.panel_table.table.cellActivated.connect(self.cell_clicked)
-        self.panel_table.table.itemSelectionChanged.connect(self.cell_clicked)
+            self.panel_table.table.setItem(row, column, QtWidgets.QTableWidgetItem(str(tbl[row,column])))
+        self.panel_table.table.itemSelectionChanged.connect(self.cell_clicked) # is duplicated for each run fit?
 
     def cell_clicked(self):
         row = self.panel_table.table.currentRow()
@@ -176,7 +179,7 @@ class AdvancedFitWindow(QtWidgets.QWidget):
             self.spinBox_noise_thresholding.setValue(1)
             self.btn_fit = QtWidgets.QPushButton("Autofit")
             lbl_result_count = QtWidgets.QLabel("How many results?")
-            self.lbl_filtered_text = QtWidgets.QLabel("Filtered :")
+            self.lbl_filtered_text = QtWidgets.QLabel("Passed :")
             self.lbl_filtered_count = QtWidgets.QLabel("")
             self.lbl_filtered_text.setMaximumHeight(30)
             self.lbl_filtered_count.setMaximumHeight(30)

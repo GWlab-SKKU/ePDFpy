@@ -426,6 +426,12 @@ class PdfAnalysis(QtWidgets.QWidget):
         self.autofit()
 
     def advancedfit(self):
+        if self.datacube.azavg is None:
+            QMessageBox.about(self, "", "You have to run profile extraction first.")
+            return
+        if self.datacube.element_nums is None:
+            QMessageBox.about(self, "", "You have to put element information.")
+            return
         self.advanced_fit_window = MainWindowAdvancedFit(self.datacube, self.advanced_fit_window_close_event)
         self.advanced_fit_window.show()
         pass
