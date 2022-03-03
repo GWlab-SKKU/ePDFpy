@@ -136,16 +136,14 @@ class AdvancedFitWindow(QtWidgets.QWidget):
 
     def cell_clicked(self):
         row = self.panel_table.table.currentRow()
-        highlight_pen_thickness = 4
-        default_pen_thickness = 1
         for irow in range(self.panel_control.spinBox_result_count.value()):
             color = pg.intColor(irow, minValue=200, alpha=255)
             if irow == row:
-                pen = pg.mkPen(color=color, width=highlight_pen_thickness)
+                pen = pg.mkPen(color=color, width=ui_util.highlight_pen_thickness)
                 self.gr_plot_lst[irow].setPen(pen)
                 self.phiq_plot_lst[irow].setPen(pen)
             else:
-                pen = pg.mkPen(color=color, width=default_pen_thickness)
+                pen = pg.mkPen(color=color, width=ui_util.default_pen_thickness)
                 self.gr_plot_lst[irow].setPen(pen)
                 self.phiq_plot_lst[irow].setPen(pen)
 
@@ -227,7 +225,7 @@ class AdvancedFitWindow(QtWidgets.QWidget):
     class GrPanel(QtWidgets.QWidget):
         def __init__(self):
             QtWidgets.QWidget.__init__(self)
-            self.graph = ui_util.CoordinatesPlotWidget(title='G(r)')
+            self.graph = ui_util.CoordinatesPlotWidget(title='G(r)', setYScaling=False, button1mode=True)
             layout = QtWidgets.QHBoxLayout()
             layout.addWidget(self.graph)
             self.setLayout(layout)
@@ -237,7 +235,7 @@ class AdvancedFitWindow(QtWidgets.QWidget):
     class PhiPanel(QtWidgets.QWidget):
         def __init__(self):
             QtWidgets.QWidget.__init__(self)
-            self.graph = ui_util.CoordinatesPlotWidget(title='phi(q)')
+            self.graph = ui_util.CoordinatesPlotWidget(title='phi(q)', setYScaling=False, button1mode=True)
             layout = QtWidgets.QHBoxLayout()
             layout.addWidget(self.graph)
             self.setLayout(layout)

@@ -11,6 +11,13 @@ from calculate.pdf_calculator import pixel_to_q, q_to_pixel
 import platform
 import definitions
 
+if platform.system() == 'Darwin':
+    default_pen_thickness = 2
+    highlight_pen_thickness = 7
+else:
+    default_pen_thickness = 1
+    highlight_pen_thickness = 4
+
 
 class binding():
     def __init__(self, widget, event):

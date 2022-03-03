@@ -15,12 +15,6 @@ import util
 from typing import List
 import platform
 from ui.selection_analysis.column_selector import ColumnSelector
-if platform.system() == 'Darwin':
-    default_pen_thickness = 2
-    highlight_pen_thickness = 7
-else:
-    default_pen_thickness = 1
-    highlight_pen_thickness = 4
 pg.setConfigOptions(antialias=True)
 
 class DataViewer(QtWidgets.QMainWindow):
@@ -625,8 +619,8 @@ class GrCube(datacube.DataCube):
         self.color_txt = "rgba({}, {}, {}, {});".format(self.color.red(), self.color.green(), self.color.blue(), self.color.alpha())
 
         ## pen ##
-        self.enter_pen = pg.mkPen(self.color, width=highlight_pen_thickness)
-        self.default_pen = pg.mkPen(self.color,width=default_pen_thickness)
+        self.enter_pen = pg.mkPen(self.color, width=ui_util.highlight_pen_thickness)
+        self.default_pen = pg.mkPen(self.color,width=ui_util.default_pen_thickness)
 
         ## default chkbox ##
         self.styleSheet_default = "background-color: #444444;" \
