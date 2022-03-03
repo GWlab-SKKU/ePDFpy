@@ -59,6 +59,8 @@ class AdvancedFitWindow(QtWidgets.QWidget):
         self.panel_control.btn_fit.clicked.connect(self.fit_clicked)
         self.panel_table.btn_select.clicked.connect(self.select)
 
+        self.panel_table.table.itemSelectionChanged.connect(self.cell_clicked) # is duplicated for each run fit?
+
     def select(self):
         row = self.panel_table.table.currentRow()
         N = self.Candidates[row, idx_N]
@@ -102,6 +104,7 @@ class AdvancedFitWindow(QtWidgets.QWidget):
     def draw_gr(self):
         cnt = min(len(self.Candidates), self.panel_control.spinBox_result_count.value())
         [plot.clear() for plot in self.gr_plot_lst]
+        self.gr_plot_lst.clear()
         for i in range(cnt):
             color = pg.intColor(i, minValue=200, alpha=255)
             pen = pg.mkPen(color=color)
@@ -112,6 +115,7 @@ class AdvancedFitWindow(QtWidgets.QWidget):
     def draw_phiq(self):
         cnt = min(len(self.Candidates), self.panel_control.spinBox_result_count.value())
         [plot.clear() for plot in self.phiq_plot_lst]
+        self.phiq_plot_lst.clear()
         for i in range(cnt):
             color = pg.intColor(i, minValue=200, alpha=255)
             pen = pg.mkPen(color=color)
@@ -121,7 +125,6 @@ class AdvancedFitWindow(QtWidgets.QWidget):
 
 
     def draw_table(self):
-
         self.panel_table.table.clear()
         self.panel_table.table.setHorizontalHeaderLabels(table_head_lst)
         column_idx_lst = [idx_Min_pix, idx_Max_pix, idx_qk, idx_N, 9]
@@ -135,9 +138,9 @@ class AdvancedFitWindow(QtWidgets.QWidget):
 
         for row, column in idx_pair:
             self.panel_table.table.setItem(row, column, QtWidgets.QTableWidgetItem(str(tbl[row,column])))
-        self.panel_table.table.itemSelectionChanged.connect(self.cell_clicked) # is duplicated for each run fit?
 
     def cell_clicked(self):
+        print("cell_clicked")
         row = self.panel_table.table.currentRow()
         for irow in range(self.panel_control.spinBox_result_count.value()):
             color = pg.intColor(irow, minValue=200, alpha=255)
@@ -149,7 +152,6 @@ class AdvancedFitWindow(QtWidgets.QWidget):
                 pen = pg.mkPen(color=color, width=ui_util.default_pen_thickness)
                 self.gr_plot_lst[irow].setPen(pen)
                 self.phiq_plot_lst[irow].setPen(pen)
-
 
 
     class ControlPanel(QtWidgets.QGroupBox):
