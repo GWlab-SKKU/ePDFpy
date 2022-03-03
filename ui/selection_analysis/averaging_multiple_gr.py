@@ -46,8 +46,8 @@ class Viewer(QtWidgets.QWidget):
         self.setLayout(self.layout)
         self.leftPanel = LeftPanel()
         self.rightPanel = GraphPanel()
-        self.average_plot = self.rightPanel.graphView.plot(pen=pg.mkPen(255, 255, 255, width=highlight_pen_thickness))
-        self.std_plot = self.rightPanel.graphView.plot(pen=pg.mkPen(255, 255, 255, width=highlight_pen_thickness))
+        self.average_plot = self.rightPanel.graphView.plot(pen=pg.mkPen(255, 255, 255, width=ui_util.highlight_pen_thickness))
+        self.std_plot = self.rightPanel.graphView.plot(pen=pg.mkPen(255, 255, 255, width=ui_util.highlight_pen_thickness))
 
         self.splitter_horizontal = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
         self.splitter_horizontal.addWidget(self.leftPanel)
