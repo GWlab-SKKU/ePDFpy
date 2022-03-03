@@ -106,7 +106,8 @@ def calculate_center_gradient(img):
     print("minimum_d is", minimum_d)
 
     cnt = 0
-    while (cnt < 15):
+    # while (cnt < 15):
+    while (cnt < 20):
         search_rect_width = 3
         for x in range(cursor[0] - search_rect_width // 2, cursor[0] + search_rect_width // 2 + 1):
             for y in range(cursor[1] - search_rect_width // 2, cursor[1] + search_rect_width // 2 + 1):
@@ -121,6 +122,8 @@ def calculate_center_gradient(img):
         else:
             print("calculated center is",cursor)
             return cursor
+    print(f"Failed to find center in {cnt}px")
+    return calculate_center(img)
 
 
 def _calculate_initial_center(img):
