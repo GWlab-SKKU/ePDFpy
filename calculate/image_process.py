@@ -295,7 +295,9 @@ def calculate_azimuthal_average(raw_image, center):
 
 
     #### radial mean ####
-    radial_mean = ndimage.mean(raw_image, labels=rr, index=np.arange(0, n_rr + 1))
+    # radial_mean = ndimage.mean(raw_image, labels=rr, index=np.arange(0, n_rr + 1))
+    radial_mean = ndimage.mean(raw_image, labels=rr, index=np.arange(1, n_rr + 1))
+    radial_mean = np.insert(radial_mean, 0, 0)
     radial_mean = np.nan_to_num(radial_mean, 0)
 
     return radial_mean

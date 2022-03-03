@@ -353,7 +353,7 @@ def Autofit_Kirkland(Iq, qkran_start, qkran_end, qkran_step, pixran_start, pixra
                            columns=['Min pix', 'Max pix', 'qk', 'N', 'Q', 'Phi(q)', 'Phi_d(q)', 'r', 'G(r)', 'judge1',
                                     'judge2', 'judge3', 'judge4'])
     Pre_Results = Results.sort_values('judge4')  # Ordering by std
-    Results = Pre_Results[Pre_Results['judge1'] < 1.]  # S.C 1
+    Results = Pre_Results[Pre_Results['judge1'] < Noise_level]  # S.C 1
     Results = Results[Results['judge1'] < Results['judge2']]  # S.C 2
     Results = Results[Results['judge3'] == 3]  # S.C 3
     qualitycheck = len(Results)  # If good sample, this # is large
