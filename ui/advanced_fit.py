@@ -88,12 +88,12 @@ class AdvancedFitWindow(QtWidgets.QWidget):
         Select = 10
         use_lobato = True if self.dc.scattering_factor =='Lobato' else False
 
-        # self.Candidates, qualitycheck, self.total_n = Autofit_Kirkland(Iq,qkran_start,qkran_end,qkran_step,pixran_start,pixran_end,pixran_step,Elem,Rat,
-        #     pixel_start_n,Calibration_factor,Damping_factor,Noise_threshold,Select,use_lobato)
+        self.Candidates, qualitycheck, self.total_n = Autofit_Kirkland(Iq,qkran_start,qkran_end,qkran_step,pixran_start,pixran_end,pixran_step,Elem,Rat,
+            pixel_start_n,Calibration_factor,Damping_factor,Noise_threshold,Select,use_lobato)
 
-        with open('candidates.p', 'rb') as file:
-            self.Candidates = pickle.load(file)
-        qualitycheck, self.total_n = 10, 200
+        # with open('candidates.p', 'rb') as file:
+        #     self.Candidates = pickle.load(file)
+        # qualitycheck, self.total_n = 10, 200
 
         self.panel_control.lbl_filtered_count.setText(f"{qualitycheck} / {self.total_n}", )
 
