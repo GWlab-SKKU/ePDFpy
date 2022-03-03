@@ -149,7 +149,7 @@ def _calculation_with_q(ds, q, Iq, element_nums, ratio, is_full_q, damping, rmax
 
     # added code
     if fit_at_q is not None:
-        search_q = q[q <= fit_at_q + 0.01]  # todo
+        search_q = q[q <= fit_at_q + ds/2]
     else:
         search_q = q
     fit_at_q, qpos = search_q.max(), search_q.argmax()  # qmax = q_fix
