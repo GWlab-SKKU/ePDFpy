@@ -256,7 +256,9 @@ class DataViewer(QtWidgets.QMainWindow):
         pass
 
     def load_dc(self,index):
-        if not len(self.dcs) == 1 and hasattr(self,"current_page"):
+        # to reduce the memory
+        if not len(self.dcs) == 1 and hasattr(self,"current_page")\
+                and len(self.dcs) > self.current_page:
             self.dcs[self.current_page].release()
         self.current_page = index
 
