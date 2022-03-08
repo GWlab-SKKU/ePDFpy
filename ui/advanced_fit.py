@@ -1,7 +1,7 @@
 import ui.ui_util as ui_util
 from PyQt5 import QtCore, QtWidgets, QtGui
 import numpy as np
-from calculate.autofit import Autofit_Kirkland
+from calculate.autofit import Autofit
 import pyqtgraph as pg
 import pickle
 
@@ -88,7 +88,7 @@ class AdvancedFitWindow(QtWidgets.QWidget):
         Select = 10
         use_lobato = True if self.dc.scattering_factor =='Lobato' else False
 
-        self.Candidates, qualitycheck, self.total_n = Autofit_Kirkland(Iq,qkran_start,qkran_end,qkran_step,pixran_start,pixran_end,pixran_step,Elem,Rat,
+        self.Candidates, qualitycheck, self.total_n = Autofit(Iq,qkran_start,qkran_end,qkran_step,pixran_start,pixran_end,pixran_step,Elem,Rat,
             pixel_start_n,Calibration_factor,Damping_factor,Noise_threshold,Select,use_lobato)
 
         # with open('candidates.p', 'rb') as file:

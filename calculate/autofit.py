@@ -20,6 +20,7 @@
 # 20th edit 220223 Added ePDF calculation + indexing probelm + separate azavg / newind file module.
 # 21st edit 220224 Delete unnecessary variable to get more free memory
 # 22nd edit 220226 Edited for ePDFpy application
+# 23rd edit 220307 Reduced time -> np.dot to matmul + no vstack
 
 import numpy as np
 import matplotlib as mpl
@@ -147,24 +148,15 @@ def createDirectory(directory):
         print("Error: Failed to create the directory.")
 
 
-def Autofit_Kirkland(Iq, qkran_start, qkran_end, qkran_step, pixran_start, pixran_end, pixran_step, Elem, Rat,
-                     pixel_start_n, Calibration_factor, Damping_factor, Noise_threshold, Select, use_lobato):
+def Autofit(Iq, qkran_start, qkran_end, qkran_step, pixran_start, pixran_end, pixran_step, Elem, Rat, pixel_start_n,
+            Calibration_factor, Damping_factor, Noise_threshold, Select, use_lobato):
     #######################preset######################
     if Noise_threshold == '':
         Noise_threshold = 1.0
-
+    print('Autofit started')
+    toc = time.time()
     cal = float(Calibration_factor)
     cali = 2 * np.pi * cal
-    qk_list = []
-    pixran = []
-
-    #     if level == 'all':
-    #         qk_list = np.arange(21,19,-.02)
-    #         pixran = np.arange(1150,900,-5)
-
-    #     if level == 'high':
-    #         qk_list = np.arange(24,21,-.02)
-    #         pixran = np.arange(1200,1050,-5)
 
     qk_list = np.arange(qkran_end, qkran_start - qkran_step, -qkran_step)  # Scanning range of qk
     pixran = np.arange(pixran_end, pixran_start - pixran_step, -pixran_step)  # Scanning range of Max. pixel
@@ -208,46 +200,36 @@ def Autofit_Kirkland(Iq, qkran_start, qkran_end, qkran_step, pixran_start, pixra
     pix_m = pixel_start_n
     q_min = pix_m * cali
 
-    seed = np.zeros(np.max(pixran) + 1 - pix_m)  # For matching up the size of stacking matrix
-    seed[:] = np.nan
+    seed = np.ones(
+        (len(qk_list) * len(pixran), np.max(pixran) + 1 - pix_m))  # For matching up the size of stacking matrix
+    seed = seed * np.nan
     data_Q, data_q, intensity_Q, kf2, kf_2 = seed.copy(), seed.copy(), seed.copy(), seed.copy(), seed.copy()
-    Nklist = [np.nan]
-    params = np.array([0, 0, 0])
+    Nklist = np.array([0])
+    params = np.ones((len(qk_list) * len(pixran), 3))
+    line = 0
     for max_pix in pixran:
         #        print(max_pix)
         for q_max in qk_list:
             if q_max > max_pix * cali:
                 continue
-            alpha = max_pix * cali - q_max
-            temp_Q, temp_q, temp_i, temp_k, temp_k2 = seed.copy(), seed.copy(), seed.copy(), seed.copy(), seed.copy()
 
             ap = np.arange(int(pix_m), int(max_pix + 1),
                            1)  ##Edited 2/21 -> Applied for 'newind' azav files. Slicing Min ~ Max pixels.
 
-            temp_Q[:len(ap)], temp_q[:len(ap)], temp_i[:len(ap)], temp_k[:len(ap)], temp_k2[:len(ap)] = Q[ap], q[ap], \
-                                                                                                        intensity[ap], \
-                                                                                                        kf2_Q[ap], \
-                                                                                                        kf_2_Q[ap]
+            temp_Q, temp_q, temp_i, temp_k, temp_k2 = Q[ap], q[ap], intensity[ap], kf2_Q[ap], kf_2_Q[ap]
 
             Q_max = int(np.round(q_max / cali))
+            Q_min = int(np.round(q_min / cali))
             if (Q_max - int(q_min / cali)) >= len(temp_i[~np.isnan(temp_i)]):
                 continue
-            iq = temp_i[Q_max - int(q_min / cali)]  # Iqfit
-            kk = temp_k[Q_max - int(q_min / cali)]  # ffit
+            iq = temp_i[Q_max - Q_min]  # Iqfit
+            kk = temp_k[Q_max - Q_min]  # ffit
 
             temp_i = temp_i - iq
             temp_k = temp_k - kk
 
-            ################### The actual data used for calculation###################
-            data_Q = np.vstack([data_Q, temp_Q])
-            data_q = np.vstack([data_q, temp_q])
-            kf_2 = np.vstack([kf_2, temp_k2])
-            params = np.vstack([params, [pix_m, max_pix, np.round(q_max, 2)]])
-            intensity_Q = np.vstack([intensity_Q, temp_i])
-            kf2 = np.vstack([kf2, temp_k])
             ###########################################################################
-
-            fit_r = np.arange(int((2 * np.pi) / cali) - int(q_min / cali), int(q_max / cali) - int(q_min / cali) + 1,
+            fit_r = np.arange(int((2 * np.pi) / cali) - Q_min, Q_max - Q_min + 1,
                               1)  # tail fitting from 2pi
 
             ############################### N fitting from 2pi for all possible cases ##########################
@@ -257,21 +239,30 @@ def Autofit_Kirkland(Iq, qkran_start, qkran_end, qkran_step, pixran_start, pixra
             costk = np.sum((nIq - nkk) ** 2, axis=1)
             AutoNk = costk.argmin() + 1
             Nklist = np.append(Nklist, AutoNk)
-            del (temp_Q, temp_q, temp_i, temp_k, temp_k2, nIq, nkk, costk)
+
             ######################################################################################################
+            ################### The actual data used for calculation###################
+            data_Q[line, :len(ap)] = temp_Q
+            data_q[line, :len(ap)] = temp_q
+            kf2[line, :len(ap)] = temp_k
+            intensity_Q[line, :len(ap)] = temp_i
+            kf_2[line, :len(ap)] = temp_k2
+            params[line] = [pix_m, max_pix, np.round(q_max, 2)]
+            del (temp_Q, temp_q, temp_i, temp_k, temp_k2, nIq, nkk, costk)
+            line = line + 1
 
-    ######################## Adding another axis to data matrix (N axis) ###########################################
-    listup = np.ones((2 * dn + 1, len(data_Q) - 1, len(data_Q[1])))
-    paramT = np.ones((2 * dn + 1, len(data_Q) - 1, len(params[1])))
+            ######################## Adding another axis to data matrix (N axis) ###########################################
+    listup = np.ones((2 * dn + 1, line, len(data_Q[0])))
+    paramT = np.ones((2 * dn + 1, line, len(params[0])))
 
-    data_Q = np.delete(data_Q, 0, axis=0) * listup
-    data_q = np.delete(data_q, 0, axis=0) * listup
-    intensity_Q = np.delete(intensity_Q, 0, axis=0) * listup
-    kf2 = np.delete(kf2, 0, axis=0) * listup
-    kf_2 = np.delete(kf_2, 0, axis=0) * listup
+    data_Q = data_Q[:line] * listup
+    data_q = data_q[:line] * listup
+    intensity_Q = intensity_Q[:line] * listup
+    kf2 = kf2[:line] * listup
+    kf_2 = kf_2[:line] * listup
     Nklist = np.delete(Nklist, 0)
     Nk, Nbase = listup.copy(), listup[0]
-    params = np.delete(params, 0, axis=0) * paramT
+    params = params[:line] * paramT
     del (listup, paramT)
     for i in range(0, 2 * dn + 1, 1):
         Nk_add = Nbase.T
@@ -291,10 +282,9 @@ def Autofit_Kirkland(Iq, qkran_start, qkran_end, qkran_step, pixran_start, pixra
     qtr = data_Q[0][:, :, np.newaxis]
     QR = np.dot(np.nan_to_num(qtr[0]), R)
     del (R, qtr)
-    # QR1 = np.dot(np.nan_to_num(qtr),R)
     Sin_QR = np.sin(QR)
     del (QR)
-    Gk = 8 * np.pi * np.dot(np.nan_to_num(Phik_d), Sin_QR) * dq  # Resulting G(r) -> shape: 11 x #(qk, pix cases) x 1000
+    Gk = 8 * np.pi * np.matmul(np.nan_to_num(Phik_d), Sin_QR) * dq
     del (data_q, Sin_QR)
     ###########################################################
     ####################### Filtering ########################################
@@ -313,25 +303,16 @@ def Autofit_Kirkland(Iq, qkran_start, qkran_end, qkran_step, pixran_start, pixra
     oo_qarea = np.arange(200, 350, 1)
     judge_noise = np.max(np.abs(Gk[:, noise_area]), axis=1)  # S.C 1
     judge_1st = np.max(Gk[:, fir_peak_area], axis=1)  # S.C 2
-    judge_oo = []  # S.C 3
     judge_std = np.std(Gk[:, noise_area], axis=1)  # Grading = std
 
-    for idx in range(len(Gk)):
-        ootest = []
-        #    ri = np.where(new_Gk[idx][oo_qarea]<0)[0]
-        oo_tmp = Gk[idx][np.where(Gk[idx][oo_qarea] < 0)[0] + 200]
-        if len(oo_tmp) == 0:
-            judge_oo.append(0)
-            continue
-        gra = np.gradient(oo_tmp)
-        for i in range(1, len(gra), 1):
-            if gra[i - 1] * gra[i] < 0:
-                ootest.append(i)
-        judge_oo.append(len(ootest))
-    judge_oo = np.array(judge_oo)
+    ############ number of oo_peak ################
+    gra = np.gradient(Gk[:, oo_qarea])[1]
+    gracheck = np.sign(gra[:, :-1] * gra[:, 1:])
+    grad_mask = gracheck == -1
+    judge_oo = np.sum((Gk[:, 200:349] * grad_mask) < 0, axis=1)
 
     Autofit = []
-
+    qc = []
     for i in range(len(Params)):
         Auto_temp = []
         Auto_temp.append(Params[i][0])
@@ -343,21 +324,20 @@ def Autofit_Kirkland(Iq, qkran_start, qkran_end, qkran_step, pixran_start, pixra
         Auto_temp.append(np.array(Phi_d[i][~np.isnan(Phi_d[i])]))
         Auto_temp.append(np.array(r))
         Auto_temp.append(np.array(Gk[i]))
-        Auto_temp.append(judge_noise[i])
-        Auto_temp.append(judge_1st[i])
+        Auto_temp.append(judge_1st[i] / judge_noise[i])
         Auto_temp.append(judge_oo[i])
         Auto_temp.append(judge_std[i])
         Autofit.append(Auto_temp)
-    del (Params, data_Q, Phi, Phi_d, Gk, judge_noise, judge_1st, judge_oo, judge_std)
+        if judge_noise[i] <= Noise_level:
+            qc.append(judge_noise[i])
+    qualitycheck = len(qc)
+    del (Params, data_Q, Phi, Phi_d, Gk, judge_noise, judge_1st, judge_oo, judge_std, qc)
 
     Results = pd.DataFrame(Autofit,
                            columns=['Min pix', 'Max pix', 'qk', 'N', 'Q', 'Phi(q)', 'Phi_d(q)', 'r', 'G(r)', 'judge1',
-                                    'judge2', 'judge3', 'judge4'])
-    Pre_Results = Results.sort_values('judge4')  # Ordering by std
-    Results = Pre_Results[Pre_Results['judge1'] < Noise_level]  # S.C 1
-    Results = Results[Results['judge1'] < Results['judge2']]  # S.C 2
-    Results = Results[Results['judge3'] == 3]  # S.C 3
-    qualitycheck = len(Results)  # If good sample, this # is large
+                                    'judge2', 'judge3'])
+    Results = Results[Results['judge2'] == 3]  # S.C 3
+    Results = Results.sort_values(['judge3', 'judge1'], ascending=[True, False])  # Ordering by std
 
     if qualitycheck != 0:  # For good samples which passed S.C 1
         if qualitycheck < Select:
@@ -367,19 +347,23 @@ def Autofit_Kirkland(Iq, qkran_start, qkran_end, qkran_step, pixran_start, pixra
             Candidates = Results[:Select].sort_values(['Max pix', 'qk', 'N'],
                                                       ascending=[False, False, False]).to_numpy()
 
-    else:  # For bad samples which didn't pass the S.C 1
-        Pre_Results2 = Pre_Results[Pre_Results['judge1'] < Pre_Results['judge2']]
-        qualitycheck2 = len(Pre_Results2)
-        if qualitycheck2 < Select:
-            Candidates = Pre_Results2[:qualitycheck2].sort_values(['Max pix', 'qk', 'N'],
-                                                                  ascending=[False, False, False]).to_numpy()
-        if qualitycheck2 >= Select:
-            Candidates = Pre_Results2[:Select].sort_values(['Max pix', 'qk', 'N'],
-                                                           ascending=[False, False, False]).to_numpy()
-        if len(Pre_Results2) == 0:
-            Candidates = Pre_Results[:Select].sort_values(['Max pix', 'qk', 'N'],
-                                                          ascending=[False, False, False]).to_numpy()
-        del (Results, Pre_Results, Pre_Results2)
+    if qualitycheck == 0:  # For good samples which passed S.C 1
+        Candidates = Results[:Select].sort_values(['Max pix', 'qk', 'N'], ascending=[False, False, False]).to_numpy()
+
+    # else:                                                     # For bad samples which didn't pass the S.C 1
+    #     Pre_Results2 = Pre_Results[Pre_Results['judge1']<Pre_Results['judge2']]
+    #     qualitycheck2 = len(Pre_Results2)
+    #     if qualitycheck2 < Select:
+    #         Candidates = Pre_Results2[:qualitycheck2].sort_values(['Max pix','qk','N'], ascending=[False,False,False]).to_numpy()
+    #     if qualitycheck2 >= Select:
+    #         Candidates = Pre_Results2[:Select].sort_values(['Max pix','qk','N'], ascending=[False,False,False]).to_numpy()
+    #     if len(Pre_Results2) == 0:
+    #         Candidates = Pre_Results[:Select].sort_values(['Max pix','qk','N'], ascending=[False,False,False]).to_numpy()
+    del (Results)
+    tic = time.time()
+    elapsed = str(tic - toc) + ' s'
+    print('Autofit finished')
+    print('Elapsed time:', elapsed)
 
     return Candidates, qualitycheck, total_n  # Candidate: top 10 results in numpy array / qualitycheck: How many that passed the filters
 
