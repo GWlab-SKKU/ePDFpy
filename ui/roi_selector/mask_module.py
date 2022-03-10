@@ -10,52 +10,48 @@ import os
 import file
 from pathlib import Path
 from PyQt5.QtCore import QItemSelectionModel
+import json
+import definitions
 
+class MaskModule():
+    def __init__(self, img = None, imageView = None):
+        self.img = img
+        self.imageView = imageView
+        self.mask_dict = {}
 
-# w2 = w.addLayout(row=0, col=1)
-# label2 = w2.addLabel(text, row=0, col=0)
-# v2a = w2.addViewBox(row=1, col=0, lockAspect=True)
-# r2a = pg.PolyLineROI([[0,0], [10,10], [10,30], [30,10]], closed=True)
-# v2a.addItem(r2a)
+        self.roi_creator = RoiCreater(self)
+        self.dropdown = DropDown(self)
+        self.list_widget = ListWidget(self)
 
-# def init_ui():
-#     # widget = QtWidgets.QWidget()
-#     # layout = QtWidgets.QHBoxLayout()
-#     # layout.addWidget(QtWidgets.QPushButton(""))
-#
-#     # pg.ImageView()
-#     # layout.addWidget(gwidget)
-#     # w1 = gwidget.addLayout(row=0, col=0)
-#     #
-#     # v2a = w1.addViewBox(row=1, col=0, lockAspect=True)
-#     # r2a = pg.PolyLineROI([[0,0], [10,10], [10,30], [30,10]], closed=True)
-#     # v2a.addItem(r2a)
-#     window = QtWidgets.QWidget()
-#     layout = QtWidgets.QVBoxLayout()
-#     layout.addWidget(QtWidgets.QPushButton('Top'))
-#     layout.addWidget(QtWidgets.QPushButton('Bottom'))
-#     window.setLayout(layout)
-#     window.show()
-#
-#     # widget.setLayout(layout)
-#     # widget.show()
-#
-#
+        self._mask_reload()
+
+    def update_img(self, img):
+        self.img = img
+        self.dropdown.img = img
+        self.list_widget.img = img
+        self.roi_creator.img = img
+
+    def get_current_mask(self):
+        x_y = self.mask_dict[self.dropdown.currentText()]['data']
+        return
+
+    def _load_mask(self):
+         self.image = json.load(definitions.MASK_PATH)
+
+    def _mask_reload(self):
+        self.mask_dict
+        self.dropdown.mask_reload()
+        # self.list_widget.mask_reload()
+
 
 class RoiCreater(QtWidgets.QWidget):
-    def __init__(self, image, save_mask_folder=None, mask=None, func_after_mask_selected=None):
+    def __init__(self, module:MaskModule):
         QtWidgets.QWidget.__init__(self)
-        self.func_after_mask_selected = func_after_mask_selected
+        self.module = module
         # self.setWindowFlags(self.windowFlags() | Qt.Qt.Window)
-
-        if isinstance(image, pg.ImageView):
-            self.image = image.image
-        else:
-            self.image = image
 
         layout = QtWidgets.QVBoxLayout()
         self.imageView = pg.ImageView()
-        self.save_mask_folder = save_mask_folder
         layout_bottom = QtWidgets.QHBoxLayout()
         self.lbl_name = QtWidgets.QLabel("Name:")
         self.lbl_name.setMaximumWidth(100)
@@ -91,7 +87,6 @@ class RoiCreater(QtWidgets.QWidget):
         # self.setBaseSize(800,800)
         self.setMinimumSize(800,700)
 
-
         self.update_image()
         self.draw_roi()
 
@@ -99,10 +94,20 @@ class RoiCreater(QtWidgets.QWidget):
 
         self.setWindowTitle("Masking")
 
+    def start(self, new:bool):
+        print("start Hello")
+        self.show()
+        pnts = None
+        if not new:
+            current_text = self.module.list_widget.QList.currentItem().text()
+            pnts = self.module.mask_dict[current_text]['data']
+        self.draw_roi(pnts)
 
     def update_image(self, img=None):
         if img is None:
-            img = self.image
+            img = self.module.img
+        if not img:
+            return
         if self.radio_raw.isChecked():
             self.imageView.setImage(img)
         if self.radio_root.isChecked():
@@ -110,10 +115,18 @@ class RoiCreater(QtWidgets.QWidget):
         if self.radio_log.isChecked():
             self.imageView.setImage(np.log((np.abs(img)+1)))
 
-    def draw_roi(self):
-        self.poly_line_roi = pg.PolyLineROI([[0,0], [10,10], [10,30], [30,10]], closed=True)
+    def draw_roi(self, pnts=None):
+        if not self.module.img:
+            return
+        if not pnts:
+            w = self.module.img.shape[0]
+            h = self.module.img.shape[1]
+            pnts = [[int(w / 2) - int(w / 10), int(h / 2) - int(h / 10)],
+                    [int(w / 2) - int(w / 10), int(h / 2) + int(h / 10)],
+                    [int(w / 2) + int(w / 10), int(h / 2) - int(h / 10)],
+                    [int(w / 2) + int(w / 10), int(h / 2) + int(h / 10)]]
+        self.poly_line_roi = pg.PolyLineROI(pnts, closed=True)
         self.imageView.addItem(self.poly_line_roi)
-        pass
 
     def binding(self):
         self.btn_ok.clicked.connect(self.btn_ok_clicked)
@@ -151,8 +164,9 @@ class RoiCreater(QtWidgets.QWidget):
         self.close()
         return
 
-class MaskDropdown(QtWidgets.QComboBox):
-    def __init__(self, image, mask_folder, func_after_mask_selected=None):
+
+class DropDown(QtWidgets.QComboBox):
+    def __init__(self, module:MaskModule):
         """
         Args:
             image: 2d numpy array or pyqtgraph.ImageViewer
@@ -160,64 +174,27 @@ class MaskDropdown(QtWidgets.QComboBox):
             after_mask_selected: function that will be excu
         """
         QtWidgets.QComboBox.__init__(self)
-        self.image = image
-        self.mask_folder = mask_folder
-        self.func_after_mask_selected = func_after_mask_selected
-        self.func_after_mask_selected = self.mask_load
-
-        self.mask_dict = None
-        self.mask_widget = None
-
-        self.mask_load()
+        self.module = module
+        self.img = module.img
         self.currentIndexChanged.connect(self.dropdown_event)
-
-    def mask_load(self):
-        self.mask_dict = self.mask_data_load()
-        self.mask_reload()
-
-    def mask_data_load(self):
-        fps = file.get_file_list_from_path(self.mask_folder, ".csv")
-        rs = {}
-        for fp in fps:
-            name = os.path.splitext(os.path.split(fp)[1])[0]
-            dic = {
-                "fp": fp,
-                "data": None
-            }
-            rs.update({name:dic})
-        return rs
 
     def mask_reload(self):
         self.clear()
         self.addItem("None")
-        self.addItems(self.mask_dict.keys())
+        self.addItems(self.module.mask_dict.keys())
         self.addItem("[Edit]")
 
-    def get_current_mask(self):
-        if not self.mask_dict:
-            return
-        if self.currentIndex() in [0, len(self.mask_dict)+1, len(self.mask_dict)+2]:
-            return
-        if self.mask_dict[self.currentText()]['data'] is None:
-            self.mask_dict[self.currentText()]['data'] = np.loadtxt(self.mask_dict[self.currentText()]['fp'],delimiter=',').astype(np.uint8)
-        return self.mask_dict[self.currentText()]['data']
-
-
     def dropdown_event(self, idx):
-        if idx == len(self.mask_dict)+1:
+        if idx == len(self.module.mask_dict) + 1:
             # edit
-            self.listWidget = ListWidget(self.mask_dict, self.image)
-            self.listWidget.show()
-            self.listWidget.update()
-
+            self.module.list_widget.show()
 
 class ListWidget(QtWidgets.QWidget):
-    def __init__(self, mask_dict, image):
+    def __init__(self, module:MaskModule):
         super().__init__()
-        self.mask_dict = mask_dict
-        self.image = image
+        self.module = module
         self.QList = QtWidgets.QListWidget()
-        self.items = list(self.mask_dict.keys())
+        self.items = list(self.module.mask_dict.keys())
         self.QList.addItems(self.items)
         # self.QList.itemDoubleClicked.connect()
         self.layout = QtWidgets.QGridLayout()
@@ -232,6 +209,8 @@ class ListWidget(QtWidgets.QWidget):
         self.btn_move_up.clicked.connect(self.btn_move_up_clicked)
         self.btn_move_down.clicked.connect(self.btn_move_down_clicked)
         self.btn_del.clicked.connect(self.btn_del_clicked)
+        self.btn_edit.clicked.connect(self.btn_edit_clicked)
+        self.btn_new.clicked.connect(self.btn_new_clicked)
 
         self.layout.addWidget(self.QList, 0, 0, 5, 2)
         self.layout.addWidget(self.btn_move_up, 0, 2)
@@ -239,7 +218,6 @@ class ListWidget(QtWidgets.QWidget):
         self.layout.addWidget(self.btn_del, 2, 2)
         self.layout.addWidget(self.btn_edit, 3, 2)
         self.layout.addWidget(self.btn_new, 4, 2)
-
 
     def btn_move_up_clicked(self):
         indexes = self.QList.selectedIndexes()
@@ -251,8 +229,8 @@ class ListWidget(QtWidgets.QWidget):
                     for idx in indexes:
                         if idx != None:
                             row = idx.row()
-                            self.items.insert(row-1,self.items[row])
-                            self.items.pop(row+1)
+                            self.items.insert(row - 1, self.items[row])
+                            self.items.pop(row + 1)
                             self.QList.clear()
                             self.QList.addItems(self.items)
             except Exception as e:
@@ -271,7 +249,7 @@ class ListWidget(QtWidgets.QWidget):
                     for idx in indexes:
                         if idx != None:
                             row = idx.row()
-                            self.items.insert(row + 2,self.items[row])
+                            self.items.insert(row + 2, self.items[row])
                             self.items.pop(row)
                             self.QList.clear()
                             self.QList.addItems(self.items)
@@ -281,24 +259,27 @@ class ListWidget(QtWidgets.QWidget):
             print('Select at least one item from list!')
         pass
 
-    def mask_data(self):
-
-        pass
 
     def btn_new_clicked(self):
-        maskWidget = RoiCreater(image=self.image, save_mask_folder=self.save_mask_folder, func_after_mask_selected=self.func_after_mask_selected)
-        maskWidget.show()
-        # self.hide()
-        pass
+        self.module.roi_creator.start(new=True)
+
+    def btn_edit_clicked(self):
+        self.module.roi_creator.start(False)
 
     def btn_del_clicked(self):
-        reply = QtWidgets.QMessageBox.question(None,"Delete","Are you sure to delete {}?".format(self.QList.currentItem().text()),QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+        indexes = self.QList.selectedIndexes()
+        if len(indexes) <= 0:
+            print('Select at least one item from list!')
+            QtWidgets.QMessageBox.about(self, "", "Select at least one item from list!")
+            return
+        reply = QtWidgets.QMessageBox.question(None, "Delete", "Are you sure to delete {}?".format(
+            self.QList.currentItem().text()), QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
         if reply == QtWidgets.QMessageBox.Yes:
-
-            indexes = self.QList.selectedIndexes()
             print(indexes)
             for idx in indexes[::-1]:
                 self.items.pop(idx)
-
             self.QList.clear()
             self.QList.addItems(self.items)
+
+
+

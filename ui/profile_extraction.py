@@ -171,7 +171,7 @@ class ProfileExtraction(QtWidgets.QWidget):
         i2 = self.control_panel.settingPanel.spinBox_irange2.value()
         intensity_range = (i1, i2)
         slice_count = int(self.control_panel.settingPanel.spinBox_slice_count.value())
-        self.dc.calculate_center(intensity_range, slice_count)
+        self.dc.calculate_center()
         self.update_center_spinBox()
         # you must use self.draw_center() after find_center
         return self.dc.center

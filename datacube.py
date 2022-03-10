@@ -61,6 +61,7 @@ class DataCube:
         self.electron_voltage = None
 
         self.original_data = None
+        self.mask = None
 
         self.load_file_path = file_path
         self.preset_file_path = None
@@ -118,10 +119,10 @@ class DataCube:
     def release(self):
         self.raw_img, self.img = None, None
 
-    def calculate_center(self, intensity_range, step_size):
+    def calculate_center(self):
         if self.img is None:
             return
-        self.center = list(image_process.calculate_center_gradient(self.img))
+        self.center = list(image_process.calculate_center_gradient(self.img, self.mask))
         return self.center
 
     def calculate_azimuthal_average(self, intensity_range=None, step_size=None):

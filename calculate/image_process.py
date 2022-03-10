@@ -13,9 +13,8 @@ try:
 except ImportError:
     use_cupy = False
 
-mask = np.loadtxt(definitions.MASK_PATH,delimiter=',').astype(np.uint8)
+# mask = np.loadtxt(definitions.MASK_PATH,delimiter=',').astype(np.uint8)
 colorcube = (np.loadtxt(definitions.COLORCUBE, delimiter=",", dtype=np.float32) * 255).astype('int')
-
 
 def draw_center_line(img, center):
     c_x, c_y = center
@@ -26,13 +25,12 @@ def draw_center_line(img, center):
     cv2.line(rs, (0, c_y), (rs.shape[1], c_y), 255, 5)
     return rs
 
-
 ###################### calculate center #####################
-def calculate_center(img):
-    center, cost = calculate_center_with_cost(img)
+def calculate_center(img, mask=None):
+    center, cost = calculate_center_with_cost(img, mask)
     return center
 
-def calculate_center_with_cost(img):
+def calculate_center_with_cost(img, mask):
     image = img.copy()
 
     # blur
@@ -50,7 +48,7 @@ def calculate_center_with_cost(img):
     print("minimum_d is",minimum_d)
 
     # evaluate center
-    cost_array = _evaluate_center_local_area(image, initial_center, search_length, minimum_d)
+    cost_array = _evaluate_center_local_area(image, initial_center, search_length, minimum_d, mask)
 
     # recover center index
     min_index = np.unravel_index(cost_array.argmin(), cost_array.shape)
@@ -60,8 +58,7 @@ def calculate_center_with_cost(img):
 
     return center, cost_array
 
-
-def _evaluate_center_local_area(img, initial_center, search_length, maximum_d):
+def _evaluate_center_local_area(img, initial_center, search_length, maximum_d, mask=None):
     """
     :param img: numpy array
     :param initial_center: coordinate tuple
@@ -74,24 +71,27 @@ def _evaluate_center_local_area(img, initial_center, search_length, maximum_d):
         for y in range(-search_length, search_length):
             center_xy = (initial_center[0] + x, initial_center[1] + y)
             cost_img[x + search_length, y + search_length] \
-                = _evaluate_center(img, center_xy, maximum_d)
+                = _evaluate_center(img, center_xy, maximum_d, mask)
     return cost_img
 
-
-def _evaluate_center(img, center, max_d=None):
+def _evaluate_center(img, center, max_d=None, mask=None):
     dr = 1
     dphi = np.radians(2)
 
-    polar_img = polar_transform.cartesian_to_polarelliptical_transform(img,[center[1],center[0],1,1,0], dr=dr, dphi=dphi, mask=~mask)
-    # polar_img = cartesian_to_polarelliptical_transform(img,[center[1],center[0],1,1,0],dphi=np.radians(0.5), mask = ~mask)
-    norm_std_graph = np.std(polar_img[0],axis=0)/np.average(polar_img[0],axis=0)
+    if mask:
+        polar_img = polar_transform.cartesian_to_polarelliptical_transform(img, [center[1], center[0], 1, 1, 0], dr=dr,
+                                                                           dphi=dphi, mask=~mask)
+    else:
+        polar_img = polar_transform.cartesian_to_polarelliptical_transform(img, [center[1], center[0], 1, 1, 0], dr=dr,
+                                                                           dphi=dphi)
+    norm_std_graph = np.std(polar_img[0], axis=0)/np.average(polar_img[0], axis=0)
     if max_d is not None:
         return np.sum(norm_std_graph[:max_d])
     else:
         return np.sum(norm_std_graph)
 
 
-def calculate_center_gradient(img):
+def calculate_center_gradient(img, mask=None):
     cost_img = np.empty(img.shape)
     cost_img[:] = np.NaN
 
@@ -113,7 +113,7 @@ def calculate_center_gradient(img):
             for y in range(cursor[1] - search_rect_width // 2, cursor[1] + search_rect_width // 2 + 1):
                 if not np.isnan(cost_img[x, y]):
                     continue
-                cost_img[x, y] = _evaluate_center(img, (x, y), minimum_d)
+                cost_img[x, y] = _evaluate_center(img, (x, y), minimum_d, mask)
         #         print("xy loop:",x,y,cost_img[x, y])
         # print(cnt)
         if cost_img[cursor[0],cursor[1]] != np.nanmin(cost_img):
@@ -123,7 +123,7 @@ def calculate_center_gradient(img):
             print("calculated center is",cursor)
             return cursor
     print(f"Failed to find center in {cnt}px")
-    return calculate_center(img)
+    return calculate_center(img, mask)
 
 
 def _calculate_initial_center(img):
@@ -282,7 +282,7 @@ def calculate_azimuthal_average_with_std(raw_image, center):
     return radial_mean, normalized_std
 
 
-def calculate_azimuthal_average(raw_image, center):
+def calculate_azimuthal_average(raw_image, center, mask=None):
     raw_min = raw_image.min()
     raw_image_abs = raw_image.copy()
     if raw_min < 0:
@@ -292,7 +292,10 @@ def calculate_azimuthal_average(raw_image, center):
     mesh_x = mesh[0] - center[0]
     mesh_y = mesh[1] - center[1]
     rr = np.power(np.square(mesh_x) + np.square(mesh_y), 0.5)
-    rr = cv2.bitwise_and(rr, rr, mask=np.bitwise_not(mask))
+    if mask:
+        rr = cv2.bitwise_and(rr, rr, mask=np.bitwise_not(mask))
+    else:
+        rr = cv2.bitwise_and(rr, rr)
     rr = np.rint(rr).astype('uint16')
     n_rr = np.uint16(rr.max())
 
@@ -485,35 +488,3 @@ def _calculate_azimuthal_average_cuda_deprecated(raw_image, center):
     azvar = np.nan_to_num(azvar.get(), 0)
 
     return azav, azvar
-
-
-def polar_transformation():
-    pass
-
-
-
-# if __name__ == '__main__':
-#
-#     import mrcfile
-#     from pathlib import Path
-#     import numpy as np
-#     import image_process
-#     import cv2
-#
-#     mrc_search_path = '/mnt/experiment/TEM diffraction/'
-#     mrc_file_paths = [str(i) for i in Path(mrc_search_path).rglob("*.mrc")]
-#     random_mrc_files = np.random.choice(mrc_file_paths, 10)
-#
-#     # %%
-#
-#     mrc_img = mrcfile.open(random_mrc_files[0])
-#     raw_img = mrc_img.data
-#     img = np.array(raw_img)
-#     center = image_process.calculate_center(img, (120, 130), 10)
-#
-#     # %%
-#     center2 = image_process.calculate_center_gradient(img, (120, 130), 10)
-#     print("result:",center2)
-
-if __name__ == '__main__':
-    print(mask)
