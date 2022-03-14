@@ -679,12 +679,17 @@ class ControlPanel(QtWidgets.QWidget):
     def __init__(self, mainWindow: QtWidgets.QMainWindow):
         QtWidgets.QWidget.__init__(self)
         self.layout = QtWidgets.QHBoxLayout()
-        self.fitting_elements = self.FittingElements(mainWindow)
-        self.fitting_factors = self.FittingFactors()
-        self.save_load = self.SaveLoadPanel("Save and Load",mainWindow)
 
-        self.layout.addWidget(self.save_load)
-        self.layout.addWidget(self.fitting_elements)
+        self.temp_layout = QtWidgets.QVBoxLayout()
+        self.save_load = self.SaveLoadPanel("Save and Load", mainWindow)
+        self.fitting_elements = self.FittingElements(mainWindow)
+        self.temp_layout.addWidget(self.save_load)
+        self.temp_layout.addWidget(self.fitting_elements)
+
+        self.fitting_factors = self.FittingFactors()
+
+
+        self.layout.addLayout(self.temp_layout)
         self.layout.addWidget(self.fitting_factors)
 
         # self.resize(600,1000)
@@ -735,7 +740,7 @@ class ControlPanel(QtWidgets.QWidget):
             layout.setSpacing(0)
             # layout.setContentsMargins(10, 0, 5, 5)
             menubar = self.create_menu(mainWindow)
-            layout.addWidget(menubar,alignment=QtCore.Qt.AlignCenter)
+            layout.addWidget(menubar, alignment=QtCore.Qt.AlignCenter)
 
             self.element_group_widgets = [ControlPanel.element_group("Element" + str(num)) for num in range(1, 6)]
             for element_group_widgets in self.element_group_widgets:

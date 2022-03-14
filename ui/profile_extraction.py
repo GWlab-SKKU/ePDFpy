@@ -261,14 +261,16 @@ class ControlPanel(QtWidgets.QWidget):
     def __init__(self, mainWindow):
         QtWidgets.QWidget.__init__(self)
         # self.openFilePanel = self.OpenFilePanel("OpenFile", mainWindow)
+        self.temp_layout = QtWidgets.QVBoxLayout()
         self.settingPanel = self.SettingPanel("Center finding setting")
         self.operationPanel = self.OperationPanel("Operation")
         self.saveLoadPanel = self.SaveLoadPanel("Save and Load",mainWindow)
+        self.temp_layout.addWidget(self.saveLoadPanel)
+        self.temp_layout.addWidget(self.settingPanel)
 
         layout = QtWidgets.QHBoxLayout()
         # layout.addWidget(self.openFilePanel)
-        layout.addWidget(self.saveLoadPanel)
-        layout.addWidget(self.settingPanel)
+        layout.addLayout(self.temp_layout)
         layout.addWidget(self.operationPanel)
         self.setLayout(layout)
 
