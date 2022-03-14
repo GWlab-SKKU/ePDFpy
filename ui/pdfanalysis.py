@@ -181,7 +181,6 @@ class PdfAnalysis(QtWidgets.QWidget):
 
         self.setLayout(self.layout)
 
-
     def load_default_setting(self):
         if util.default_setting.calibration_factor is not None and self.datacube.ds is None:
             # self.controlPanel.fitting_elements.spinbox_ds.setValue(util.default_setting.calibration_factor)
@@ -389,10 +388,23 @@ class PdfAnalysis(QtWidgets.QWidget):
 
         self.controlPanel.fitting_elements.btn_apply_all.clicked.connect(self.btn_clicked_apply_to_all)
 
-        # self.controlPanel.save_load.open_azavg_file.triggered.connect(self.Dataviewer)
-        # self.controlPanel.save_load.open_azavg_stack.triggered.connect()
-        # self.controlPanel.save_load.open_prameter_file.triggered.connect()
-        # self.controlPanel.save_load.open_prameter_stack.triggered.connect()
+        self.controlPanel.save_load.open_azavg_file.triggered.connect(self.Dataviewer.menu_open_azavg_only)
+        self.controlPanel.save_load.open_azavg_stack_csv.triggered.connect(
+            lambda: self.Dataviewer.menu_open_azavg_stack("csv"))
+        self.controlPanel.save_load.open_azavg_stack_txt.triggered.connect(
+            lambda: self.Dataviewer.menu_open_azavg_stack("txt"))
+        self.controlPanel.save_load.open_azavg_stack_azavg_csv.triggered.connect(
+            lambda: self.Dataviewer.menu_open_azavg_stack("azavg.csv"))
+        self.controlPanel.save_load.open_azavg_stack_azavg_txt.triggered.connect(
+            lambda: self.Dataviewer.menu_open_azavg_stack("azavg.txt"))
+        self.controlPanel.save_load.open_prameter_file.triggered.connect(
+            self.Dataviewer.menu_load_preset)
+        self.controlPanel.save_load.open_prameter_stack.triggered.connect(
+            self.Dataviewer.menu_open_preset_stack)
+        self.controlPanel.save_load.save_current_parameter.triggered.connect(
+            self.Dataviewer.menu_save_preset)
+        self.controlPanel.save_load.save_parameter_stack.triggered.connect(
+            self.Dataviewer.menu_save_presets)
 
     def btn_clicked_apply_to_all(self):
         reply = QMessageBox.question(self,'Message',
@@ -449,7 +461,6 @@ class PdfAnalysis(QtWidgets.QWidget):
         idx_Max_q = pdf_calculator.pixel_to_q(idx_Max_pix, self.datacube.ds)
         self.graph_Iq_panel.setting.spinBox_range_right.setValue(idx_Max_q)
         self.manualfit()
-        pass
 
     def dialog_to_range(self):
         left = self.controlPanel.fitting_factors.spinbox_q_range_left.value()

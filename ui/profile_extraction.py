@@ -263,7 +263,7 @@ class ControlPanel(QtWidgets.QWidget):
         # self.openFilePanel = self.OpenFilePanel("OpenFile", mainWindow)
         self.settingPanel = self.SettingPanel("Center finding setting")
         self.operationPanel = self.OperationPanel("Operation")
-        self.saveLoadPanel = self.SaveLoadPanel("Save Load",mainWindow)
+        self.saveLoadPanel = self.SaveLoadPanel("Save and Load",mainWindow)
 
         layout = QtWidgets.QHBoxLayout()
         # layout.addWidget(self.openFilePanel)

@@ -365,24 +365,21 @@ class DataViewer(QtWidgets.QMainWindow):
         self.load_dc(0)
 
     def menu_save_preset(self):
-        file.save_preset_default(self.dcs[self.current_page], self)
+        fpth = QtWidgets.QFileDialog.getExistingDirectory(self,"")
+        file.save_preset_stack([self.dcs[self.current_page]], self, fpth, stack=False)
 
     def menu_save_presets(self):
+        fpth = QtWidgets.QFileDialog.getExistingDirectory(self, "")
         for i in range(len(self.dcs)):
             self.load_dc(i)
-            self.menu_save_preset()
+            file.save_preset_stack([self.dcs[self.current_page]], self, fpth, stack=True)
 
     def menu_save_azavg_only(self):
         if self.dcs[self.current_page].azavg is not None:
             file.save_azavg_only(self.dcs[self.current_page].azavg)
 
     def menu_save_azavg_stack(self):
-        print("Check!!!!")
         file.save_azavg_stack(self.dcs)
-
-
-
-
 
     def btn_page_left_clicked(self):
         if hasattr(self, "current_page") and not self.current_page == 0:

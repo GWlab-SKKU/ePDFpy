@@ -111,8 +111,99 @@ def make_analyse_folder(datacube):
 
     return final_analysis_folder
 
+def save_preset_stack(datacubes, main_window, fpth=None, stack=True):
+    imgPanel = main_window.profile_extraction.img_panel
+    if fpth is None:
+        fpth = QFileDialog.getExistingDirectory(None, "")
 
-def save_preset_default(datacube, main_window):
+    for datacube in datacubes:
+        load_folder_path, load_file_name = os.path.split(datacube.load_file_path)
+        file_short_name, load_file_ext = os.path.splitext(load_file_name)
+        if '.azavg' in file_short_name:
+            file_short_name = file_short_name.replace('.azavg','')
+        if stack:
+            analysis_folder_path = os.path.join(fpth, file_short_name)
+        else:
+            analysis_folder_path = fpth
+        os.makedirs(analysis_folder_path, exist_ok=True)
+        preset_path = os.path.join(analysis_folder_path, file_short_name + preset_ext)
+        azavg_path = os.path.join(analysis_folder_path, file_short_name + azavg_ext)
+        normstd_path = os.path.join(analysis_folder_path, file_short_name + normstd_ext)
+        data_q_path = os.path.join(analysis_folder_path, file_short_name + data_q_ext)
+        data_r_path = os.path.join(analysis_folder_path, file_short_name + data_r_ext)
+        img_path = os.path.join(analysis_folder_path, file_short_name + image_ext)
+        rdf_screen_path = os.path.join(analysis_folder_path, file_short_name + rdf_screen_ext)
+        datacube.preset_file_path = preset_path
+
+        # save azavg
+        if datacube.azavg is not None:
+            np.savetxt(azavg_path, datacube.azavg)
+        # save normalized std
+        if datacube.azvar is not None:
+            np.savetxt(normstd_path, datacube.azvar)
+        # save q data
+        if datacube.q is not None:
+            lst = ['q', 'Iq', 'Autofit', 'phiq', 'phiq_damp']
+            df = pd.DataFrame({name: getattr(datacube, name) for name in lst if getattr(datacube, name) is not None})
+            df.to_csv(data_q_path, index=None)
+        # save r data
+        if datacube.r is not None:
+            lst = ['r', 'Gr']
+            df = pd.DataFrame({name: getattr(datacube, name) for name in lst if getattr(datacube, name) is not None})
+            df.to_csv(data_r_path, index=None)
+        # save img data
+        if imgPanel is not None and datacube.img is not None:
+            imgPanel.imageView.export(img_path)
+        # save screenshot
+        if datacube.Gr is not None:
+            main_window.PDF_analyser.grab().save(rdf_screen_path)
+
+        ################ save preset #################
+        presets = vars(copy.copy(datacube))
+
+        # convert to relative path
+        try:
+            # deprecated: mrc_file_path
+            if presets['img_file_path'] is not None:
+                presets['img_file_path'] = os.path.relpath(datacube.img_file_path, os.path.split(preset_path)[0])
+                presets['img_file_path'] = presets['img_file_path'].replace('\\',
+                                                                            '/')  # compatibility between windows and linux
+        except:
+            if presets['mrc_file_path'] is not None:
+                presets['mrc_file_path'] = os.path.relpath(datacube.img_file_path, os.path.split(preset_path)[0])
+                presets['mrc_file_path'] = presets['mrc_file_path'].replace('\\',
+                                                                            '/')  # compatibility between windows and linux
+
+        # remove data that not support to save as json
+        for key, value in dict(presets).items():
+            if type(value) not in [int, str, float, list, np.float64, np.float32, np.int64, np.int32, np.uint]:
+                del presets[key]
+
+        # Don't save in preset file
+        remove_list = ['load_file_path', 'preset_file_path']
+        for remove_item in remove_list:
+            if remove_item in dict(presets).keys():
+                del presets[remove_item]
+
+        # type exception handling
+        for key, value in presets.items():
+            if type(value) in [np.int64, np.int32, np.uint]:
+                presets[key] = int(value)
+            if type(value) in [np.float64, np.float32]:
+                presets[key] = float(value)
+
+        if presets['center'][0] is not None:
+            presets['center'] = [int(presets['center'][0]), int(presets['center'][1])]
+
+        print("save data:", presets)
+        print(preset_path)
+        json.dump(presets, open(preset_path, 'w'), indent=2)
+        return True
+
+def save_preset_file(datacube, main_window, fpth=None):
+    pass
+
+def save_preset_default(datacube, main_window, fpth=None):
     imgPanel = main_window.profile_extraction.img_panel
     # Types of datacube source : azavg, mrc, None, preset&azavg, preset&mrc, preset&None
 
@@ -146,7 +237,8 @@ def save_preset_default(datacube, main_window):
                 os.rename(current_folder_path, new_folder_path)
             analysis_folder_path = new_folder_path
 
-
+    if fpth is not None:
+        analysis_folder_path = fpth
     os.makedirs(analysis_folder_path, exist_ok=True)
 
     preset_path = os.path.join(analysis_folder_path, file_short_name + preset_ext)
