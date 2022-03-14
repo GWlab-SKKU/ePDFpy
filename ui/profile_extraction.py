@@ -32,7 +32,7 @@ class ProfileExtraction(QtWidgets.QWidget):
         ##
 
     def init_ui(self):
-        self.control_panel = ControlPanel()
+        self.control_panel = ControlPanel(self.Dataviewer)
         self.img_panel = ImgPanel()
         self.profile_graph_panel = IntensityProfilePanel()
         self.polar_image_panel = PolarImagePanel()
@@ -100,6 +100,19 @@ class ProfileExtraction(QtWidgets.QWidget):
         self.control_panel.settingPanel.chkBox_show_centerLine.stateChanged.connect(self.update_img)
         self.control_panel.settingPanel.chkBox_show_beam_stopper_mask.stateChanged.connect(self.update_img)
 
+        self.control_panel.saveLoadPanel.open_img_file.triggered.connect(self.Dataviewer.menu_open_image_file)
+        self.control_panel.saveLoadPanel.open_img_stack_mrc.triggered.connect(lambda: self.Dataviewer.menu_open_image_stack('.mrc'))
+        self.control_panel.saveLoadPanel.open_img_stack_csv.triggered.connect(lambda: self.Dataviewer.menu_open_image_stack('.csv'))
+        self.control_panel.saveLoadPanel.open_img_stack_tiff.triggered.connect(lambda: self.Dataviewer.menu_open_image_stack('.tiff'))
+        self.control_panel.saveLoadPanel.open_img_stack_png.triggered.connect(lambda: self.Dataviewer.menu_open_image_stack('.png'))
+        self.control_panel.saveLoadPanel.open_img_stack_txt.triggered.connect(lambda: self.Dataviewer.menu_open_image_stack('.txt'))
+        self.control_panel.saveLoadPanel.open_img_stack_custom.triggered.connect(lambda: self.Dataviewer.menu_open_image_stack('.custom'))
+        self.control_panel.saveLoadPanel.open_img_stack_jpg.triggered.connect(lambda: self.Dataviewer.menu_open_image_stack('.jpg'))
+        self.control_panel.saveLoadPanel.open_img_stack_jpeg.triggered.connect(lambda: self.Dataviewer.menu_open_image_stack('.jpeg'))
+
+        self.control_panel.saveLoadPanel.save_current_azavg.triggered.connect(self.Dataviewer.menu_save_azavg_only)
+        self.control_panel.saveLoadPanel.save_azavg_stack.triggered.connect(self.Dataviewer.menu_save_azavg_stack)
+
     def spinbox_changed_event(self):
         x = self.control_panel.settingPanel.spinBox_center_x.value()
         y = self.control_panel.settingPanel.spinBox_center_y.value()
@@ -144,7 +157,6 @@ class ProfileExtraction(QtWidgets.QWidget):
     def update_azavg_graph(self):
         if self.dc.azavg is None:
             return
-
         self.profile_graph_panel.update_graph(self.dc.azavg)
 
     def update_polar_img(self):
@@ -246,18 +258,56 @@ class ControlPanel(QtWidgets.QWidget):
     # text_fixed_height = 25
     # text_fixed_width = 70
 
-    def __init__(self):
+    def __init__(self, mainWindow):
         QtWidgets.QWidget.__init__(self)
         # self.openFilePanel = self.OpenFilePanel("OpenFile", mainWindow)
         self.settingPanel = self.SettingPanel("Center finding setting")
         self.operationPanel = self.OperationPanel("Operation")
+        self.saveLoadPanel = self.SaveLoadPanel("Save Load",mainWindow)
 
         layout = QtWidgets.QHBoxLayout()
         # layout.addWidget(self.openFilePanel)
+        layout.addWidget(self.saveLoadPanel)
         layout.addWidget(self.settingPanel)
         layout.addWidget(self.operationPanel)
         self.setLayout(layout)
 
+    class SaveLoadPanel(QtWidgets.QGroupBox):
+        def __init__(self, arg, mainWindow:QtWidgets.QMainWindow):
+            QtWidgets.QGroupBox.__init__(self, arg)
+            menubar = mainWindow.menuBar()
+            menubar.setNativeMenuBar(False)
+            open_menu = menubar.addMenu("&Open")
+            save_menu = menubar.addMenu("&Save")
+
+            self.open_img_file = QtWidgets.QAction("Open &image file", self)
+            open_menu.addAction(self.open_img_file)
+            self.open_img_stack = open_menu.addMenu("Open image stack")
+            self.open_img_stack_mrc = QtWidgets.QAction("mrc file stack", self)
+            self.open_img_stack_txt = QtWidgets.QAction("txt file stack", self)
+            self.open_img_stack_csv = QtWidgets.QAction("csv file stack", self)
+            self.open_img_stack_tiff = QtWidgets.QAction("tiff file stack", self)
+            self.open_img_stack_jpg = QtWidgets.QAction("jpg file stack", self)
+            self.open_img_stack_jpeg = QtWidgets.QAction("jpeg file stack", self)
+            self.open_img_stack_png = QtWidgets.QAction("png file stack", self)
+            self.open_img_stack_custom = QtWidgets.QAction("Custom ...", self)
+            self.open_img_stack.addAction(self.open_img_stack_mrc)
+            self.open_img_stack.addAction(self.open_img_stack_txt)
+            self.open_img_stack.addAction(self.open_img_stack_csv)
+            self.open_img_stack.addAction(self.open_img_stack_tiff)
+            self.open_img_stack.addAction(self.open_img_stack_jpg)
+            self.open_img_stack.addAction(self.open_img_stack_jpeg)
+            self.open_img_stack.addAction(self.open_img_stack_png)
+            self.open_img_stack.addAction(self.open_img_stack_custom)
+
+            self.save_current_azavg = QtWidgets.QAction("Save current azavg file", self)
+            self.save_azavg_stack = QtWidgets.QAction("Save azavg stack", self)
+            save_menu.addAction(self.save_current_azavg)
+            save_menu.addAction(self.save_azavg_stack)
+
+            self.layout = QtWidgets.QHBoxLayout()
+            self.setLayout(self.layout)
+            self.layout.addWidget(menubar)
 
     class SettingPanel(QtWidgets.QGroupBox):
         def __init__(self, arg):

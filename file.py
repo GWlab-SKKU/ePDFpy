@@ -311,8 +311,15 @@ def save_azavg_only(azavg):
     if 'txt' in ext:
         np.savetxt(fp,azavg)
 
-
-
+def save_azavg_stack(dcs):
+    dirpth = QFileDialog.getExistingDirectory(None, '')
+    for dc in dcs:
+        if dc.azavg is None:
+            continue
+        filename = os.path.split(dc.load_file_path)[1]
+        short_name, ext = os.path.splitext(filename)
+        fp = os.path.join(dirpth, short_name+".azavg.csv")
+        np.savetxt(fp, dc.azavg, delimiter = ',')
 
 if __name__ == '__main__':
     # file_list = get_file_list_from_path('/mnt/experiment/TEM diffraction/210312','.mrc')

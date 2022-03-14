@@ -389,6 +389,11 @@ class PdfAnalysis(QtWidgets.QWidget):
 
         self.controlPanel.fitting_elements.btn_apply_all.clicked.connect(self.btn_clicked_apply_to_all)
 
+        # self.controlPanel.save_load.open_azavg_file.triggered.connect(self.Dataviewer)
+        # self.controlPanel.save_load.open_azavg_stack.triggered.connect()
+        # self.controlPanel.save_load.open_prameter_file.triggered.connect()
+        # self.controlPanel.save_load.open_prameter_stack.triggered.connect()
+
     def btn_clicked_apply_to_all(self):
         reply = QMessageBox.question(self,'Message',
                                                'Are you sure to apply calibration factor and element data to all?',
@@ -665,7 +670,9 @@ class ControlPanel(QtWidgets.QWidget):
         self.layout = QtWidgets.QHBoxLayout()
         self.fitting_elements = self.FittingElements(mainWindow)
         self.fitting_factors = self.FittingFactors()
+        self.save_load = self.SaveLoadPanel("Save and Load",mainWindow)
 
+        self.layout.addWidget(self.save_load)
         self.layout.addWidget(self.fitting_elements)
         self.layout.addWidget(self.fitting_factors)
 
@@ -673,6 +680,41 @@ class ControlPanel(QtWidgets.QWidget):
         self.setLayout(self.layout)
         self.layout.setContentsMargins(2,2,2,2)
 
+    class SaveLoadPanel(QtWidgets.QGroupBox):
+        def __init__(self, arg, mainWindow: QtWidgets.QMainWindow):
+            QtWidgets.QGroupBox.__init__(self, arg)
+            menubar = mainWindow.menuBar()
+            menubar.setNativeMenuBar(False)
+            open_menu = menubar.addMenu("&Open")
+            save_menu = menubar.addMenu("&Save")
+
+            self.open_azavg_file = QtWidgets.QAction("Open azavg &file", self)
+            open_menu.addAction(self.open_azavg_file)
+
+            self.open_azavg_stack = open_menu.addMenu("Open azavg &stack")
+            self.open_azavg_stack_txt = QtWidgets.QAction("txt file stack")
+            self.open_azavg_stack_csv = QtWidgets.QAction("csv file stack")
+            self.open_azavg_stack_azavg_txt = QtWidgets.QAction("azavg.txt file stack")
+            self.open_azavg_stack_azavg_csv = QtWidgets.QAction("azavg.csv file stack")
+            self.open_azavg_stack.addAction(self.open_azavg_stack_txt)
+            self.open_azavg_stack.addAction(self.open_azavg_stack_csv)
+            self.open_azavg_stack.addAction(self.open_azavg_stack_azavg_txt)
+            self.open_azavg_stack.addAction(self.open_azavg_stack_azavg_csv)
+
+            self.open_prameter_file = QtWidgets.QAction("Open &parameter file", self)
+            self.open_prameter_stack = QtWidgets.QAction("Open p&arameter stack", self)
+
+            open_menu.addAction(self.open_prameter_file)
+            open_menu.addAction(self.open_prameter_stack)
+
+            self.save_current_parameter = QtWidgets.QAction("Save current parameters", self)
+            self.save_parameter_stack = QtWidgets.QAction("Save parameters stack", self)
+            save_menu.addAction(self.save_current_parameter)
+            save_menu.addAction(self.save_parameter_stack)
+
+            self.layout = QtWidgets.QHBoxLayout()
+            self.setLayout(self.layout)
+            self.layout.addWidget(menubar)
 
     class FittingElements(QtWidgets.QGroupBox):
         def __init__(self, mainWindow:QtWidgets.QMainWindow):
@@ -684,8 +726,6 @@ class ControlPanel(QtWidgets.QWidget):
             menubar = self.create_menu(mainWindow)
             layout.addWidget(menubar,alignment=QtCore.Qt.AlignCenter)
 
-
-
             self.element_group_widgets = [ControlPanel.element_group("Element" + str(num)) for num in range(1, 6)]
             for element_group_widgets in self.element_group_widgets:
                 layout.addWidget(element_group_widgets)
@@ -693,7 +733,6 @@ class ControlPanel(QtWidgets.QWidget):
             layout.addWidget(self.scattering_factors_widget())
 
             lbl_calibration_factor = QtWidgets.QLabel("Calibration factors")
-
 
             self.spinbox_ds = ui_util.DoubleSpinBox()
             self.spinbox_ds.setValue(0.001)
@@ -713,8 +752,6 @@ class ControlPanel(QtWidgets.QWidget):
 
             self.btn_apply_all = QtWidgets.QPushButton("Apply to all")
             layout.addWidget(self.btn_apply_all)
-
-
 
             self.setLayout(layout)
 

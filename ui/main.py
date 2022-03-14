@@ -231,7 +231,6 @@ class DataViewer(QtWidgets.QMainWindow):
         self.top_menu.open_img_stack_jpg.triggered.connect(lambda: self.menu_open_image_stack('.jpg'))
         self.top_menu.open_img_stack_jpg.triggered.connect(lambda: self.menu_open_image_stack('.jpeg'))
 
-
         self.top_menu.open_preset.triggered.connect(self.menu_load_preset)
         self.top_menu.save_preset.triggered.connect(self.menu_save_preset)
         self.top_menu.open_preset_stack.triggered.connect(self.menu_open_preset_stack)
@@ -376,6 +375,14 @@ class DataViewer(QtWidgets.QMainWindow):
     def menu_save_azavg_only(self):
         if self.dcs[self.current_page].azavg is not None:
             file.save_azavg_only(self.dcs[self.current_page].azavg)
+
+    def menu_save_azavg_stack(self):
+        print("Check!!!!")
+        file.save_azavg_stack(self.dcs)
+
+
+
+
 
     def btn_page_left_clicked(self):
         if hasattr(self, "current_page") and not self.current_page == 0:
