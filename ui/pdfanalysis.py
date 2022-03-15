@@ -983,7 +983,6 @@ class ControlPanel(QtWidgets.QWidget):
             layout.addWidget(self.element_ratio)
             self.setLayout(layout)
 
-
 if __name__ == "__main__":
     qtapp = QtWidgets.QApplication([])
     # QtWidgets.QMainWindow().show()
