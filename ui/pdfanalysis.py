@@ -112,6 +112,8 @@ class PdfAnalysis(QtWidgets.QWidget):
         px = np.arange(self.datacube.pixel_start_n,self.datacube.pixel_end_n+1)
         self.datacube.q = pdf_calculator.pixel_to_q(px,self.datacube.ds)
 
+        self.datacube.full_q = pdf_calculator.pixel_to_q(np.arange(len(self.datacube.azavg)),self.datacube.ds)
+
         azavg_px = np.arange(len(self.datacube.azavg))
         self.datacube.all_q = pdf_calculator.pixel_to_q(azavg_px,self.datacube.ds)
 
@@ -180,7 +182,6 @@ class PdfAnalysis(QtWidgets.QWidget):
         self.graph_Gr_Gr = self.graph_Gr.plot(pen=pg.mkPen(255, 0, 0, width=2), name='Gr')
 
         self.setLayout(self.layout)
-
 
     def load_default_setting(self):
         if util.default_setting.calibration_factor is not None and self.datacube.ds is None:
@@ -389,6 +390,24 @@ class PdfAnalysis(QtWidgets.QWidget):
 
         self.controlPanel.fitting_elements.btn_apply_all.clicked.connect(self.btn_clicked_apply_to_all)
 
+        self.controlPanel.save_load.open_azavg_file.triggered.connect(self.Dataviewer.menu_open_azavg_only)
+        self.controlPanel.save_load.open_azavg_stack_csv.triggered.connect(
+            lambda: self.Dataviewer.menu_open_azavg_stack("csv"))
+        self.controlPanel.save_load.open_azavg_stack_txt.triggered.connect(
+            lambda: self.Dataviewer.menu_open_azavg_stack("txt"))
+        self.controlPanel.save_load.open_azavg_stack_azavg_csv.triggered.connect(
+            lambda: self.Dataviewer.menu_open_azavg_stack("azavg.csv"))
+        self.controlPanel.save_load.open_azavg_stack_azavg_txt.triggered.connect(
+            lambda: self.Dataviewer.menu_open_azavg_stack("azavg.txt"))
+        self.controlPanel.save_load.open_prameter_file.triggered.connect(
+            self.Dataviewer.menu_load_preset)
+        self.controlPanel.save_load.open_prameter_stack.triggered.connect(
+            self.Dataviewer.menu_open_preset_stack)
+        self.controlPanel.save_load.save_current_parameter.triggered.connect(
+            self.Dataviewer.menu_save_preset)
+        self.controlPanel.save_load.save_parameter_stack.triggered.connect(
+            self.Dataviewer.menu_save_presets)
+
     def btn_clicked_apply_to_all(self):
         reply = QMessageBox.question(self,'Message',
                                                'Are you sure to apply calibration factor and element data to all?',
@@ -444,7 +463,6 @@ class PdfAnalysis(QtWidgets.QWidget):
         idx_Max_q = pdf_calculator.pixel_to_q(idx_Max_pix, self.datacube.ds)
         self.graph_Iq_panel.setting.spinBox_range_right.setValue(idx_Max_q)
         self.manualfit()
-        pass
 
     def dialog_to_range(self):
         left = self.controlPanel.fitting_factors.spinbox_q_range_left.value()
@@ -663,16 +681,58 @@ class ControlPanel(QtWidgets.QWidget):
     def __init__(self, mainWindow: QtWidgets.QMainWindow):
         QtWidgets.QWidget.__init__(self)
         self.layout = QtWidgets.QHBoxLayout()
+
+        self.temp_layout = QtWidgets.QVBoxLayout()
+        self.save_load = self.SaveLoadPanel("Save and Load", mainWindow)
         self.fitting_elements = self.FittingElements(mainWindow)
+        self.temp_layout.addWidget(self.save_load)
+        self.temp_layout.addWidget(self.fitting_elements)
+
         self.fitting_factors = self.FittingFactors()
 
-        self.layout.addWidget(self.fitting_elements)
+
+        self.layout.addLayout(self.temp_layout)
         self.layout.addWidget(self.fitting_factors)
 
         # self.resize(600,1000)
         self.setLayout(self.layout)
         self.layout.setContentsMargins(2,2,2,2)
 
+    class SaveLoadPanel(QtWidgets.QGroupBox):
+        def __init__(self, arg, mainWindow: QtWidgets.QMainWindow):
+            QtWidgets.QGroupBox.__init__(self, arg)
+            menubar = mainWindow.menuBar()
+            menubar.setNativeMenuBar(False)
+            open_menu = menubar.addMenu("&Open")
+            save_menu = menubar.addMenu("&Save")
+
+            self.open_azavg_file = QtWidgets.QAction("Open azavg &file", self)
+            open_menu.addAction(self.open_azavg_file)
+
+            self.open_azavg_stack = open_menu.addMenu("Open azavg &stack")
+            self.open_azavg_stack_txt = QtWidgets.QAction("txt file stack")
+            self.open_azavg_stack_csv = QtWidgets.QAction("csv file stack")
+            self.open_azavg_stack_azavg_txt = QtWidgets.QAction("azavg.txt file stack")
+            self.open_azavg_stack_azavg_csv = QtWidgets.QAction("azavg.csv file stack")
+            self.open_azavg_stack.addAction(self.open_azavg_stack_txt)
+            self.open_azavg_stack.addAction(self.open_azavg_stack_csv)
+            self.open_azavg_stack.addAction(self.open_azavg_stack_azavg_txt)
+            self.open_azavg_stack.addAction(self.open_azavg_stack_azavg_csv)
+
+            self.open_prameter_file = QtWidgets.QAction("Open &parameter file", self)
+            self.open_prameter_stack = QtWidgets.QAction("Open p&arameter stack", self)
+
+            open_menu.addAction(self.open_prameter_file)
+            open_menu.addAction(self.open_prameter_stack)
+
+            self.save_current_parameter = QtWidgets.QAction("Save current parameters", self)
+            self.save_parameter_stack = QtWidgets.QAction("Save parameters stack", self)
+            save_menu.addAction(self.save_current_parameter)
+            save_menu.addAction(self.save_parameter_stack)
+
+            self.layout = QtWidgets.QHBoxLayout()
+            self.setLayout(self.layout)
+            self.layout.addWidget(menubar)
 
     class FittingElements(QtWidgets.QGroupBox):
         def __init__(self, mainWindow:QtWidgets.QMainWindow):
@@ -682,9 +742,7 @@ class ControlPanel(QtWidgets.QWidget):
             layout.setSpacing(0)
             # layout.setContentsMargins(10, 0, 5, 5)
             menubar = self.create_menu(mainWindow)
-            layout.addWidget(menubar,alignment=QtCore.Qt.AlignCenter)
-
-
+            layout.addWidget(menubar, alignment=QtCore.Qt.AlignCenter)
 
             self.element_group_widgets = [ControlPanel.element_group("Element" + str(num)) for num in range(1, 6)]
             for element_group_widgets in self.element_group_widgets:
@@ -693,7 +751,6 @@ class ControlPanel(QtWidgets.QWidget):
             layout.addWidget(self.scattering_factors_widget())
 
             lbl_calibration_factor = QtWidgets.QLabel("Calibration factors")
-
 
             self.spinbox_ds = ui_util.DoubleSpinBox()
             self.spinbox_ds.setValue(0.001)
@@ -713,8 +770,6 @@ class ControlPanel(QtWidgets.QWidget):
 
             self.btn_apply_all = QtWidgets.QPushButton("Apply to all")
             layout.addWidget(self.btn_apply_all)
-
-
 
             self.setLayout(layout)
 
@@ -929,7 +984,6 @@ class ControlPanel(QtWidgets.QWidget):
             layout.addWidget(self.combobox)
             layout.addWidget(self.element_ratio)
             self.setLayout(layout)
-
 
 if __name__ == "__main__":
     qtapp = QtWidgets.QApplication([])

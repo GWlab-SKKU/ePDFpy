@@ -41,13 +41,13 @@ class DataCube:
         self.dr = None
         self.is_full_q = None
 
-
         self.r = None
         self.Gr = None
 
         self.all_q = None
 
         self.q = None
+        self.full_q = None
         self.Iq = None
 
         self.SS = None
@@ -74,9 +74,7 @@ class DataCube:
             self.azavg = file.load_azavg(self.azavg_file_path)
         elif file_type == "image":
             self.img_file_path = self.load_file_path
-
             # file.load_mrc_img(self,self.mrc_file_path)
-
         self.load_data()
 
     def initialize_pdf_parameter(self):

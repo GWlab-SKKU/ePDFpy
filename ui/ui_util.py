@@ -63,7 +63,6 @@ class DoubleSpinBox(QtWidgets.QDoubleSpinBox):
         return np.round(float(text),self.decimals())
 
 
-
 class DoubleLineEdit(QtWidgets.QLineEdit):
     def __init__(self):
         super().__init__()
