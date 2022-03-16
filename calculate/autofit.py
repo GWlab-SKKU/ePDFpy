@@ -21,6 +21,7 @@
 # 21st edit 220224 Delete unnecessary variable to get more free memory
 # 22nd edit 220226 Edited for ePDFpy application
 # 23rd edit 220307 Reduced time -> np.dot to matmul + no vstack
+# 24th edit 220308 Reduced time -> judge_oo from matrix calculation
 
 import numpy as np
 import matplotlib as mpl
@@ -115,8 +116,8 @@ def Kirkland_factor(cf, pix_min, pix_max):
         element = j
         for i in np.arange(1, len(pix), 1):
             Kf[j, i] = (a1[element]) / (b1[element] + s2[i]) + (c1[element] * np.exp((-1) * d1[element] * s2[i])) + (
-            a2[element]) / (b2[element] + s2[i]) + (c2[element] * np.exp((-1) * d2[element] * s2[i])) + (
-                       a3[element]) / (b3[element] + s2[i]) + (c3[element] * np.exp((-1) * d3[element] * s2[i]))
+                a2[element]) / (b2[element] + s2[i]) + (c2[element] * np.exp((-1) * d2[element] * s2[i])) + (
+                           a3[element]) / (b3[element] + s2[i]) + (c3[element] * np.exp((-1) * d3[element] * s2[i]))
 
     return Kf
 
@@ -132,10 +133,10 @@ def Lobato_factor(cali, pix_min, pix_max):
         element = j
         for i in np.arange(0, len(pix), 1):
             Lf[j, i] = (A1[element] * ((2 + (B1[element] * q2[i])) / (1 + (B1[element] * q2[i])) ** 2)) + (
-                        A2[element] * ((2 + (B2[element] * q2[i])) / (1 + (B2[element] * q2[i])) ** 2)) + (
-                                   A3[element] * ((2 + (B3[element] * q2[i])) / (1 + (B3[element] * q2[i])) ** 2)) + (
-                                   A4[element] * ((2 + (B4[element] * q2[i])) / (1 + (B4[element] * q2[i])) ** 2)) + (
-                                   A5[element] * ((2 + (B5[element] * q2[i])) / (1 + (B5[element] * q2[i])) ** 2))
+                    A2[element] * ((2 + (B2[element] * q2[i])) / (1 + (B2[element] * q2[i])) ** 2)) + (
+                               A3[element] * ((2 + (B3[element] * q2[i])) / (1 + (B3[element] * q2[i])) ** 2)) + (
+                               A4[element] * ((2 + (B4[element] * q2[i])) / (1 + (B4[element] * q2[i])) ** 2)) + (
+                               A5[element] * ((2 + (B5[element] * q2[i])) / (1 + (B5[element] * q2[i])) ** 2))
 
     return Lf
 
@@ -312,7 +313,7 @@ def Autofit(Iq, qkran_start, qkran_end, qkran_step, pixran_start, pixran_end, pi
     judge_oo = np.sum((Gk[:, 200:349] * grad_mask) < 0, axis=1)
 
     Autofit = []
-    qc = []
+
     for i in range(len(Params)):
         Auto_temp = []
         Auto_temp.append(Params[i][0])
@@ -324,20 +325,21 @@ def Autofit(Iq, qkran_start, qkran_end, qkran_step, pixran_start, pixran_end, pi
         Auto_temp.append(np.array(Phi_d[i][~np.isnan(Phi_d[i])]))
         Auto_temp.append(np.array(r))
         Auto_temp.append(np.array(Gk[i]))
-        Auto_temp.append(judge_1st[i] / judge_noise[i])
+        Auto_temp.append(judge_noise[i])
+        Auto_temp.append(judge_1st[i])
         Auto_temp.append(judge_oo[i])
         Auto_temp.append(judge_std[i])
         Autofit.append(Auto_temp)
-        if judge_noise[i] <= Noise_level:
-            qc.append(judge_noise[i])
-    qualitycheck = len(qc)
-    del (Params, data_Q, Phi, Phi_d, Gk, judge_noise, judge_1st, judge_oo, judge_std, qc)
+    del (Params, data_Q, Phi, Phi_d, Gk, judge_noise, judge_1st, judge_oo, judge_std)
 
     Results = pd.DataFrame(Autofit,
                            columns=['Min pix', 'Max pix', 'qk', 'N', 'Q', 'Phi(q)', 'Phi_d(q)', 'r', 'G(r)', 'judge1',
-                                    'judge2', 'judge3'])
-    Results = Results[Results['judge2'] == 3]  # S.C 3
-    Results = Results.sort_values(['judge3', 'judge1'], ascending=[True, False])  # Ordering by std
+                                    'judge2', 'judge3', 'judge4'])
+    Pre_Results = Results.sort_values('judge4')  # Ordering by std
+    Results = Pre_Results[Pre_Results['judge1'] < Noise_level]  # S.C 1
+    Results = Results[Results['judge1'] < Results['judge2']]  # S.C 2
+    Results = Results[Results['judge3'] == 3]  # S.C 3
+    qualitycheck = len(Results)  # If good sample, this # is large
 
     if qualitycheck != 0:  # For good samples which passed S.C 1
         if qualitycheck < Select:
@@ -347,24 +349,22 @@ def Autofit(Iq, qkran_start, qkran_end, qkran_step, pixran_start, pixran_end, pi
             Candidates = Results[:Select].sort_values(['Max pix', 'qk', 'N'],
                                                       ascending=[False, False, False]).to_numpy()
 
-    if qualitycheck == 0:  # For good samples which passed S.C 1
-        Candidates = Results[:Select].sort_values(['Max pix', 'qk', 'N'], ascending=[False, False, False]).to_numpy()
-
-    # else:                                                     # For bad samples which didn't pass the S.C 1
-    #     Pre_Results2 = Pre_Results[Pre_Results['judge1']<Pre_Results['judge2']]
-    #     qualitycheck2 = len(Pre_Results2)
-    #     if qualitycheck2 < Select:
-    #         Candidates = Pre_Results2[:qualitycheck2].sort_values(['Max pix','qk','N'], ascending=[False,False,False]).to_numpy()
-    #     if qualitycheck2 >= Select:
-    #         Candidates = Pre_Results2[:Select].sort_values(['Max pix','qk','N'], ascending=[False,False,False]).to_numpy()
-    #     if len(Pre_Results2) == 0:
-    #         Candidates = Pre_Results[:Select].sort_values(['Max pix','qk','N'], ascending=[False,False,False]).to_numpy()
-    del (Results)
+    else:  # For bad samples which didn't pass the S.C 1
+        Pre_Results2 = Pre_Results[Pre_Results['judge1'] < Pre_Results['judge2']]
+        qualitycheck2 = len(Pre_Results2)
+        if qualitycheck2 < Select:
+            Candidates = Pre_Results2[:qualitycheck2].sort_values(['Max pix', 'qk', 'N'],
+                                                                  ascending=[False, False, False]).to_numpy()
+        if qualitycheck2 >= Select:
+            Candidates = Pre_Results2[:Select].sort_values(['Max pix', 'qk', 'N'],
+                                                           ascending=[False, False, False]).to_numpy()
+        if len(Pre_Results2) == 0:
+            Candidates = Pre_Results[:Select].sort_values(['Max pix', 'qk', 'N'],
+                                                          ascending=[False, False, False]).to_numpy()
+        del (Results, Pre_Results, Pre_Results2)
     tic = time.time()
     elapsed = str(tic - toc) + ' s'
     print('Autofit finished')
     print('Elapsed time:', elapsed)
 
     return Candidates, qualitycheck, total_n  # Candidate: top 10 results in numpy array / qualitycheck: How many that passed the filters
-
-
