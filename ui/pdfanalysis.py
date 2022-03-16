@@ -399,14 +399,18 @@ class PdfAnalysis(QtWidgets.QWidget):
             lambda: self.Dataviewer.menu_open_azavg_stack("azavg.csv"))
         self.controlPanel.save_load.open_azavg_stack_azavg_txt.triggered.connect(
             lambda: self.Dataviewer.menu_open_azavg_stack("azavg.txt"))
-        self.controlPanel.save_load.open_prameter_file.triggered.connect(
+        self.controlPanel.save_load.open_preset_file.triggered.connect(
             self.Dataviewer.menu_load_preset)
-        self.controlPanel.save_load.open_prameter_stack.triggered.connect(
+        self.controlPanel.save_load.open_preset_stack.triggered.connect(
             self.Dataviewer.menu_open_preset_stack)
-        self.controlPanel.save_load.save_current_parameter.triggered.connect(
-            self.Dataviewer.menu_save_preset)
-        self.controlPanel.save_load.save_parameter_stack.triggered.connect(
-            self.Dataviewer.menu_save_presets)
+        self.controlPanel.save_load.save_current_preset_as.triggered.connect(
+            self.Dataviewer.menu_save_current_preset_as)
+        self.controlPanel.save_load.save_all_preset_as.triggered.connect(
+            self.Dataviewer.menu_save_all_preset_as)
+        self.controlPanel.save_load.save_all_preset.triggered.connect(
+            self.Dataviewer.menu_save_all_preset)
+        self.controlPanel.save_load.save_current_preset.triggered.connect(
+            self.Dataviewer.menu_save_current_preset)
 
     def btn_clicked_apply_to_all(self):
         reply = QMessageBox.question(self,'Message',
@@ -714,21 +718,30 @@ class ControlPanel(QtWidgets.QWidget):
             self.open_azavg_stack_csv = QtWidgets.QAction("csv file stack")
             self.open_azavg_stack_azavg_txt = QtWidgets.QAction("azavg.txt file stack")
             self.open_azavg_stack_azavg_csv = QtWidgets.QAction("azavg.csv file stack")
+            self.open_azavg_stack_azavg_others = QtWidgets.QAction("Others ...")
             self.open_azavg_stack.addAction(self.open_azavg_stack_txt)
             self.open_azavg_stack.addAction(self.open_azavg_stack_csv)
             self.open_azavg_stack.addAction(self.open_azavg_stack_azavg_txt)
             self.open_azavg_stack.addAction(self.open_azavg_stack_azavg_csv)
+            self.open_azavg_stack.addAction(self.open_azavg_stack_azavg_others)
+            self.open_azavg_stack_azavg_others.setDisabled(True)
 
-            self.open_prameter_file = QtWidgets.QAction("Open &parameter file", self)
-            self.open_prameter_stack = QtWidgets.QAction("Open p&arameter stack", self)
+            open_menu.addSeparator()
 
-            open_menu.addAction(self.open_prameter_file)
-            open_menu.addAction(self.open_prameter_stack)
+            self.open_preset_file = QtWidgets.QAction("Open &preset file", self)
+            self.open_preset_stack = QtWidgets.QAction("Open p&reset stack", self)
 
-            self.save_current_parameter = QtWidgets.QAction("Save current parameters", self)
-            self.save_parameter_stack = QtWidgets.QAction("Save parameters stack", self)
-            save_menu.addAction(self.save_current_parameter)
-            save_menu.addAction(self.save_parameter_stack)
+            open_menu.addAction(self.open_preset_file)
+            open_menu.addAction(self.open_preset_stack)
+
+            self.save_current_preset = QtWidgets.QAction("Save current preset", self)
+            self.save_current_preset_as = QtWidgets.QAction("Save current preset as ...", self)
+            self.save_all_preset = QtWidgets.QAction("Save all preset", self)
+            self.save_all_preset_as = QtWidgets.QAction("Save all preset as ...", self)
+            save_menu.addAction(self.save_current_preset)
+            save_menu.addAction(self.save_current_preset_as)
+            save_menu.addAction(self.save_all_preset)
+            save_menu.addAction(self.save_all_preset_as)
 
             self.layout = QtWidgets.QHBoxLayout()
             self.setLayout(self.layout)
