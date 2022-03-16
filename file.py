@@ -344,10 +344,9 @@ def load_preset(fp:str=None, dc:DataCube=None) -> DataCube:
     except:
         print(f"Error while loading preset file: {fp}")
 
-    azavg_path = os.path.join(os.path.split(fp)[0], fp[:fp.rfind(preset_ext)] + azavg_ext)
     data_r_path = os.path.join(os.path.split(fp)[0], fp[:fp.rfind(preset_ext)] + data_r_ext)
     data_q_path = os.path.join(os.path.split(fp)[0], fp[:fp.rfind(preset_ext)] + data_q_ext)
-    normstd_path = os.path.join(os.path.split(fp)[0], fp[:fp.rfind(preset_ext)] + normstd_ext)
+    # normstd_path = os.path.join(os.path.split(fp)[0], fp[:fp.rfind(preset_ext)] + normstd_ext)
 
     dc.load_file_path = fp
     dc.preset_file_path = fp
@@ -357,20 +356,21 @@ def load_preset(fp:str=None, dc:DataCube=None) -> DataCube:
         if key in vars(dc).keys():
             setattr(dc, key, value)
 
-    if os.path.isfile(azavg_path):
-        df_azavg = np.loadtxt(azavg_path)
-        dc.azavg = df_azavg
-
     # previous q
     if os.path.isfile(data_q_path):
         df_q = pd.read_csv(data_q_path)
         for column in df_q.columns:
             setattr(dc, column, df_q[column].to_numpy())
+    azavg_path = os.path.join(os.path.split(fp)[0], fp[:fp.rfind(preset_ext)] + azavg_ext)
+    if os.path.isfile(azavg_path):
+        df_azavg = np.loadtxt(azavg_path)
+        dc.azavg = df_azavg
 
     # current version of q
     if (dc.pixel_end_n - dc.pixel_start_n+1) != len(df_q):
         df_q = pd.read_csv(data_q_path)
-        dc.full_q = df_q['q']
+        dc.full_q = np.array(df_q['q'])
+        dc.azavg = np.array(df_q['Iq'])
         dc.Iq = np.array(dc.azavg[dc.pixel_start_n:dc.pixel_end_n+1])
         dc.q = np.array(dc.full_q[dc.pixel_start_n:dc.pixel_end_n+1])
         dc.phiq = np.array(df_q['phiq'][dc.pixel_start_n:dc.pixel_end_n+1])
@@ -382,13 +382,10 @@ def load_preset(fp:str=None, dc:DataCube=None) -> DataCube:
         for column in df_r.columns:
             setattr(dc, column, df_r[column].to_numpy())
 
-
-
-    if os.path.isfile(normstd_path):
-        df_normstd = np.loadtxt(normstd_path)
-        dc.azvar = df_normstd
-
-
+    # # deprecated
+    # if os.path.isfile(normstd_path):
+    #     df_normstd = np.loadtxt(normstd_path)
+    #     dc.azvar = df_normstd
 
     # deprecated: img load
         #     deprecated: mrc_file_path
