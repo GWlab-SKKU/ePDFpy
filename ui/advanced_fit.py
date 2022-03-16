@@ -5,7 +5,7 @@ from calculate.autofit import Autofit
 import pyqtgraph as pg
 import pickle
 
-table_head_lst = ['min_q', 'max_q', 'fix_q', 'N', 'noise1']
+table_head_lst = ['min_q', 'max_q', 'fix_q', 'N', 'noise1', 'color']
 
 idx_Min_pix = 0
 idx_Max_pix = 1
@@ -17,6 +17,7 @@ idx_phiq_d = 6
 idx_r = 7
 idx_g = 8
 
+color = [pg.intColor(i, minValue=200, alpha=255) for i in range(100)]
 
 class MainWindowAdvancedFit(QtWidgets.QMainWindow):
     def __init__(self, dc, close_event):
@@ -32,7 +33,6 @@ class AdvancedFitWindow(QtWidgets.QWidget):
         self.mainWindow = mainWindow
         self.dc = dc
         self.close_event = close_event
-        self.color_int = 1
         splitter_vertical = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
         splitter_left_horizontal = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         splitter_right_horizontal = QtWidgets.QSplitter(QtCore.Qt.Vertical)
@@ -106,8 +106,7 @@ class AdvancedFitWindow(QtWidgets.QWidget):
         [plot.clear() for plot in self.gr_plot_lst]
         self.gr_plot_lst.clear()
         for i in range(cnt):
-            color = pg.intColor(i, minValue=200, alpha=255)
-            pen = pg.mkPen(color=color)
+            pen = pg.mkPen(color=color[i])
             plot = self.panel_gr.graph.plot()
             plot.setData(self.Candidates[i, idx_r], self.Candidates[i, idx_g], pen=pen)
             self.gr_plot_lst.append(plot)
@@ -117,8 +116,7 @@ class AdvancedFitWindow(QtWidgets.QWidget):
         [plot.clear() for plot in self.phiq_plot_lst]
         self.phiq_plot_lst.clear()
         for i in range(cnt):
-            color = pg.intColor(i, minValue=200, alpha=255)
-            pen = pg.mkPen(color=color)
+            pen = pg.mkPen(color=color[i])
             plot = self.panel_phiq.graph.plot()
             plot.setData(self.Candidates[i, idx_Q], self.Candidates[i, idx_phiq], pen=pen)
             self.phiq_plot_lst.append(plot)
@@ -129,7 +127,6 @@ class AdvancedFitWindow(QtWidgets.QWidget):
         self.panel_table.table.setHorizontalHeaderLabels(table_head_lst)
         column_idx_lst = [idx_Min_pix, idx_Max_pix, idx_qk, idx_N, 9]
 
-        # making pandas
         tbl = self.Candidates[0:min(len(self.Candidates), self.panel_control.spinBox_result_count.value()), column_idx_lst]
         idx_pair = []
         for row in np.arange(tbl.shape[0]):
@@ -139,8 +136,12 @@ class AdvancedFitWindow(QtWidgets.QWidget):
         for row, column in idx_pair:
             self.panel_table.table.setItem(row, column, QtWidgets.QTableWidgetItem(str(tbl[row,column])))
 
+        # color column
+        for row in np.arange(tbl.shape[0]):
+            self.panel_table.table.setItem(row, 5, QtWidgets.QTableWidgetItem(""))
+            self.panel_table.table.item(row, 5).setBackground(QtGui.QColor(*color[row].getRgb()))
+
     def cell_clicked(self):
-        print("cell_clicked")
         row = self.panel_table.table.currentRow()
         for irow in range(self.panel_control.spinBox_result_count.value()):
             color = pg.intColor(irow, minValue=200, alpha=255)
@@ -214,7 +215,7 @@ class AdvancedFitWindow(QtWidgets.QWidget):
             layout = QtWidgets.QVBoxLayout()
             layout.addWidget(self.table)
             self.table.setRowCount(10)
-            column_count = 5
+            column_count = 6
             self.table.setColumnCount(column_count)
             for i in range(column_count):
                 self.table.setColumnWidth(i,50)
