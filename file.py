@@ -111,10 +111,8 @@ def make_analyse_folder(datacube):
 
     return final_analysis_folder
 
-def save_preset_stack(datacubes, main_window, fpth=None, stack=True):
+def save_preset(datacubes, main_window, fpth, stack=True, saveas=True):
     imgPanel = main_window.profile_extraction.img_panel
-    if fpth is None:
-        fpth = QFileDialog.getExistingDirectory(None, "")
 
     for datacube in datacubes:
         load_folder_path, load_file_name = os.path.split(datacube.load_file_path)
@@ -123,32 +121,36 @@ def save_preset_stack(datacubes, main_window, fpth=None, stack=True):
             file_short_name = file_short_name.replace('.azavg','')
         if '.preset' in file_short_name:
             file_short_name = file_short_name.replace('.preset','')
-        if stack:
-            analysis_folder_path = os.path.join(fpth, file_short_name)
-        else:
-            analysis_folder_path = fpth
-        os.makedirs(analysis_folder_path, exist_ok=True)
-        preset_path = os.path.join(analysis_folder_path, file_short_name + preset_ext)
-        azavg_path = os.path.join(analysis_folder_path, file_short_name + azavg_ext)
-        normstd_path = os.path.join(analysis_folder_path, file_short_name + normstd_ext)
-        data_q_path = os.path.join(analysis_folder_path, file_short_name + data_q_ext)
-        data_r_path = os.path.join(analysis_folder_path, file_short_name + data_r_ext)
-        img_path = os.path.join(analysis_folder_path, file_short_name + image_ext)
-        rdf_screen_path = os.path.join(analysis_folder_path, file_short_name + rdf_screen_ext)
+
+        if (stack) and (saveas):
+            sample_folder = os.path.join(fpth, f"({datacube.data_quality}){file_short_name}")
+            os.makedirs(sample_folder, exist_ok=True)
+        if (not stack) and (saveas):
+            sample_folder = fpth
+            os.makedirs(sample_folder, exist_ok=True)
+        if (stack) and (not saveas):
+            current_sample_folder = os.path.split(datacube.preset_file_path)[0]
+            upper_folder, sample_folder_short = os.path.split(current_sample_folder)
+            new_sample_folder_short = re.sub(r'\(L.\)',"({})".format(datacube.data_quality), sample_folder_short)
+            new_sample_folder_short = re.sub(r'\(None\)',"({})".format(datacube.data_quality), new_sample_folder_short)
+            sample_folder = os.path.join(upper_folder,new_sample_folder_short)
+            if sample_folder_short != new_sample_folder_short:
+                os.rename(current_sample_folder, sample_folder)
+        if (not stack) and (not saveas):
+            current_sample_folder = os.path.split(datacube.preset_file_path)[0]
+            upper_folder, sample_folder_short = os.path.split(current_sample_folder)
+            new_sample_folder_short = re.sub(r'\(L.\)',"({})".format(datacube.data_quality), sample_folder_short)
+            new_sample_folder_short = re.sub(r'\(None\)',"({})".format(datacube.data_quality), new_sample_folder_short)
+            sample_folder = os.path.join(upper_folder,new_sample_folder_short)
+            if sample_folder_short != new_sample_folder_short:
+                os.rename(current_sample_folder, sample_folder)
+
+        preset_path = os.path.join(sample_folder, file_short_name + preset_ext)
+        data_q_path = os.path.join(sample_folder, file_short_name + data_q_ext)
+        data_r_path = os.path.join(sample_folder, file_short_name + data_r_ext)
+        img_path = os.path.join(sample_folder, file_short_name + image_ext)
+        rdf_screen_path = os.path.join(sample_folder, file_short_name + rdf_screen_ext)
         datacube.preset_file_path = preset_path
-
-        # # save azavg
-        # if datacube.azavg is not None:
-        #     np.savetxt(azavg_path, datacube.azavg)
-        # # save normalized std
-        # if datacube.azvar is not None:
-        #     np.savetxt(normstd_path, datacube.azvar)
-
-        # save q data
-        # if datacube.q is not None:
-        #     lst = ['q', 'Iq', 'Autofit', 'phiq', 'phiq_damp']
-        #     df = pd.DataFrame({name: getattr(datacube, name) for name in lst if getattr(datacube, name) is not None})
-        #     df.to_csv(data_q_path, index=None)
 
         # full q data
         if datacube.full_q is not None:
@@ -177,18 +179,16 @@ def save_preset_stack(datacubes, main_window, fpth=None, stack=True):
         ################ save preset #################
         presets = vars(copy.copy(datacube))
 
-        # convert to relative path
-        try:
-            # deprecated: mrc_file_path
-            if presets['img_file_path'] is not None:
-                presets['img_file_path'] = os.path.relpath(datacube.img_file_path, os.path.split(preset_path)[0])
-                presets['img_file_path'] = presets['img_file_path'].replace('\\',
-                                                                            '/')  # compatibility between windows and linux
-        except:
-            if presets['mrc_file_path'] is not None:
-                presets['mrc_file_path'] = os.path.relpath(datacube.img_file_path, os.path.split(preset_path)[0])
-                presets['mrc_file_path'] = presets['mrc_file_path'].replace('\\',
-                                                                            '/')  # compatibility between windows and linux
+        # # convert to relative path
+        # try:
+        #     # deprecated: mrc_file_path
+        #     if presets['img_file_path'] is not None:
+        #         presets['img_file_path'] = os.path.relpath(datacube.img_file_path, os.path.split(preset_path)[0])
+        #         presets['img_file_path'] = presets['img_file_path'].replace('\\','/')  # compatibility between windows and linux
+        # except:
+        #     if presets['mrc_file_path'] is not None:
+        #         presets['mrc_file_path'] = os.path.relpath(datacube.img_file_path, os.path.split(preset_path)[0])
+        #         presets['mrc_file_path'] = presets['mrc_file_path'].replace('\\','/')  # compatibility between windows and linux
 
         # remove data that not support to save as json
         for key, value in dict(presets).items():

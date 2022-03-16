@@ -369,15 +369,30 @@ class DataViewer(QtWidgets.QMainWindow):
         self.dcs.append(dc)
         self.load_dc(0)
 
-    def menu_save_preset(self):
-        fpth = QtWidgets.QFileDialog.getExistingDirectory(self,"")
-        file.save_preset_stack([self.dcs[self.current_page]], self, fpth, stack=False)
+    def menu_save_current_preset(self):
+        self.PDF_analyser.manualfit()
+        file.save_preset([self.dcs[self.current_page]], self, None, stack=False, saveas=False)
 
-    def menu_save_presets(self):
+    def menu_save_current_preset_as(self):
+        self.PDF_analyser.manualfit()
+        fpth = QtWidgets.QFileDialog.getExistingDirectory(self,"")
+        file.save_preset([self.dcs[self.current_page]], self, fpth, stack=False, saveas=True)
+
+    def menu_save_all_preset(self):
+        for i in range(len(self.dcs)):
+            self.load_dc(i)
+            self.PDF_analyser.manualfit()
+            file.save_preset([self.dcs[self.current_page]], self, None, stack=True, saveas=False)
+
+    def menu_save_all_preset_as(self):
+        self.PDF_analyser.manualfit()
         fpth = QtWidgets.QFileDialog.getExistingDirectory(self, "")
         for i in range(len(self.dcs)):
             self.load_dc(i)
-            file.save_preset_stack([self.dcs[self.current_page]], self, fpth, stack=True)
+            self.PDF_analyser.manualfit()
+            file.save_preset([self.dcs[self.current_page]], self, fpth, stack=True, saveas=True)
+
+
 
     def menu_save_azavg_only(self):
         if self.dcs[self.current_page].azavg is not None:

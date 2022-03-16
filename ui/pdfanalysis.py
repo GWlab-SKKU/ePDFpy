@@ -404,9 +404,13 @@ class PdfAnalysis(QtWidgets.QWidget):
         self.controlPanel.save_load.open_preset_stack.triggered.connect(
             self.Dataviewer.menu_open_preset_stack)
         self.controlPanel.save_load.save_current_preset_as.triggered.connect(
-            self.Dataviewer.menu_save_preset)
-        self.controlPanel.save_load.save_preset_stack_as.triggered.connect(
-            self.Dataviewer.menu_save_presets)
+            self.Dataviewer.menu_save_current_preset_as)
+        self.controlPanel.save_load.save_all_preset_as.triggered.connect(
+            self.Dataviewer.menu_save_all_preset_as)
+        self.controlPanel.save_load.save_all_preset.triggered.connect(
+            self.Dataviewer.menu_save_all_preset)
+        self.controlPanel.save_load.save_current_preset.triggered.connect(
+            self.Dataviewer.menu_save_current_preset)
 
     def btn_clicked_apply_to_all(self):
         reply = QMessageBox.question(self,'Message',
@@ -731,16 +735,13 @@ class ControlPanel(QtWidgets.QWidget):
             open_menu.addAction(self.open_preset_stack)
 
             self.save_current_preset = QtWidgets.QAction("Save current preset", self)
-            self.save_current_preset.setDisabled(True)
-            self.save_preset_stack = QtWidgets.QAction("Save all preset", self)
-            self.save_preset_stack.setDisabled(True)
-
             self.save_current_preset_as = QtWidgets.QAction("Save current preset as ...", self)
-            self.save_preset_stack_as = QtWidgets.QAction("Save all preset as ...", self)
+            self.save_all_preset = QtWidgets.QAction("Save all preset", self)
+            self.save_all_preset_as = QtWidgets.QAction("Save all preset as ...", self)
             save_menu.addAction(self.save_current_preset)
-            save_menu.addAction(self.save_preset_stack)
             save_menu.addAction(self.save_current_preset_as)
-            save_menu.addAction(self.save_preset_stack_as)
+            save_menu.addAction(self.save_all_preset)
+            save_menu.addAction(self.save_all_preset_as)
 
             self.layout = QtWidgets.QHBoxLayout()
             self.setLayout(self.layout)
