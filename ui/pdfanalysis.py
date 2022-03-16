@@ -112,6 +112,8 @@ class PdfAnalysis(QtWidgets.QWidget):
         px = np.arange(self.datacube.pixel_start_n,self.datacube.pixel_end_n+1)
         self.datacube.q = pdf_calculator.pixel_to_q(px,self.datacube.ds)
 
+        self.datacube.full_q = pdf_calculator.pixel_to_q(np.arange(len(self.datacube.azavg)),self.datacube.ds)
+
         azavg_px = np.arange(len(self.datacube.azavg))
         self.datacube.all_q = pdf_calculator.pixel_to_q(azavg_px,self.datacube.ds)
 

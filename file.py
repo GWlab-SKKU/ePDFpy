@@ -121,6 +121,8 @@ def save_preset_stack(datacubes, main_window, fpth=None, stack=True):
         file_short_name, load_file_ext = os.path.splitext(load_file_name)
         if '.azavg' in file_short_name:
             file_short_name = file_short_name.replace('.azavg','')
+        if '.preset' in file_short_name:
+            file_short_name = file_short_name.replace('.preset','')
         if stack:
             analysis_folder_path = os.path.join(fpth, file_short_name)
         else:
@@ -135,22 +137,36 @@ def save_preset_stack(datacubes, main_window, fpth=None, stack=True):
         rdf_screen_path = os.path.join(analysis_folder_path, file_short_name + rdf_screen_ext)
         datacube.preset_file_path = preset_path
 
-        # save azavg
-        if datacube.azavg is not None:
-            np.savetxt(azavg_path, datacube.azavg)
-        # save normalized std
-        if datacube.azvar is not None:
-            np.savetxt(normstd_path, datacube.azvar)
+        # # save azavg
+        # if datacube.azavg is not None:
+        #     np.savetxt(azavg_path, datacube.azavg)
+        # # save normalized std
+        # if datacube.azvar is not None:
+        #     np.savetxt(normstd_path, datacube.azvar)
+
         # save q data
-        if datacube.q is not None:
-            lst = ['q', 'Iq', 'Autofit', 'phiq', 'phiq_damp']
-            df = pd.DataFrame({name: getattr(datacube, name) for name in lst if getattr(datacube, name) is not None})
-            df.to_csv(data_q_path, index=None)
+        # if datacube.q is not None:
+        #     lst = ['q', 'Iq', 'Autofit', 'phiq', 'phiq_damp']
+        #     df = pd.DataFrame({name: getattr(datacube, name) for name in lst if getattr(datacube, name) is not None})
+        #     df.to_csv(data_q_path, index=None)
+
+        # full q data
+        if datacube.full_q is not None:
+            # q, Iq, Autofit, phiq, phiq_damp
+            df_q = pd.DataFrame({'q':datacube.full_q})
+            df_q['Iq'] = datacube.azavg
+
+            lst = ['Autofit', 'phiq', 'phiq_damp']
+            for l in lst:
+                df_q[l] = np.nan
+                df_q[l][datacube.pixel_start_n:datacube.pixel_end_n+1] = getattr(datacube, l)
+            df_q.to_csv(data_q_path, index=None)
+
         # save r data
         if datacube.r is not None:
             lst = ['r', 'Gr']
-            df = pd.DataFrame({name: getattr(datacube, name) for name in lst if getattr(datacube, name) is not None})
-            df.to_csv(data_r_path, index=None)
+            df_r = pd.DataFrame({name: getattr(datacube, name) for name in lst if getattr(datacube, name) is not None})
+            df_r.to_csv(data_r_path, index=None)
         # save img data
         if imgPanel is not None and datacube.img is not None:
             imgPanel.imageView.export(img_path)
@@ -323,7 +339,10 @@ def load_preset(fp:str=None, dc:DataCube=None) -> DataCube:
 
     if dc is None:
         dc = DataCube()
-    content = json.load(open(fp))
+    try:
+        content = json.load(open(fp))
+    except:
+        print(f"Error while loading preset file: {fp}")
 
     azavg_path = os.path.join(os.path.split(fp)[0], fp[:fp.rfind(preset_ext)] + azavg_ext)
     data_r_path = os.path.join(os.path.split(fp)[0], fp[:fp.rfind(preset_ext)] + data_r_ext)
@@ -332,34 +351,54 @@ def load_preset(fp:str=None, dc:DataCube=None) -> DataCube:
 
     dc.load_file_path = fp
     dc.preset_file_path = fp
-    if os.path.isfile(azavg_path):
-        df_azavg = np.loadtxt(azavg_path)
-        dc.azavg = df_azavg
-    if os.path.isfile(normstd_path):
-        df_normstd = np.loadtxt(normstd_path)
-        dc.azvar = df_normstd
-    if os.path.isfile(data_r_path):
-        df_r = pd.read_csv(data_r_path)
-        for column in df_r.columns:
-            setattr(dc, column, df_r[column].to_numpy())
-    if os.path.isfile(data_q_path):
-        df_q = pd.read_csv(data_q_path)
-        for column in df_q.columns:
-            setattr(dc, column, df_q[column].to_numpy())
-
-    # deprecated: mrc_file_path
-    if 'mrc_file_path' in content.keys():
-        content['mrc_file_path'] = os.path.abspath(os.path.join(fp, "..", content['mrc_file_path']))
-        content['mrc_file_path'] = os.path.abspath(os.path.join(fp, "..", content['mrc_file_path']))
-    # convert relative path to absolute path
-    if 'img_file_path' in content.keys():
-        content['img_file_path'] = os.path.abspath(os.path.join(fp, "..", content['img_file_path']))
-        content['img_file_path'] = os.path.abspath(os.path.join(fp, "..", content['img_file_path']))
 
     # put content in DataCube
     for key, value in content.items():
         if key in vars(dc).keys():
             setattr(dc, key, value)
+
+    if os.path.isfile(azavg_path):
+        df_azavg = np.loadtxt(azavg_path)
+        dc.azavg = df_azavg
+
+    # previous q
+    if os.path.isfile(data_q_path):
+        df_q = pd.read_csv(data_q_path)
+        for column in df_q.columns:
+            setattr(dc, column, df_q[column].to_numpy())
+
+    # current version of q
+    if (dc.pixel_end_n - dc.pixel_start_n+1) != len(df_q):
+        df_q = pd.read_csv(data_q_path)
+        dc.full_q = df_q['q']
+        dc.Iq = np.array(dc.azavg[dc.pixel_start_n:dc.pixel_end_n+1])
+        dc.q = np.array(dc.full_q[dc.pixel_start_n:dc.pixel_end_n+1])
+        dc.phiq = np.array(df_q['phiq'][dc.pixel_start_n:dc.pixel_end_n+1])
+        dc.phiq_damp = np.array(df_q['phiq_damp'][dc.pixel_start_n:dc.pixel_end_n+1])
+        dc.Autofit = np.array(df_q['Autofit'][dc.pixel_start_n:dc.pixel_end_n+1])
+
+    if os.path.isfile(data_r_path):
+        df_r = pd.read_csv(data_r_path)
+        for column in df_r.columns:
+            setattr(dc, column, df_r[column].to_numpy())
+
+
+
+    if os.path.isfile(normstd_path):
+        df_normstd = np.loadtxt(normstd_path)
+        dc.azvar = df_normstd
+
+
+
+    # deprecated: img load
+        #     deprecated: mrc_file_path
+        #     if 'mrc_file_path' in content.keys():
+        #         content['mrc_file_path'] = os.path.abspath(os.path.join(fp, "..", content['mrc_file_path']))
+        #         content['mrc_file_path'] = os.path.abspath(os.path.join(fp, "..", content['mrc_file_path']))
+        #     # convert relative path to absolute path
+        #     if 'img_file_path' in content.keys():
+        #         content['img_file_path'] = os.path.abspath(os.path.join(fp, "..", content['img_file_path']))
+        #         content['img_file_path'] = os.path.abspath(os.path.join(fp, "..", content['img_file_path']))
 
     return dc
 

@@ -47,6 +47,7 @@ class DataCube:
         self.all_q = None
 
         self.q = None
+        self.full_q = None
         self.Iq = None
 
         self.SS = None

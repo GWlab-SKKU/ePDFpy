@@ -142,6 +142,8 @@ class AdvancedFitWindow(QtWidgets.QWidget):
     def cell_clicked(self):
         print("cell_clicked")
         row = self.panel_table.table.currentRow()
+        if len(self.gr_plot_lst) == 0:
+            return
         for irow in range(self.panel_control.spinBox_result_count.value()):
             color = pg.intColor(irow, minValue=200, alpha=255)
             if irow == row:
