@@ -401,10 +401,12 @@ class DataViewer(QtWidgets.QMainWindow):
             self.menu_save_all_preset_as()
             return
 
+        temp_page_num = self.current_page
         for i in range(len(self.dcs)):
             self.load_dc(i)
             self.PDF_analyser.manualfit()
             file.save_preset([self.dcs[self.current_page]], self, None, stack=True, saveas=False)
+        self.load_dc(temp_page_num)
 
     def menu_save_all_preset_as(self):
         if len(self.dcs) == 0:
@@ -415,12 +417,12 @@ class DataViewer(QtWidgets.QMainWindow):
         if not fpth:
             return
 
+        temp_page_num = self.current_page
         for i in range(len(self.dcs)):
             self.load_dc(i)
             self.PDF_analyser.manualfit()
             file.save_preset([self.dcs[self.current_page]], self, fpth, stack=True, saveas=True)
-
-
+        self.load_dc(temp_page_num)
 
     def menu_save_azavg_only(self):
         if self.dcs[self.current_page].azavg is not None:
