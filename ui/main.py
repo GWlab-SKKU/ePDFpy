@@ -388,6 +388,8 @@ class DataViewer(QtWidgets.QMainWindow):
 
         self.PDF_analyser.manualfit()
         fpth = QtWidgets.QFileDialog.getExistingDirectory(self,"")
+        if not fpth:
+            return
         file.save_preset([self.dcs[self.current_page]], self, fpth, stack=False, saveas=True)
 
     def menu_save_all_preset(self):
@@ -409,8 +411,10 @@ class DataViewer(QtWidgets.QMainWindow):
             QMessageBox.about(self,"","No data is loaded")
             return
 
-        self.PDF_analyser.manualfit()
         fpth = QtWidgets.QFileDialog.getExistingDirectory(self, "")
+        if not fpth:
+            return
+
         for i in range(len(self.dcs)):
             self.load_dc(i)
             self.PDF_analyser.manualfit()
