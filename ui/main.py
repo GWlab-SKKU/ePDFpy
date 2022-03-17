@@ -356,6 +356,7 @@ class DataViewer(QtWidgets.QMainWindow):
 
         if len(lst1) == 0:
             QMessageBox.about(self, "", "No file detected")
+            return
         dc = [DataCube(file_path=pth, file_type='azavg') for pth in lst1]
         self.dcs.clear()
         self.dcs.extend(dc)
