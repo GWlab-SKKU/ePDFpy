@@ -356,6 +356,7 @@ class DataViewer(QtWidgets.QMainWindow):
 
         if len(lst1) == 0:
             QMessageBox.about(self, "", "No file detected")
+            return
         dc = [DataCube(file_path=pth, file_type='azavg') for pth in lst1]
         self.dcs.clear()
         self.dcs.extend(dc)
@@ -370,29 +371,59 @@ class DataViewer(QtWidgets.QMainWindow):
         self.load_dc(0)
 
     def menu_save_current_preset(self):
+        if len(self.dcs) == 0:
+            QMessageBox.about(self,"","No data is loaded")
+            return
+
+        if not self.dcs[0].preset_file_path:
+            self.menu_save_current_preset_as()
+            return
+
         self.PDF_analyser.manualfit()
         file.save_preset([self.dcs[self.current_page]], self, None, stack=False, saveas=False)
 
     def menu_save_current_preset_as(self):
+        if len(self.dcs) == 0:
+            QMessageBox.about(self,"","No data is loaded")
+            return
+
         self.PDF_analyser.manualfit()
         fpth = QtWidgets.QFileDialog.getExistingDirectory(self,"")
+        if not fpth:
+            return
         file.save_preset([self.dcs[self.current_page]], self, fpth, stack=False, saveas=True)
 
     def menu_save_all_preset(self):
+        if len(self.dcs) == 0:
+            QMessageBox.about(self,"","No data is loaded")
+            return
+
+        if not self.dcs[0].preset_file_path:
+            self.menu_save_all_preset_as()
+            return
+
+        temp_page_num = self.current_page
         for i in range(len(self.dcs)):
             self.load_dc(i)
             self.PDF_analyser.manualfit()
             file.save_preset([self.dcs[self.current_page]], self, None, stack=True, saveas=False)
+        self.load_dc(temp_page_num)
 
     def menu_save_all_preset_as(self):
-        self.PDF_analyser.manualfit()
+        if len(self.dcs) == 0:
+            QMessageBox.about(self,"","No data is loaded")
+            return
+
         fpth = QtWidgets.QFileDialog.getExistingDirectory(self, "")
+        if not fpth:
+            return
+
+        temp_page_num = self.current_page
         for i in range(len(self.dcs)):
             self.load_dc(i)
             self.PDF_analyser.manualfit()
             file.save_preset([self.dcs[self.current_page]], self, fpth, stack=True, saveas=True)
-
-
+        self.load_dc(temp_page_num)
 
     def menu_save_azavg_only(self):
         if self.dcs[self.current_page].azavg is not None:
