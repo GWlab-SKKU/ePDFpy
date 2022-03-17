@@ -396,7 +396,7 @@ class DataViewer(QtWidgets.QMainWindow):
             return
 
         if not self.dcs[0].preset_file_path:
-            self.menu_save_all_preset_as
+            self.menu_save_all_preset_as()
             return
 
         for i in range(len(self.dcs)):
