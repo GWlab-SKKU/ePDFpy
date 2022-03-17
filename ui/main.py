@@ -370,21 +370,45 @@ class DataViewer(QtWidgets.QMainWindow):
         self.load_dc(0)
 
     def menu_save_current_preset(self):
+        if len(self.dcs) == 0:
+            QMessageBox.about(self,"","No data is loaded")
+            return
+
+        if not self.dcs[0].preset_file_path:
+            self.menu_save_current_preset_as()
+            return
+
         self.PDF_analyser.manualfit()
         file.save_preset([self.dcs[self.current_page]], self, None, stack=False, saveas=False)
 
     def menu_save_current_preset_as(self):
+        if len(self.dcs) == 0:
+            QMessageBox.about(self,"","No data is loaded")
+            return
+
         self.PDF_analyser.manualfit()
         fpth = QtWidgets.QFileDialog.getExistingDirectory(self,"")
         file.save_preset([self.dcs[self.current_page]], self, fpth, stack=False, saveas=True)
 
     def menu_save_all_preset(self):
+        if len(self.dcs) == 0:
+            QMessageBox.about(self,"","No data is loaded")
+            return
+
+        if not self.dcs[0].preset_file_path:
+            self.menu_save_all_preset_as
+            return
+
         for i in range(len(self.dcs)):
             self.load_dc(i)
             self.PDF_analyser.manualfit()
             file.save_preset([self.dcs[self.current_page]], self, None, stack=True, saveas=False)
 
     def menu_save_all_preset_as(self):
+        if len(self.dcs) == 0:
+            QMessageBox.about(self,"","No data is loaded")
+            return
+
         self.PDF_analyser.manualfit()
         fpth = QtWidgets.QFileDialog.getExistingDirectory(self, "")
         for i in range(len(self.dcs)):

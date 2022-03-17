@@ -216,8 +216,6 @@ def save_preset(datacubes, main_window, fpth, stack=True, saveas=True):
         json.dump(presets, open(preset_path, 'w'), indent=2)
         return True
 
-def save_preset_file(datacube, main_window, fpth=None):
-    pass
 
 def save_preset_default(datacube, main_window, fpth=None):
     imgPanel = main_window.profile_extraction.img_panel
