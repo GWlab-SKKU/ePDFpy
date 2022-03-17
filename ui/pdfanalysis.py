@@ -419,9 +419,9 @@ class PdfAnalysis(QtWidgets.QWidget):
         if reply == QMessageBox.Yes:
             self.update_parameter()
             self.Dataviewer.apply_element_to_all(self.datacube)
-            print("Yes")
+            print("Apply calibration factor and element data to all")
         else:
-            print("No")
+            print("Cancel applying calibration factors and elements to all")
 
 
     def btn_radiotail_clicked(self):
