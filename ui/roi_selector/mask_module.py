@@ -23,6 +23,7 @@ class MaskModule():
         self.roi_creator = None
         self.dropdown = DropDown(self)
         self.list_widget = ListWidget(self)
+        self.mask = None
 
         self._mask_reload()
 

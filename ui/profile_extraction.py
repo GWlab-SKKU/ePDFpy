@@ -14,25 +14,30 @@ from ui import ui_util
 pg.setConfigOptions(antialias=True)
 import definitions
 import cv2
+from ui.roi_selector import mask_module
 
 
 class ProfileExtraction(QtWidgets.QWidget):
     def __init__(self, Dataviewer):
         QtWidgets.QWidget.__init__(self)
         self.Dataviewer = Dataviewer
+        self.mask_module = mask_module.MaskModule()
         self.init_ui()
         self.default_setting = util.DefaultSetting()
         self.isShowCenter = True
         self.flag_range_update = False
         self.load_default()
         self.sig_binding()
+
+
+
         # for text
         # self.menu_open_azavg_only(np.loadtxt("/mnt/experiment/TEM diffraction/201126 (test)/sample38_TiTa_annealed/Analysis ePDFpy/Camera 230 mm Ceta 20201126 1649_40s_20f_area01.azavg.txt"))
         # self.menu_open_azavg_only(np.loadtxt(r"V:\experiment\TEM diffraction\201126 (test)\sample38_TiTa_annealed\Analysis ePDFpy\Camera 230 mm Ceta 20201126 1649_40s_20f_area01.azavg.txt"))
         ##
 
     def init_ui(self):
-        self.control_panel = ControlPanel(self.Dataviewer)
+        self.control_panel = ControlPanel(self.Dataviewer, self)
         self.img_panel = ImgPanel()
         self.profile_graph_panel = IntensityProfilePanel()
         self.polar_image_panel = PolarImagePanel()
@@ -224,7 +229,8 @@ class ProfileExtraction(QtWidgets.QWidget):
             return
         img = self.dc.img.copy()
         if self.control_panel.settingPanel.chkBox_show_beam_stopper_mask.isChecked():
-            img = cv2.bitwise_and(img, img, mask=np.bitwise_not(image_process.mask))
+            img = cv2.bitwise_and(img, img, mask=np.bitwise_not(self.mask_module.mask))
+            # img = cv2.bitwise_and(img, img, mask=np.bitwise_not(self.mask_module.mask))
         if self.dc.center[0] is not None and self.control_panel.settingPanel.chkBox_show_centerLine.isChecked():
             img = image_process.draw_center_line(img, self.dc.center)
         self.img_panel.update_img(img)
@@ -258,21 +264,35 @@ class ControlPanel(QtWidgets.QWidget):
     # text_fixed_height = 25
     # text_fixed_width = 70
 
-    def __init__(self, mainWindow):
+    def __init__(self, mainWindow, profile_extraction):
         QtWidgets.QWidget.__init__(self)
         # self.openFilePanel = self.OpenFilePanel("OpenFile", mainWindow)
         self.temp_layout = QtWidgets.QVBoxLayout()
+        self.temp_layout2 = QtWidgets.QHBoxLayout()
         self.settingPanel = self.SettingPanel("Center finding setting")
         self.operationPanel = self.OperationPanel("Operation")
         self.saveLoadPanel = self.SaveLoadPanel("Save and Load",mainWindow)
-        self.temp_layout.addWidget(self.saveLoadPanel)
+        self.maskPanel = self.MaskModule("Mask", profile_extraction)
+        self.temp_layout2.addWidget(self.saveLoadPanel)
+        self.temp_layout2.addWidget(self.maskPanel)
+        self.temp_layout.addLayout(self.temp_layout2)
         self.temp_layout.addWidget(self.settingPanel)
+
 
         layout = QtWidgets.QHBoxLayout()
         # layout.addWidget(self.openFilePanel)
         layout.addLayout(self.temp_layout)
         layout.addWidget(self.operationPanel)
         self.setLayout(layout)
+
+    class MaskModule(QtWidgets.QGroupBox):
+        def __init__(self, arg, profile_extraction):
+            QtWidgets.QGroupBox.__init__(self, arg)
+            self.layout = QtWidgets.QHBoxLayout()
+            self.setLayout(self.layout)
+            self.mask_dropdown = profile_extraction.mask_module.dropdown
+            self.mask_dropdown.setMinimumWidth(100)
+            self.layout.addWidget(self.mask_dropdown)
 
     class SaveLoadPanel(QtWidgets.QGroupBox):
         def __init__(self, arg, mainWindow:QtWidgets.QMainWindow):

@@ -289,6 +289,9 @@ class DataViewer(QtWidgets.QMainWindow):
         # Set index label
         self.top_menu.lbl_current_num.setText(str(self.current_page + 1) + "/" + str(len(self.dcs)))
 
+        # mask module
+        self.profile_extraction.mask_module.update_img(self.dcs[self.current_page].raw_img)
+
     def apply_element_to_all(self, datacube):
         for dc in self.dcs:
             dc.ds = datacube.ds
