@@ -45,9 +45,12 @@ if __name__ == '__main__':
     qw.setLayout(qw.layout)
     img = sample_image_load()
     print("load finished")
-    # dropdown = roi_selector.MaskDropdown(image=img, mask_folder=definitions.MASK_FOLDER_PATH)
-    # qw.layout.addWidget(dropdown)
-    roi_selector.RoiCreater(img).show()
+    import mask_module
+    module = mask_module.MaskModule()
+    module.update_img(img)
+    qw.layout.addWidget(module.dropdown)
+    qw.show()
+    # roi_selector.RoiCreater(img).show()
 
 
     app.exec_()
