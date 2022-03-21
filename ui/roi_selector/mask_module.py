@@ -12,6 +12,7 @@ from pathlib import Path
 from PyQt5.QtCore import QItemSelectionModel
 import json
 import definitions
+from calculate import beam_stopper
 
 class MaskModule():
     def __init__(self, img = None, imageView = None):
@@ -126,6 +127,11 @@ class RoiCreater(QtWidgets.QWidget):
     def draw_roi(self, pnts=None):
         if self.module.img is None:
             return
+        if pnts is None:
+            pnts = beam_stopper.find_polygon(self.module.img)
+            pnts = pnts[:,0,:]
+            pnts = np.flip(pnts, axis=None)
+
         if pnts is None:
             w = self.module.img.shape[0]
             h = self.module.img.shape[1]
