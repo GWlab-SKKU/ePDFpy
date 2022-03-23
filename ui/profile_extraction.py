@@ -229,7 +229,7 @@ class ProfileExtraction(QtWidgets.QWidget):
             return
         img = self.dc.img.copy()
         if self.control_panel.settingPanel.chkBox_show_beam_stopper_mask.isChecked():
-            img = cv2.bitwise_and(img, img, mask=np.bitwise_not(self.mask_module.mask))
+            img = cv2.bitwise_and(img, img, mask=self.mask_module.mask)
             # img = cv2.bitwise_and(img, img, mask=np.bitwise_not(self.mask_module.mask))
         if self.dc.center[0] is not None and self.control_panel.settingPanel.chkBox_show_centerLine.isChecked():
             img = image_process.draw_center_line(img, self.dc.center)

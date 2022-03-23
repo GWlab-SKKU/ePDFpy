@@ -20,7 +20,7 @@ class MaskModule():
         self.imageView = imageView
         self.mask_dict = {}
 
-        self.roi_creator = None
+        self.roi_creator: RoiCreater = None
         self.dropdown = DropDown(self)
         self.list_widget = ListWidget(self)
         self.mask = None
@@ -130,8 +130,9 @@ class RoiCreater(QtWidgets.QWidget):
             return
         if pnts is None:
             pnts = beam_stopper.find_polygon(self.module.img)
-            pnts = pnts[:,0,:]
-            pnts = np.flip(pnts, axis=None)
+            if pnts is not None:
+                pnts = pnts[:,0,:]
+                pnts = np.flip(pnts, axis=None)
 
         if pnts is None:
             w = self.module.img.shape[0]

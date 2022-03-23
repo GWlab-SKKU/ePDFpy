@@ -32,16 +32,21 @@ def find_polygon(raw_img):
     thresh = cv2.threshold(cv2.convertScaleAbs(sobel_magnitude), 0, 1, cv2.THRESH_BINARY)[1]  # Make binary images
     # plt.imshow(thresh)
     # plt.show()
-    trimed_thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel=np.ones((5, 5), np.uint8))  # Remove noise
+    kernel = np.ones(np.round(np.array(img.shape)/300).astype(np.uint8), np.uint8)
+    trimed_thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel=kernel)  # Remove noise
     plt.imshow(trimed_thresh)
     plt.show()
+    if np.sum(trimed_thresh) == 0:
+        print("failed to find contours")
+        return
 
     ######## Find Center #########
     x_size = trimed_thresh.shape[0]
     y_size = trimed_thresh.shape[1]
     y_grid, x_grid = np.meshgrid(np.arange(x_size), np.arange(y_size))
-    x_center = int(np.sum(x_grid * trimed_thresh) / np.sum((trimed_thresh == 1)))
-    y_center = int(np.sum(y_grid * trimed_thresh) / np.sum((trimed_thresh == 1)))
+    x_center = int(np.sum(x_grid * trimed_thresh) / np.sum(trimed_thresh == 1))
+    y_center = int(np.sum(y_grid * trimed_thresh) / np.sum(trimed_thresh == 1))
+
     print(x_center, y_center)
 
     ######## Fill Mask #########
@@ -53,9 +58,9 @@ def find_polygon(raw_img):
 
     contours, hierarchy = cv2.findContours(image=floodfill_img, mode=cv2.RETR_EXTERNAL,
                                            method=cv2.CHAIN_APPROX_TC89_KCOS)
-    image_copy = floodfill_img.copy()
-    a = cv2.drawContours(image=image_copy, contours=contours, contourIdx=-1, color=(255, 255, 255), thickness=20,
-                         lineType=cv2.LINE_AA)
+    # image_copy = floodfill_img.copy()
+    # a = cv2.drawContours(image=image_copy, contours=contours, contourIdx=-1, color=(255, 255, 255), thickness=20,
+    #                      lineType=cv2.LINE_AA)
 
     if len(contours) != 1:
         print("failed to find contours")
