@@ -170,6 +170,9 @@ class RoiCreater(QtWidgets.QWidget):
         return
 
     def btn_ok_clicked(self):
+        if self.txt_name.toPlainText() == "":
+            QtWidgets.QMessageBox.about(self, "", "Enter the mask name")
+            return
         handles = np.array([handle.pos() for handle in self.poly_line_roi.getHandles()])
         handles = handles + np.array(self.poly_line_roi.pos())
         handles = handles.astype(int)
