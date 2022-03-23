@@ -326,6 +326,7 @@ class ListWidget(QtWidgets.QWidget):
         if reply == QtWidgets.QMessageBox.Yes:
             print(indexes)
             for idx in indexes[::-1]:
-                self.items.pop(idx)
+                key = self.items.pop(idx.row())
+                self.module.mask_dict.pop(key)
             self.QList.clear()
             self.QList.addItems(self.items)
