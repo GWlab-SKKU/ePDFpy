@@ -13,9 +13,14 @@ from PyQt5.QtCore import QItemSelectionModel
 import json
 import definitions
 from calculate import beam_stopper
+from PyQt5 import QtCore
 
-class MaskModule():
+class MaskModule(QtCore.QObject):
+    mask_changed = QtCore.pyqtSignal(np.array)
+    data_changed = QtCore.pyqtSignal(np.array)
+
     def __init__(self, img = None, imageView = None):
+        super(MaskModule, self).__init__()
         self.img = img
         self.imageView = imageView
         self.mask_dict = {}
@@ -182,6 +187,8 @@ class RoiCreater(QtWidgets.QWidget):
                   'data':handles}
              })
         self.module._mask_reload()
+        self.module.mask
+        self.module.mask_changed.emit(self.module.mask)
         self.close()
 
     def btn_cancel_clicked(self):
@@ -323,10 +330,12 @@ class ListWidget(QtWidgets.QWidget):
             return
         reply = QtWidgets.QMessageBox.question(None, "Delete", "Are you sure to delete {}?".format(
             self.QList.currentItem().text()), QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
-        if reply == QtWidgets.QMessageBox.Yes:
-            print(indexes)
-            for idx in indexes[::-1]:
-                key = self.items.pop(idx.row())
-                self.module.mask_dict.pop(key)
-            self.QList.clear()
-            self.QList.addItems(self.items)
+        if reply == QtWidgets.QMessageBox.No:
+            return
+        print(indexes)
+        for idx in indexes[::-1]:
+            key = self.items.pop(idx.row())
+            self.module.mask_dict.pop(key)
+        self.QList.clear()
+        self.QList.addItems(self.items)
+        self.module.mask_changed.emit()

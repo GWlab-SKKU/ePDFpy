@@ -118,6 +118,9 @@ class ProfileExtraction(QtWidgets.QWidget):
         self.control_panel.saveLoadPanel.save_current_azavg.triggered.connect(self.Dataviewer.menu_save_azavg_only)
         self.control_panel.saveLoadPanel.save_azavg_stack.triggered.connect(self.Dataviewer.menu_save_azavg_stack)
 
+        self.mask_module.mask_changed.connect(self.update_img)
+
+
     def spinbox_changed_event(self):
         x = self.control_panel.settingPanel.spinBox_center_x.value()
         y = self.control_panel.settingPanel.spinBox_center_y.value()
