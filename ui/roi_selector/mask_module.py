@@ -119,11 +119,12 @@ class RoiCreater(QtWidgets.QWidget):
         if img is None:
             return
         if self.radio_raw.isChecked():
-            self.imageView.setImage(img)
+            disp_img = img
         if self.radio_root.isChecked():
-            self.imageView.setImage(np.power(img,0.5))
+            disp_img = np.power(img, 0.5)
         if self.radio_log.isChecked():
-            self.imageView.setImage(np.log((np.abs(img)+1)))
+            disp_img = np.log((np.abs(img)+1))
+        self.imageView.setImage(disp_img.T)
 
     def draw_roi(self, pnts=None):
         if self.module.img is None:
@@ -132,8 +133,7 @@ class RoiCreater(QtWidgets.QWidget):
             pnts = beam_stopper.find_polygon(self.module.img)
             if pnts is not None:
                 pnts = pnts[:,0,:]
-                pnts = np.flip(pnts, axis=None)
-
+                # pnts = np.flip(pnts, axis=None)
         if pnts is None:
             w = self.module.img.shape[0]
             h = self.module.img.shape[1]
