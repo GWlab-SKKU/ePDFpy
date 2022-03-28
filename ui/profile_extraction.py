@@ -21,7 +21,7 @@ class ProfileExtraction(QtWidgets.QWidget):
     def __init__(self, Dataviewer):
         QtWidgets.QWidget.__init__(self)
         self.Dataviewer = Dataviewer
-        self.mask_module = mask_module.MaskModule()
+        self.mask_module = mask_module.MaskModule(fp=definitions.MASK_PATH)
         self.init_ui()
         self.default_setting = util.DefaultSetting()
         self.isShowCenter = True
@@ -227,12 +227,15 @@ class ProfileExtraction(QtWidgets.QWidget):
             ui_util.update_value(self.control_panel.settingPanel.spinBox_center_y, self.dc.center[1])
 
     def update_img(self):
+        if not hasattr(self,'dc'):
+            return
         if self.dc.img is None:
             self.img_panel.clear_img()
             return
         img = self.dc.img.copy()
         if self.control_panel.settingPanel.chkBox_show_beam_stopper_mask.isChecked():
-            img = cv2.bitwise_and(img, img, mask=self.mask_module.mask)
+            if self.mask_module.mask is not None:
+                img = cv2.bitwise_and(img, img, mask=~self.mask_module.mask)
             # img = cv2.bitwise_and(img, img, mask=np.bitwise_not(self.mask_module.mask))
         if self.dc.center[0] is not None and self.control_panel.settingPanel.chkBox_show_centerLine.isChecked():
             img = image_process.draw_center_line(img, self.dc.center)

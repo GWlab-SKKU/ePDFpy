@@ -1,6 +1,6 @@
 import pyqtgraph as pg
 import PyQt5
-from PyQt5 import QtWidgets, Qt
+from PyQt5 import QtWidgets, Qt, QtGui
 from PyQt5.QtWidgets import QFileDialog
 import sys
 import hyperspy.api as hs
@@ -14,16 +14,18 @@ import json
 import definitions
 from calculate import beam_stopper
 from PyQt5 import QtCore
+import json
 
 class MaskModule(QtCore.QObject):
-    mask_changed = QtCore.pyqtSignal(np.array)
-    data_changed = QtCore.pyqtSignal(np.array)
+    mask_changed = QtCore.pyqtSignal()  # to update mask image
+    data_changed = QtCore.pyqtSignal()
 
-    def __init__(self, img = None, imageView = None):
+    def __init__(self, img = None, imageView = None, fp = None):
         super(MaskModule, self).__init__()
         self.img = img
+        self.fp = fp
         self.imageView = imageView
-        self.mask_dict = {}
+        self.mask_dict = self.mask_load()
 
         self.roi_creator: RoiCreater = None
         self.dropdown = DropDown(self)
@@ -37,17 +39,47 @@ class MaskModule(QtCore.QObject):
         self.dropdown.img = img
         self.list_widget.img = img
 
+    def mask_save(self):
+        if not os.path.isdir(os.path.split(self.fp)[0]):
+            return
+        if self.fp is None:
+            return
+        if len(self.mask_dict) == 0:
+            return
+        save_dict = {}
+        for key, value in self.mask_dict.copy().items():
+            temp = value.copy()
+            temp.update({'data':temp['data'].tolist()})
+            save_dict.update({key: temp})
+        with open(self.fp, 'w') as json_file:
+            json.dump(save_dict, json_file)
+
+    def mask_load(self):
+        try:
+            with open(self.fp, 'r') as json_file:
+                self.mask_dict = json.load(json_file)
+                for key, value in self.mask_dict.items():
+                    value.update({'data': np.array(value['data'])})
+                    self.mask_dict.update({key: value})
+            return self.mask_dict
+        except Exception as e:
+            print("failed to load ",self.fp, e)
+            return {}
+
     def get_current_mask(self):
-        x_y = self.mask_dict[self.dropdown.currentText()]['data']
-        img = np.zeros(self.img.shape)
-        cv2.fillPoly(img, pts=[x_y], color=(255, 255, 255))
-        return img
+        if self.dropdown.currentText() in ['None', "[Edit]", '']:
+            self.mask = None
+        else:
+            x_y = self.mask_dict[self.dropdown.currentText()]['data']
+            img = np.zeros(self.img.shape, dtype=np.uint8)
+            print(x_y)
+            cv2.fillPoly(img, pts=[x_y], color=(255, 255, 255))
+            self.mask = img
 
     def _load_mask(self):
          self.image = json.load(definitions.MASK_PATH)
 
     def _mask_reload(self):
-        self.mask_dict
         self.dropdown.mask_reload()
         self.list_widget.mask_reload()
 
@@ -187,8 +219,8 @@ class RoiCreater(QtWidgets.QWidget):
                   'data':handles}
              })
         self.module._mask_reload()
-        self.module.mask
-        self.module.mask_changed.emit(self.module.mask)
+        self.module.get_current_mask()
+        self.module.mask_changed.emit()
         self.close()
 
     def btn_cancel_clicked(self):
@@ -222,10 +254,12 @@ class DropDown(QtWidgets.QComboBox):
         if self.currentText() not in ['[Edit]','None', ''] and self.img is not None:
             size = self.module.mask_dict[self.currentText()]['size']
             shape = self.img.shape
-            if size != shape:
+            if tuple(size) != tuple(shape):
                 QtWidgets.QMessageBox.about(self,"",
                         f"Size is not matching. \n mask size: {size}\n image size: {shape}")
-
+                return
+        self.module.get_current_mask()
+        self.module.mask_changed.emit()
 
 class ListWidget(QtWidgets.QWidget):
     def __init__(self, module:MaskModule):
@@ -339,3 +373,10 @@ class ListWidget(QtWidgets.QWidget):
         self.QList.clear()
         self.QList.addItems(self.items)
         self.module.mask_changed.emit()
+
+    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
+        super().closeEvent(a0)
+        self.module.mask_save()
+        self.module.get_current_mask()
+        self.module.mask_changed.emit()
+
