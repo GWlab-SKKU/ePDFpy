@@ -130,7 +130,7 @@ class DataCube:
             raise Exception("You don't have img data")
         if self.center[0] is None:
             if (intensity_range is not None) and (step_size is not None):
-                self.calculate_center(intensity_range, step_size)
+                self.calculate_center()
             else:
                 raise Exception("You need to calculate center first")
         tic = time.time()
