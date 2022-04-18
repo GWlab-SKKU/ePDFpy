@@ -92,6 +92,7 @@ class RoiCreater(QtWidgets.QWidget):
         # self.setWindowFlags(self.windowFlags() | Qt.Qt.Window)
 
         layout = QtWidgets.QVBoxLayout()
+        control_layout = QtWidgets.QHBoxLayout()
         self.imageView = pg.ImageView()
         layout_bottom = QtWidgets.QHBoxLayout()
         self.lbl_name = QtWidgets.QLabel("Name:")
@@ -121,10 +122,12 @@ class RoiCreater(QtWidgets.QWidget):
         grp_view_mode.setLayout(view_mode_layout)
         self.radio_raw.setChecked(True)
 
+        control_layout.addWidget(grp_view_mode)
+        control_layout.addWidget(grp_save)
         layout.addWidget(self.imageView)
-        layout.addWidget(grp_view_mode)
-        layout.addWidget(grp_save)
+        layout.addLayout(control_layout)
         self.setLayout(layout)
+
         # self.setBaseSize(800,800)
         self.setMinimumSize(800,700)
 
