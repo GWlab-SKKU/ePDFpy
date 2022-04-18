@@ -16,6 +16,7 @@ from calculate import beam_stopper
 from PyQt5 import QtCore
 import json
 
+
 class MaskModule(QtCore.QObject):
     mask_changed = QtCore.pyqtSignal()  # to update mask image
     data_changed = QtCore.pyqtSignal()
@@ -83,15 +84,38 @@ class MaskModule(QtCore.QObject):
         self.dropdown.mask_reload()
         self.list_widget.mask_reload()
 
-class RoiCreater(QtWidgets.QWidget):
+class RoiCreater(QtWidgets.QMainWindow):
     def __init__(self, module:MaskModule, img, name=None, pnts=None):
         QtWidgets.QWidget.__init__(self)
         self.module = module
         self.img = img
         self.pnts = pnts
-        # self.setWindowFlags(self.windowFlags() | Qt.Qt.Window)
+        self.name = name
 
+        self.init_ui()
+
+        self.initial_image_load(self.img)
+
+        self.create_menubar()
+
+        self.binding()
+
+        self.setWindowTitle("Masking")
+
+    def initial_image_load(self, img):
+        self.update_image(img)
+        if self.pnts is None:
+            self.draw_roi()
+        else:
+            self.draw_roi(self.pnts)
+
+        if self.name is not None:
+            self.txt_name.setText(self.name)
+
+    def init_ui(self):
+        # self.setWindowFlags(self.windowFlags() | Qt.Qt.Window)
         layout = QtWidgets.QVBoxLayout()
+        control_layout = QtWidgets.QHBoxLayout()
         self.imageView = pg.ImageView()
         layout_bottom = QtWidgets.QHBoxLayout()
         self.lbl_name = QtWidgets.QLabel("Name:")
@@ -121,25 +145,31 @@ class RoiCreater(QtWidgets.QWidget):
         grp_view_mode.setLayout(view_mode_layout)
         self.radio_raw.setChecked(True)
 
+        control_layout.addWidget(grp_view_mode)
+        control_layout.addWidget(grp_save)
         layout.addWidget(self.imageView)
-        layout.addWidget(grp_view_mode)
-        layout.addWidget(grp_save)
-        self.setLayout(layout)
+        layout.addLayout(control_layout)
+        self.mainWidget = QtWidgets.QWidget()
+        self.mainWidget.setLayout(layout)
+        self.setCentralWidget(self.mainWidget)
+
         # self.setBaseSize(800,800)
-        self.setMinimumSize(800,700)
+        self.setMinimumSize(800, 700)
 
-        self.update_image(self.img)
-        if pnts is None:
-            self.draw_roi()
-        else:
-            self.draw_roi(pnts)
+    def create_menubar(self):
+        menubar = self.menuBar()
+        menu_file = menubar.addMenu("\tFile\t")
 
-        if name is not None:
-            self.txt_name.setText(name)
+        self.action_import_image = QtWidgets.QAction("Import image", self)
+        self.action_import_poly = QtWidgets.QAction("Import polygon", self)
+        self.action_export_poly = QtWidgets.QAction("Export polygon", self)
+        self.action_export_mask = QtWidgets.QAction("Export mask", self)
 
-        self.binding()
-
-        self.setWindowTitle("Masking")
+        menu_file.addAction(self.action_import_image)
+        menu_file.addAction(self.action_import_poly)
+        menu_file.addAction(self.action_export_poly)
+        menu_file.addAction(self.action_export_mask)
+        return menubar
 
     def start(self, new:bool):
         print("start Hello")
@@ -155,6 +185,7 @@ class RoiCreater(QtWidgets.QWidget):
             img = self.module.img
         if img is None:
             return
+        self.img = img
         if self.radio_raw.isChecked():
             disp_img = img
         if self.radio_root.isChecked():
@@ -187,6 +218,25 @@ class RoiCreater(QtWidgets.QWidget):
         self.radio_raw.toggled.connect(lambda x: self.update_image())
         self.radio_root.toggled.connect(lambda x: self.update_image())
         self.radio_log.toggled.connect(lambda x: self.update_image())
+        self.action_import_image.triggered.connect(self.import_image)
+        self.action_import_poly.triggered.connect(self.import_poly)
+        self.action_export_mask.triggered.connect(self.export_mask)
+        self.action_export_poly.triggered.connect(self.export_poly)
+
+    def import_image(self):
+        fp, _ = QFileDialog.getOpenFileName()
+        img, _ = file.load_diffraction_img(fp)
+        self.update_image(img)
+
+    def import_poly(self):
+        pass
+
+    def export_mask(self):
+        pass
+
+    def export_poly(self):
+        pass
+
 
     def btn_export_clicked(self):
         handles = [handle.pos() for handle in self.poly_line_roi.getHandles()]
@@ -342,7 +392,7 @@ class ListWidget(QtWidgets.QWidget):
         if self.module is not None:
             for i in range(len(self.QList)):
                 name = self.QList.item(i).text()
-                new_mask_dict.update({name:self.module.mask_dict[name]})
+                new_mask_dict.update({name: self.module.mask_dict[name]})
             self.module.mask_dict = new_mask_dict
             self.module._mask_reload()
 
@@ -380,3 +430,6 @@ class ListWidget(QtWidgets.QWidget):
         self.module.get_current_mask()
         self.module.mask_changed.emit()
 
+
+if __name__ == "__init__":
+    __name__

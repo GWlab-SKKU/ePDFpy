@@ -110,7 +110,7 @@ class DataCube:
     def image_ready(self):
         if self.img_file_path is None or not os.path.isfile(self.img_file_path):
             return False
-        self.raw_img, self.img = file.load_img(self.img_file_path)
+        self.raw_img, self.img = file.load_diffraction_img(self.img_file_path)
         return True
 
 
