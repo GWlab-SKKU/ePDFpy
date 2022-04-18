@@ -12,6 +12,7 @@ import definitions
 import re
 import cv2
 from PIL import Image
+import hyperspy.api as hs
 
 ePDFpy_analysis_folder_name = "Analysis ePDFpy"
 preset_ext = ".preset.json"
@@ -22,22 +23,29 @@ data_r_ext = ".r.csv"
 image_ext = ".img.png"
 rdf_screen_ext = ".rdf.png"
 
-def load_img(fp):
+def load_diffraction_img(fp):
     ext = os.path.splitext(fp)[1]
     if not os.path.isfile(fp):
+        print(f"{fp} is not a file")
         return
-    if ext in ['.jpg','.jpeg','.tiff','.png']:
+    if ext in ['.jpg', '.jpeg', '.tiff', '.png']:
         raw_img, easy_img = load_PIL_img(fp)
     elif ext in ['.mrc']:
         raw_img, easy_img = load_mrc_img(fp)
-    elif ext in ['.dm3']:
-        pass
-    elif ext in ['.txt','.csv']:
-        raw_img, easy_img = None
-        pass
+    elif ext in ['.dm3', '.dm4']:
+        raw_img, easy_img = load_dm_img(fp)
+    elif ext in ['.txt', '.csv']:
+        raw_img, easy_img = load_txt_img(fp)
     else:
         print("Error, Non support data type")
+    print(f"Load '{fp}', shape {str(raw_img.shape)}")
     return raw_img, easy_img
+
+def load_4d_stem(fp):
+    pass
+
+def load_dm_img(fp):
+    return hs.load(fp).data, None
 
 def load_txt_img(fp):
     ext = os.path.splitext(fp)[1]
@@ -319,7 +327,7 @@ def load_azavg(fp) -> np.ndarray:
 
 def save_azavg_only(azavg):
     fp, ext = QFileDialog.getSaveFileName(filter="csv (*.csv);; txt (*.txt)")
-    if fp is '':
+    if fp == '':
         return
     if 'csv' in ext:
         np.savetxt(fp,azavg,delimiter=',')
