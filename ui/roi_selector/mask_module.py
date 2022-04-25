@@ -184,6 +184,8 @@ class RoiCreater(QtWidgets.QMainWindow):
         if img is None:
             img = self.module.img
         if img is None:
+            img = self.img
+        if img is None:
             return
         self.img = img
         if self.radio_raw.isChecked():
@@ -195,22 +197,31 @@ class RoiCreater(QtWidgets.QMainWindow):
         self.imageView.setImage(disp_img.T)
 
     def draw_roi(self, pnts=None):
-        if self.module.img is None:
+        if hasattr(self,'poly_line_roi'):
+            pass  # todo:
+
+        if self.img is None:
             return
         if pnts is None:
-            pnts = beam_stopper.find_polygon(self.module.img)
+            pnts = beam_stopper.find_polygon(self.img)
             if pnts is not None:
                 pnts = pnts[:,0,:]
                 # pnts = np.flip(pnts, axis=None)
         if pnts is None:
-            w = self.module.img.shape[0]
-            h = self.module.img.shape[1]
+            w = self.img.shape[0]
+            h = self.img.shape[1]
             pnts = [[int(w / 2) - int(w / 10), int(h / 2) - int(h / 10)],
                     [int(w / 2) + int(w / 10), int(h / 2) - int(h / 10)],
                     [int(w / 2) + int(w / 10), int(h / 2) + int(h / 10)],
                     [int(w / 2) - int(w / 10), int(h / 2) + int(h / 10)]]
-        self.poly_line_roi = pg.PolyLineROI(pnts, closed=True)
-        self.imageView.addItem(self.poly_line_roi)
+        self.draw_poly(pnts)
+
+    def draw_poly(self, pnts):
+        if hasattr(self,'poly_line_roi') and isinstance(self.poly_line_roi,pg.ROI):
+            self.poly_line_roi.setPoints(pnts, closed=True)
+        else:
+            self.poly_line_roi = pg.PolyLineROI(pnts, closed=True)
+            self.imageView.addItem(self.poly_line_roi)
 
     def binding(self):
         self.btn_ok.clicked.connect(self.btn_ok_clicked)
@@ -225,17 +236,51 @@ class RoiCreater(QtWidgets.QMainWindow):
 
     def import_image(self):
         fp, _ = QFileDialog.getOpenFileName()
-        img, _ = file.load_diffraction_img(fp)
-        self.update_image(img)
+        if fp:
+            img, _ = file.load_diffraction_img(fp)
+            self.initial_image_load(img)
 
     def import_poly(self):
-        pass
+        if self.img is None:
+            QtWidgets.QMessageBox.about(None, "You have to load image first.")
+            return
+        fp, _ = QFileDialog.getOpenFileName()
+        if fp:
+            pnts = np.loadtxt(fp, delimiter=',')
+            self.draw_poly(pnts)
+
+
+
 
     def export_mask(self):
-        pass
+        handles = [handle.pos() for handle in self.poly_line_roi.getHandles()]
+        handles = np.array(handles).astype(np.int)
+
+        img = np.zeros(self.imageView.image.shape)
+        cv2.fillPoly(img, pts=[handles], color=(255, 255, 255))
+
+        fp, _ = QFileDialog.getSaveFileName()
+        if fp == "":
+            return
+
+        if os.path.splitext(fp)[1] is None or os.path.splitext(fp)[1] != ".csv":
+            fp = fp + ".csv"
+        np.savetxt(fp, img, delimiter=',', fmt='%s')
+        print("save to {}".format(fp))
 
     def export_poly(self):
-        pass
+        handles = [handle.pos() for handle in self.poly_line_roi.getHandles()]
+        handles = np.array(handles).astype(np.int)
+
+        fp, _ = QFileDialog.getSaveFileName()
+        if fp == "":
+            return
+
+        if os.path.splitext(fp)[1] is None or os.path.splitext(fp)[1] != ".csv":
+            fp = fp + ".csv"
+
+        np.savetxt(fp, handles, delimiter=',', fmt='%s')
+        print("save to {}".format(fp))
 
 
     def btn_export_clicked(self):
