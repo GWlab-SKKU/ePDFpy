@@ -73,7 +73,6 @@ class MaskModule(QtCore.QObject):
         else:
             x_y = self.mask_dict[self.dropdown.currentText()]['data']
             img = np.zeros(self.img.shape, dtype=np.uint8)
-            print(x_y)
             cv2.fillPoly(img, pts=[x_y], color=(255, 255, 255))
             self.mask = img
 
@@ -172,7 +171,6 @@ class RoiCreater(QtWidgets.QMainWindow):
         return menubar
 
     def start(self, new:bool):
-        print("start Hello")
         self.show()
         pnts = None
         if not new:
@@ -476,5 +474,13 @@ class ListWidget(QtWidgets.QWidget):
         self.module.mask_changed.emit()
 
 
-if __name__ == "__init__":
-    __name__
+if __name__ == '__main__':
+    qtapp = QtWidgets.QApplication.instance()
+    if not qtapp:
+        qtapp = QtWidgets.QApplication(sys.argv)
+    maskModule = MaskModule(fp=definitions.MASK_PATH)
+
+    app = maskModule.list_widget
+    app.btn_new_clicked()
+
+    sys.exit(qtapp.exec_())
