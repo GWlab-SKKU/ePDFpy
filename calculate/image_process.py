@@ -78,7 +78,7 @@ def _evaluate_center(img, center, max_d=None, mask=None):
     dr = 1
     dphi = np.radians(2)
 
-    if mask:
+    if mask is not None:
         polar_img = polar_transform.cartesian_to_polarelliptical_transform(img, [center[1], center[0], 1, 1, 0], dr=dr,
                                                                            dphi=dphi, mask=~mask)
     else:
@@ -292,7 +292,7 @@ def calculate_azimuthal_average(raw_image, center, mask=None):
     mesh_x = mesh[0] - center[0]
     mesh_y = mesh[1] - center[1]
     rr = np.power(np.square(mesh_x) + np.square(mesh_y), 0.5)
-    if mask:
+    if mask is not None:
         rr = cv2.bitwise_and(rr, rr, mask=np.bitwise_not(mask))
     else:
         rr = cv2.bitwise_and(rr, rr)

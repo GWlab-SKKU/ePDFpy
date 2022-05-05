@@ -1,15 +1,11 @@
 import pyqtgraph as pg
-import PyQt5
-from PyQt5 import QtWidgets, Qt
+from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QFileDialog
-import sys
-import hyperspy.api as hs
 import numpy as np
 import cv2
 import os
-import file
+from file import file
 from pathlib import Path
-from PyQt5.QtCore import QItemSelectionModel
 
 
 # w2 = w.addLayout(row=0, col=1)

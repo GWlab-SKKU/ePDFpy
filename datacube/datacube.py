@@ -1,12 +1,10 @@
-import file
+from file import file
 from calculate import image_process
 
 import os
-import cv2
-import numpy as np
 import time
 import pandas as pd
-from PIL import Image
+
 
 class DataCube:
     _use_cupy = False
@@ -60,7 +58,6 @@ class DataCube:
         self.scattering_factor = None
         self.electron_voltage = None
 
-        self.original_data = None
         self.mask = None
 
         self.load_file_path = file_path
@@ -69,7 +66,7 @@ class DataCube:
         self.img_file_path = None
         if file_type == "preset":
             self.preset_file_path = self.load_file_path
-            file.load_preset(self,self.preset_file_path)
+            file.load_preset(self, self.preset_file_path)
         elif file_type == "azavg":
             self.azavg_file_path = self.load_file_path
             self.azavg = file.load_azavg(self.azavg_file_path)
@@ -77,16 +74,6 @@ class DataCube:
             self.img_file_path = self.load_file_path
             # file.load_mrc_img(self,self.mrc_file_path)
         self.load_data()
-
-    def initialize_pdf_parameter(self):
-        self.pixel_start_n = None
-        self.pixel_end_n = None
-        self.fit_at_q = None
-        self.N = None
-        self.damping = None
-        self.rmax = None
-        self.dr = None
-        self.is_full_q = None
 
     def load_data(self):
         if self.load_file_path is None:
@@ -105,16 +92,12 @@ class DataCube:
             self.original_data_has_column = True
         df.columns = df.columns.astype(str)
         self.pd_data = df
-        self.original_data = df.to_numpy()
 
     def image_ready(self):
         if self.img_file_path is None or not os.path.isfile(self.img_file_path):
             return False
         self.raw_img, self.img = file.load_diffraction_img(self.img_file_path)
         return True
-
-
-
 
     def release(self):
         self.raw_img, self.img = None, None
@@ -136,7 +119,7 @@ class DataCube:
         tic = time.time()
         self.azavg = image_process.calculate_azimuthal_average(self.raw_img, self.center)
         toc = time.time()
-        print("Time to get azavg:",toc-tic)
+        print("Time to get azavg:", toc-tic)
         return self.azavg
 
     # def save_azimuthal_data(self, intensity_start, intensity_end, intensity_slice, imgPanel=None, draw_center_line=False, masking=False):

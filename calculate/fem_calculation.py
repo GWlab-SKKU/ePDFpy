@@ -1,4 +1,5 @@
 
+
 """
 Functions related to elliptical calibration, such as fitting elliptical
 distortions.
@@ -14,7 +15,9 @@ the module docstring for process/utils/elliptical_coords.py.
 """
 import time
 import numpy as np
-from scipy.optimize import leastsq
+from scipy.optimize import leastsq,curve_fit
+from itertools import product
+import matplotlib.pyplot as plt
 from scipy.ndimage.filters import gaussian_filter
 
 ###### Fitting a 1d elliptical curve to a 2d array, e.g. a Bragg vector map ######
@@ -139,8 +142,9 @@ def fit_ellipse_amorphous_ring(data,center,fitradii,p0=None,mask=None):
     # Return
     _x0,_y0 = p[6],p[7]
     _A,_B,_C = p[8],p[9],p[10]
-    _a,_b,_theta = convert_ellipse_params(_A,_B,_C)
-    return (_x0,_y0,_a,_b,_theta),p
+    # _a,_b,_theta = convert_ellipse_params(_A,_B,_C)
+    # return (_x0, _y0, _a, _b, _theta), p
+    return (_x0,_y0,_A,_B,_C),p
 
 def double_sided_gaussian_fiterr(p, x, y, val):
     """
@@ -357,6 +361,112 @@ def cartesian_to_polarelliptical_transform(
     )
     return polarEllipticalData, rr, pp
 
+
+def accum(accmap, a, func=None, size=None, fill_value=0, dtype=None):
+    """
+    An accumulation function similar to Matlab's `accumarray` function.
+
+    Parameters
+    ----------
+    accmap : ndarray
+        This is the "accumulation map".  It maps input (i.e. indices into
+        `a`) to their destination in the output array.  The first `a.ndim`
+        dimensions of `accmap` must be the same as `a.shape`.  That is,
+        `accmap.shape[:a.ndim]` must equal `a.shape`.  For example, if `a`
+        has shape (15,4), then `accmap.shape[:2]` must equal (15,4).  In this
+        case `accmap[i,j]` gives the index into the output array where
+        element (i,j) of `a` is to be accumulated.  If the output is, say,
+        a 2D, then `accmap` must have shape (15,4,2).  The value in the
+        last dimension give indices into the output array. If the output is
+        1D, then the shape of `accmap` can be either (15,4) or (15,4,1)
+    a : ndarray
+        The input data to be accumulated.
+    func : callable or None
+        The accumulation function.  The function will be passed a list
+        of values from `a` to be accumulated.
+        If None, numpy.sum is assumed.
+    size : ndarray or None
+        The size of the output array.  If None, the size will be determined
+        from `accmap`.
+    fill_value : scalar
+        The default value for elements of the output array.
+    dtype : numpy data type, or None
+        The data type of the output array.  If None, the data type of
+        `a` is used.
+
+    Returns
+    -------
+    out : ndarray
+        The accumulated results.
+
+        The shape of `out` is `size` if `size` is given.  Otherwise the
+        shape is determined by the (lexicographically) largest indices of
+        the output found in `accmap`.
+
+
+    Examples
+    --------
+    >>> from numpy import array, prod
+    >>> a = array([[1,2,3],[4,-1,6],[-1,8,9]])
+    >>> a
+    array([[ 1,  2,  3],
+           [ 4, -1,  6],
+           [-1,  8,  9]])
+    >>> # Sum the diagonals.
+    >>> accmap = array([[0,1,2],[2,0,1],[1,2,0]])
+    >>> s = accum(accmap, a)
+    array([9, 7, 15])
+    >>> # A 2D output, from sub-arrays with shapes and positions like this:
+    >>> # [ (2,2) (2,1)]
+    >>> # [ (1,2) (1,1)]
+    >>> accmap = array([
+            [[0,0],[0,0],[0,1]],
+            [[0,0],[0,0],[0,1]],
+            [[1,0],[1,0],[1,1]],
+        ])
+    >>> # Accumulate using a product.
+    >>> accum(accmap, a, func=prod, dtype=float)
+    array([[ -8.,  18.],
+           [ -8.,   9.]])
+    >>> # Same accmap, but create an array of lists of values.
+    >>> accum(accmap, a, func=lambda x: x, dtype='O')
+    array([[[1, 2, 4, -1], [3, 6]],
+           [[-1, 8], [9]]], dtype=object)
+    """
+
+    # Check for bad arguments and handle the defaults.
+    if accmap.shape[:a.ndim] != a.shape:
+        raise ValueError("The initial dimensions of accmap must be the same as a.shape")
+    if func is None:
+        func = np.sum
+    if dtype is None:
+        dtype = a.dtype
+    if accmap.shape == a.shape:
+        accmap = np.expand_dims(accmap, -1)
+    adims = tuple(range(a.ndim))
+    if size is None:
+        size = 1 + np.squeeze(np.apply_over_axes(np.max, accmap, axes=adims))
+    size = np.atleast_1d(size)
+
+    # Create an array of python lists of values.
+    vals = np.empty(size, dtype='O')
+    for s in product(*[range(k) for k in size]):
+        vals[s] = []
+    for s in product(*[range(k) for k in a.shape]):
+        indx = tuple(accmap[s])
+        val = a[s]
+        vals[indx].append(val)
+
+    # Create the output array.
+    out = np.empty(size, dtype=dtype)
+    for s in product(*[range(k) for k in size]):
+        if vals[s] == []:
+            out[s] = fill_value
+        else:
+            out[s] = func(vals[s])
+
+    return out
+
 def autofit(dc, mask=None):
     initial_center = [dc.shape[2]//2,dc.shape[1]//2]
     if mask is not None:
@@ -397,3 +507,108 @@ def get_FEM(dc, mask, elliptical_p):
     radialVarNorm = radialVar / radialMean ** 2
 
     return radialVarNorm
+
+
+def elliptical_fitting_matlab(image, mask=None):
+    def fit_func(x, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11):
+        Rsq = (x[:, 0] - c1) ** 2 + c4 * (x[:, 0] - c1) * (x[:, 1] - c2) + c3 * (x[:, 1] - c2) ** 2
+        rs = c5 + \
+             c6 * np.exp(-1 / 2 / c7 ** 2 * Rsq) + \
+             c9 * np.exp(-1 / 2 / c10 ** 2 * np.abs(c8 - np.sqrt(Rsq)) ** 2) * (c8 ** 2 > Rsq) + \
+             c9 * np.exp(-1 / 2 / c11 ** 2 * np.abs(c8 - np.sqrt(Rsq)) ** 2) * (c8 ** 2 < Rsq)
+        return rs
+
+    if mask is None:
+        mask = np.ones(image.shape)
+    skipFit = [11, 1]
+    stackSize = image.shape
+    ya, xa = np.meshgrid(np.arange(image.shape[0]), np.arange(image.shape[1]))
+    inds2D = np.ravel_multi_index([ya, xa], stackSize[1:3])
+    basis = np.array((ya.reshape(-1), xa.reshape(-1))).transpose()
+    p0 = 1.0e+03 * np.array([0.2565, 0.2624, 0.0010, 0.0001, 0.0, 1.4273, 0.0535,
+                             0.1198, 0.2895, 0.0118, 0.0104])
+    lb = [0, 0, 0.5, -0.5,
+          0, 0, 0, 0, 0, 0, 0];
+    ub = [stackSize[1], stackSize[2], 2, 0.5
+        , np.Inf, np.Inf, np.Inf, np.Inf, np.Inf, np.Inf, np.Inf];
+    coefsInit = p0
+    for a0 in range(0, len(skipFit)):
+        maskFit = (inds2D % skipFit[a0]) == 0;
+        coefsInit = curve_fit(fit_func,
+                              basis[np.logical_and(mask.reshape(-1), maskFit.reshape(-1))],
+                              image[np.logical_and(mask, maskFit)],
+                              p0=coefsInit,
+                              bounds=(lb, ub)
+                              )[0]
+    A = 1.0
+    B = coefsInit[3]
+    C = coefsInit[2]
+    coefs = [coefsInit[1], coefsInit[0], A, C, B]
+
+    ellipse_rs = [coefs, coefsInit]
+    return ellipse_rs
+
+
+def polar_transformation_matlab(image, ellipse_rs, mask=None, **kargs):
+    pixelSize = kargs.get('pixelSize', 1)
+    rSigma = kargs.get('rSigma', 0.1)
+    tSigma = kargs.get('tSigma', 1)
+    rMax = kargs.get('rMax', 240)
+    dr = kargs.get('dr', 2)
+    dt = kargs.get('dt', 5)
+
+    polarRadius = np.arange(0, rMax, dr) * pixelSize;
+    polarTheta = np.arange(0, 360, dt) * (np.pi / 180)
+    ya, xa = np.meshgrid(np.arange(image.shape[0]), np.arange(image.shape[1]))
+
+    A, B, C = ellipse_rs[0][2], ellipse_rs[0][3], ellipse_rs[0][4]
+    A, B, C = A/A, B/A, C/A
+    coefs = [ellipse_rs[0][0], ellipse_rs[0][1], C, B]
+    xa = xa - coefs[0]
+    ya = ya - coefs[1]
+    # Correction factors
+    if abs(C) > -6:
+        p0 = -np.arctan((1 - B + np.sqrt((B - 1) ** 2 + C ** 2)) / C);
+    else:
+        p0 = 0;
+
+    a0 = np.sqrt(2 * (1 + C + np.sqrt((C - 1) ** 2 + B ** 2)) / (4 * C - B ** 2))
+    b0 = np.sqrt(2 * (1 + C - np.sqrt((C - 1) ** 2 + B ** 2)) / (4 * C - B ** 2))
+    ratio = b0 / a0;
+    m = [[ratio * np.cos(p0) ** 2 + np.sin(p0) ** 2,
+          -np.cos(p0) * np.sin(p0) + ratio * np.cos(p0) * np.sin(p0)],
+         [-np.cos(p0) * np.sin(p0) + ratio * np.cos(p0) * np.sin(p0),
+          np.cos(p0) ** 2 + ratio * np.sin(p0) ** 2]]
+    m = np.array(m)
+    ta = np.arctan2(m[1, 0] * xa + m[1, 1] * ya, m[0, 0] * xa + m[0, 1] * ya)
+    ra = np.sqrt(xa ** 2 + coefs[2] * ya ** 2 + coefs[3] * xa * ya) * b0
+
+    # Resamping coordinates
+    Nout = [len(polarRadius), len(polarTheta)];
+    rInd = (np.round((ra - polarRadius[0]) / dr)).astype(np.uint)
+    tInd = (np.mod(np.round((ta - polarTheta[0]) / (dt * np.pi / 180)), Nout[1])).astype(np.uint)
+    sub = np.logical_and(rInd <= Nout[0] - 1, rInd >= 0)
+    rtIndsSub = np.array([rInd[sub], tInd[sub]]).T;
+
+    polarNorm = accum(rtIndsSub, np.ones(np.sum(sub)))
+    polarImg = accum(rtIndsSub, image[sub])
+    polarImg = polarImg / polarNorm
+    if mask is None:
+        mask = np.ones(image.shape)
+    polarMask = accum(rtIndsSub, mask[sub]) == 0
+
+    polarImg = np.ma.masked_array(polarImg, polarMask)
+    return polarImg
+
+
+if __name__ == "__main__":
+    from datacube import cube
+    fp = "C:\\Users\\vlftj\\Documents\\sample41_Ta_AD\\Camera 230 mm Ceta 20201030 1709 0001_1_5s_1f_area01.mrc"
+    dc = cube.PDFCube(fp, filetype='image')
+    dc.mask = np.loadtxt('../assets/mask_data.txt', delimiter=',', dtype=np.bool)
+    # dc.find_center()
+    # dc.calculate_azimuthal_average()
+    dc.center = [1201, 1073]
+    polar_img = polar_transformation_matlab(dc.img_display, [[1073, 1201, 1, 0, 1]])
+    plt.imshow(polar_img)
+    plt.show()

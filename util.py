@@ -111,8 +111,8 @@ def load_previous_tiff(dc):
     if not os.path.isfile(load_save):
         print('There is no such file:', load_save)
         return
-    dc.display_img = np.array(Image.open(load_save))
-    return dc.display_img
+    dc.img_display = np.array(Image.open(load_save))
+    return dc.img_display
 
 
 def get_multiple_dc(folder_path):

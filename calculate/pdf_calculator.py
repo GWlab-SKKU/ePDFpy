@@ -5,12 +5,12 @@ paramK = np.loadtxt(definitions.KIRKLAND_PATH)
 paramL = np.loadtxt(definitions.LOBATO_PATH)
 
 
-def calculation(ds, px_start_num, px_end_num, element_nums, ratio, azavg, is_full_q, damping, rmax, dr, electron_voltage, fit_at_q=None, N=None, scattering_factor_type="Kirkland", fitting_range=None):
+def calculation(ds, pixel_start_n, pixel_end_n, element_nums, ratio, azavg, is_full_q, damping, rmax, dr, electron_voltage, fit_at_q=None, N=None, scattering_factor_type="Kirkland", fitting_range=None):
     assert len(element_nums) == len(ratio)
-    if px_start_num is None or px_start_num==0:
-        px_start_num = 1
-    if px_end_num is None or px_end_num==0:
-        px_end_num = len(azavg)
+    if pixel_start_n is None or pixel_start_n==0:
+        pixel_start_n = 1
+    if pixel_end_n is None or pixel_end_n==0:
+        pixel_end_n = len(azavg)
 
     element_nums = np.array(element_nums)
     for idx, element in enumerate(element_nums):
@@ -22,9 +22,9 @@ def calculation(ds, px_start_num, px_end_num, element_nums, ratio, azavg, is_ful
     e_tot = np.sum(np.array(ratio))
     e_ratio = ratio / e_tot
 
-    x = np.arange(px_start_num, px_end_num + 1)  # selected x ranges, end point = end point(eRDF) + 1
+    x = np.arange(pixel_start_n, pixel_end_n + 1)  # selected x ranges, end point = end point(eRDF) + 1
     # Iq = azavg[px_start_num-1:px_end_num]        # Indexing number
-    Iq = azavg[px_start_num: px_end_num + 1]
+    Iq = azavg[pixel_start_n: pixel_end_n + 1]
 
     q = x * ds * 2 * np.pi
 

@@ -1,9 +1,9 @@
 from PyQt5 import QtCore, QtWidgets, QtGui
 import sys
 import pyqtgraph as pg
-import file
+from file import file
 import util
-from datacube import DataCube
+from datacube.cube import PDFCube
 from typing import List
 from ui.pdfanalysis import PdfAnalysis
 from PyQt5.QtWidgets import QMessageBox
@@ -26,7 +26,7 @@ class DataViewer(QtWidgets.QMainWindow):
         self.bottom.addTab(self.profile_extraction,"Profile extraction")
         self.bottom.addTab(self.PDF_analyser, "PDF analysis")
 
-        self.dcs: List[DataCube] = []
+        self.dcs: List[PDFCube] = []
 
         self.setStyleSheet(ui_util.get_style_sheet())
 
@@ -274,7 +274,7 @@ class DataViewer(QtWidgets.QMainWindow):
             self.top_menu.combo_dataQuality.setCurrentIndex(0)
 
         # show image
-        self.dcs[self.current_page].image_ready()
+        # self.dcs[self.current_page].image_ready()
 
         # Update profile_extraction ui
         self.profile_extraction.update_dc(self.dcs[self.current_page])
@@ -290,7 +290,7 @@ class DataViewer(QtWidgets.QMainWindow):
         self.top_menu.lbl_current_num.setText(str(self.current_page + 1) + "/" + str(len(self.dcs)))
 
         # mask module
-        self.profile_extraction.mask_module.update_img(self.dcs[self.current_page].raw_img)
+        self.profile_extraction.mask_module.update_img(self.dcs[self.current_page].img_raw)
 
     def apply_element_to_all(self, datacube):
         for dc in self.dcs:
@@ -305,7 +305,7 @@ class DataViewer(QtWidgets.QMainWindow):
             return
         load_paths.extend(path)
         self.dcs.clear()
-        self.dcs.extend([DataCube(path,'image') for path in load_paths])
+        self.dcs.extend([PDFCube(path,'image') for path in load_paths])
         self.load_dc(0)
 
     def menu_open_image_stack(self, file_type):
@@ -317,7 +317,7 @@ class DataViewer(QtWidgets.QMainWindow):
         if len(load_paths) == 0:
             QtWidgets.QMessageBox.about(None, "No file found", "No file found")
             return
-        dcs = [DataCube(path, 'image') for path in load_paths]
+        dcs = [PDFCube(path, 'image') for path in load_paths]
         if dcs is None:
             return
         self.dcs.clear()
@@ -342,12 +342,12 @@ class DataViewer(QtWidgets.QMainWindow):
             fp, _ = QtWidgets.QFileDialog.getOpenFileName(self, filter="csv (*.csv); text file (*.txt)")
             if fp is '':
                 return
-            dc = DataCube(file_path=fp,file_type='azavg')
+            dc = PDFCube(fp,'profile')
             self.dcs.clear()
             self.dcs.append(dc)
         else:
             self.dcs.clear()
-            self.dcs.append(DataCube())
+            self.dcs.append(PDFCube())
             self.dcs[0].azavg = azavg
         self.load_dc(0)
 
@@ -360,7 +360,7 @@ class DataViewer(QtWidgets.QMainWindow):
         if len(lst1) == 0:
             QMessageBox.about(self, "", "No file detected")
             return
-        dc = [DataCube(file_path=pth, file_type='azavg') for pth in lst1]
+        dc = [PDFCube(file_path=pth, file_type='profile') for pth in lst1]
         self.dcs.clear()
         self.dcs.extend(dc)
         self.load_dc(0)

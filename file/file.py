@@ -1,4 +1,4 @@
-from datacube import DataCube
+from datacube.datacube import DataCube
 
 import mrcfile
 import os
@@ -23,63 +23,6 @@ data_r_ext = ".r.csv"
 image_ext = ".img.png"
 rdf_screen_ext = ".rdf.png"
 
-def load_diffraction_img(fp):
-    ext = os.path.splitext(fp)[1]
-    if not os.path.isfile(fp):
-        print(f"{fp} is not a file")
-        return
-    if ext in ['.jpg', '.jpeg', '.tiff', '.png']:
-        raw_img, easy_img = load_PIL_img(fp)
-    elif ext in ['.mrc']:
-        raw_img, easy_img = load_mrc_img(fp)
-    elif ext in ['.dm3', '.dm4']:
-        raw_img, easy_img = load_dm_img(fp)
-    elif ext in ['.txt', '.csv']:
-        raw_img, easy_img = load_txt_img(fp)
-    else:
-        print("Error, Non support data type")
-    print(f"Load '{fp}', shape {str(raw_img.shape)}")
-    return raw_img, easy_img
-
-def load_4d_stem(fp):
-    pass
-
-def load_dm_img(fp):
-    return hs.load(fp).data, None
-
-def load_txt_img(fp):
-    ext = os.path.splitext(fp)[1]
-    if ext == '.csv':
-        raw_img = np.loadtxt(fp)
-    if ext == '.txt':
-        raw_img = np.loadtxt(fp)
-    if np.min(raw_img) > 1:
-        easy_img = np.log(raw_img)
-    else:
-        easy_img = np.log(np.abs(raw_img) + 1)
-    easy_img = easy_img / easy_img.max() * 255
-    return raw_img, easy_img
-
-def load_mrc_img(fp):
-    print("Loading file:",fp)
-    with mrcfile.open(fp) as mrc:
-        raw_img = mrc.data
-    if np.min(raw_img) > 1:
-        easy_img = np.log(raw_img)
-    else:
-        easy_img = np.log(np.abs(raw_img) + 1)
-    easy_img = easy_img / easy_img.max() * 255
-    # easy_img = easy_img.astype('uint8')
-    return raw_img, easy_img
-
-def load_PIL_img(path):
-    img = Image.open(path).convert("L")
-    raw_img = np.array(img)
-    if np.min(raw_img) > 1:
-        easy_img = np.log(raw_img)
-    else:
-        easy_img = np.log(np.abs(raw_img) + 1)
-    return raw_img, easy_img
 
 def get_file_list_from_path(fp, extension=None):
     files = Path(fp).rglob("*" + extension)

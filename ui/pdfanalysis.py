@@ -1,17 +1,13 @@
-import typing
-
-from ui.advanced_fit import AdvancedFitWindow, MainWindowAdvancedFit
-import file
-from datacube import DataCube
+from ui.advanced_fit import MainWindowAdvancedFit
+from file import file
+from datacube.datacube import DataCube
 import pyqtgraph as pg
 import util
 from calculate import pdf_calculator
 from PyQt5.QtWidgets import QMessageBox
 import ui.ui_util as ui_util
-from PyQt5 import QtCore, QtWidgets, QtGui
-import os
+from PyQt5 import QtCore, QtWidgets
 import numpy as np
-import definitions
 from calculate import q_range_selector
 
 pg.setConfigOptions(antialias=True)

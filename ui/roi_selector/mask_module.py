@@ -1,20 +1,15 @@
 import pyqtgraph as pg
-import PyQt5
-from PyQt5 import QtWidgets, Qt, QtGui
+from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtWidgets import QFileDialog
-import sys
-import hyperspy.api as hs
 import numpy as np
 import cv2
 import os
-import file
-from pathlib import Path
-from PyQt5.QtCore import QItemSelectionModel
-import json
+from file import load
 import definitions
 from calculate import beam_stopper
 from PyQt5 import QtCore
 import json
+import sys
 
 
 class MaskModule(QtCore.QObject):
@@ -160,11 +155,13 @@ class RoiCreater(QtWidgets.QMainWindow):
         menu_file = menubar.addMenu("\tFile\t")
 
         self.action_import_image = QtWidgets.QAction("Import image", self)
+        self.action_import_stem_image = QtWidgets.QAction("Import stem image", self)
         self.action_import_poly = QtWidgets.QAction("Import polygon", self)
         self.action_export_poly = QtWidgets.QAction("Export polygon", self)
         self.action_export_mask = QtWidgets.QAction("Export mask", self)
 
         menu_file.addAction(self.action_import_image)
+        menu_file.addAction(self.action_import_stem_image)
         menu_file.addAction(self.action_import_poly)
         menu_file.addAction(self.action_export_poly)
         menu_file.addAction(self.action_export_mask)
@@ -228,6 +225,7 @@ class RoiCreater(QtWidgets.QMainWindow):
         self.radio_root.toggled.connect(lambda x: self.update_image())
         self.radio_log.toggled.connect(lambda x: self.update_image())
         self.action_import_image.triggered.connect(self.import_image)
+        self.action_import_stem_image.triggered.connect(self.import_stem_image)
         self.action_import_poly.triggered.connect(self.import_poly)
         self.action_export_mask.triggered.connect(self.export_mask)
         self.action_export_poly.triggered.connect(self.export_poly)
@@ -235,7 +233,18 @@ class RoiCreater(QtWidgets.QMainWindow):
     def import_image(self):
         fp, _ = QFileDialog.getOpenFileName()
         if fp:
-            img, _ = file.load_diffraction_img(fp)
+            img = load.load_diffraction_image(fp)
+            self.initial_image_load(img)
+
+    def import_stem_image(self):
+        fp, _ = QFileDialog.getOpenFileName()
+        if fp:
+            img = load.load_stem_image(fp)
+            reply = QtWidgets.QMessageBox.question(None, "","Use variance for representative image?", QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No)
+            if reply == QtWidgets.QMessageBox.Yes:
+                img = np.var(img,axis=0)
+            else:
+                img = np.mean(img, axis=0)
             self.initial_image_load(img)
 
     def import_poly(self):
@@ -246,8 +255,6 @@ class RoiCreater(QtWidgets.QMainWindow):
         if fp:
             pnts = np.loadtxt(fp, delimiter=',')
             self.draw_poly(pnts)
-
-
 
 
     def export_mask(self):
@@ -459,7 +466,6 @@ class ListWidget(QtWidgets.QWidget):
             self.QList.currentItem().text()), QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
         if reply == QtWidgets.QMessageBox.No:
             return
-        print(indexes)
         for idx in indexes[::-1]:
             key = self.items.pop(idx.row())
             self.module.mask_dict.pop(key)

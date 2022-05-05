@@ -1,19 +1,14 @@
-from PyQt5 import QtCore, QtWidgets, QtGui
-import os, sys
+from PyQt5 import QtCore, QtWidgets
 import pyqtgraph as pg
-import file
 import numpy as np
 import util
 import time
-from datacube import DataCube
-from typing import List
-from ui.pdfanalysis import PdfAnalysis
-from calculate import pdf_calculator, image_process, q_range_selector, polar_transform
-from PyQt5.QtWidgets import QMessageBox
+from calculate import image_process, polar_transform
 from ui import ui_util
 pg.setConfigOptions(antialias=True)
 import definitions
 import cv2
+from datacube.cube import PDFCube
 from ui.roi_selector import mask_module
 
 
@@ -28,6 +23,7 @@ class ProfileExtraction(QtWidgets.QWidget):
         self.flag_range_update = False
         self.load_default()
         self.sig_binding()
+        self.dc:PDFCube = None
 
 
 
@@ -147,13 +143,7 @@ class ProfileExtraction(QtWidgets.QWidget):
         # self.controlPanel.operationPanel.progress_bar.setValue(0)
 
     def get_azimuthal_value(self):
-
-        # calculate azavg
-        i1 = self.control_panel.settingPanel.spinBox_irange1.value()
-        i2 = self.control_panel.settingPanel.spinBox_irange2.value()
-        intensity_range = (i1, i2)
-        slice_count = int(self.control_panel.settingPanel.spinBox_slice_count.value())
-        self.dc.calculate_azimuthal_average(intensity_range, slice_count)
+        self.dc.calculate_azimuthal_average()
 
         # update ui
         self.update_azavg_graph()
@@ -171,7 +161,7 @@ class ProfileExtraction(QtWidgets.QWidget):
         if self.dc.center[0] is None:
             return
         p_ellipse = [self.dc.center[1],self.dc.center[0],1,1,0]
-        polar_img, _, _ = polar_transform.cartesian_to_polarelliptical_transform(self.dc.img,p_ellipse, dphi=np.radians(0.5))
+        polar_img, _, _ = polar_transform.cartesian_to_polarelliptical_transform(self.dc.img_raw,p_ellipse, dphi=np.radians(0.5))
         self.polar_image_panel.update_img(polar_img)
 
     def find_center(self):
@@ -179,7 +169,7 @@ class ProfileExtraction(QtWidgets.QWidget):
         i2 = self.control_panel.settingPanel.spinBox_irange2.value()
         intensity_range = (i1, i2)
         slice_count = int(self.control_panel.settingPanel.spinBox_slice_count.value())
-        self.dc.calculate_center()
+        self.dc.find_center()
         self.update_center_spinBox()
         # you must use self.draw_center() after find_center
         return self.dc.center
@@ -218,9 +208,9 @@ class ProfileExtraction(QtWidgets.QWidget):
         #         self.controlPanel.openFilePanel.lbl_file_name.setText(fn)
 
     def update_center_spinBox(self):
-        if not self.dc.img is None:
-            self.control_panel.settingPanel.spinBox_center_x.setMaximum(self.dc.img.shape[0])  # todo : confusing x,y
-            self.control_panel.settingPanel.spinBox_center_y.setMaximum(self.dc.img.shape[1])
+        if not self.dc.img_raw is None:
+            self.control_panel.settingPanel.spinBox_center_x.setMaximum(self.dc.img_raw.shape[0])  # todo : confusing x,y
+            self.control_panel.settingPanel.spinBox_center_y.setMaximum(self.dc.img_raw.shape[1])
 
         if not self.dc.center[0] is None:
             ui_util.update_value(self.control_panel.settingPanel.spinBox_center_x, self.dc.center[0])
@@ -229,10 +219,10 @@ class ProfileExtraction(QtWidgets.QWidget):
     def update_img(self):
         if not hasattr(self,'dc'):
             return
-        if self.dc.img is None:
+        if self.dc.img_raw is None:
             self.img_panel.clear_img()
             return
-        img = self.dc.img.copy()
+        img = self.dc.img_display.copy()
         if self.control_panel.settingPanel.chkBox_show_beam_stopper_mask.isChecked():
             if self.mask_module.mask is not None:
                 img = cv2.bitwise_and(img, img, mask=~self.mask_module.mask)

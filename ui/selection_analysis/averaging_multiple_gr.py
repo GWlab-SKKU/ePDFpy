@@ -1,20 +1,18 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
-from ui import main
 import pyqtgraph as pg
 import os
-import glob
 import pandas as pd
 from pathlib import Path
 from PyQt5.QtWidgets import QMessageBox
-from PyQt5.QtCore import Qt, QRectF
+from PyQt5.QtCore import Qt
 import numpy as np
 from ui import ui_util
-import datacube
+from datacube import datacube
 from PyQt5.QtGui import QColor
 import util
 from typing import List
 import platform
-from ui.selection_analysis.column_selector import ColumnSelector
+
 pg.setConfigOptions(antialias=True)
 
 class DataViewer(QtWidgets.QMainWindow):

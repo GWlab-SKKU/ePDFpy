@@ -1,0 +1,3 @@
+import cube
+
+cube.PDFCube()
