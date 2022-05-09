@@ -2,7 +2,7 @@ from abc import *
 from file import load
 import numpy as np
 import logging
-from calculate import image_process, pdf_calculator, fem_calculation
+from calculate import image_process, pdf_calculator, elliptical_correction
 import time
 import os
 import numpy as np
@@ -129,7 +129,7 @@ class PDFCube(Cube):
             self.azavg = image_process.calculate_azimuthal_average(self.img_raw, self.center, self.mask)
         elif version == 1:
             # py4dstem polar transformation
-            self.azavg = fem_calculation.fit_ellipse_amorphous_ring()
+            self.azavg = fem_calculation._fit_ellipse_amorphous_ring()
         elif version == 2:
             pass
         elif version == 3:
@@ -208,7 +208,7 @@ class FEMCube(Cube):
         shp = np.array(self.repres_img.shape)
         center = shp / 2
         dist = np.hypot(*(shp - center)).astype(int)
-        self.ellipse_rs = fem_calculation.fit_ellipse_amorphous_ring(self.repres_img, (self.repres_img.shape[0]/2,self.repres_img.shape[1]/2), (1,dist), mask=use_mask)
+        self.ellipse_rs = fem_calculation._fit_ellipse_amorphous_ring(self.repres_img, (self.repres_img.shape[0] / 2, self.repres_img.shape[1] / 2), (1, dist), mask=use_mask)
         A,B,C = self.ellipse_rs[0][2:5]
         self.A, self.B, self.C = 1, B/A, C/A
 
@@ -324,12 +324,12 @@ class FEMCube(Cube):
             dt = 5
             dt = np.radians(dt)
         self.polarRepresImg = \
-        fem_calculation.cartesian_to_polarelliptical_transform(self.repres_img, self.ellipse_rs[0][:5], mask=use_mask, dr=dr, dphi=dt)[0].T
+        fem_calculation._cartesian_to_polarelliptical_transform(self.repres_img, self.ellipse_rs[0][:5], mask=use_mask, dr=dr, dphi=dt)[0].T
         self.polarAll = np.zeros([self.data.shape[0], self.polarRepresImg.shape[0], self.polarRepresImg.shape[1]])
         self.polarAll = np.ma.array(data=self.polarAll)
         for i in range(self.data.shape[0]):
             self.polarAll[i] = \
-            fem_calculation.cartesian_to_polarelliptical_transform(self.data[i], self.ellipse_rs[0][:5], mask=use_mask, dr=dr, dphi=dt)[0].T
+            fem_calculation._cartesian_to_polarelliptical_transform(self.data[i], self.ellipse_rs[0][:5], mask=use_mask, dr=dr, dphi=dt)[0].T
 
 
     def get_display_img(self):

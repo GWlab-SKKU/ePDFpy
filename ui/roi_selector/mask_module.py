@@ -167,14 +167,6 @@ class RoiCreater(QtWidgets.QMainWindow):
         menu_file.addAction(self.action_export_mask)
         return menubar
 
-    def start(self, new:bool):
-        self.show()
-        pnts = None
-        if not new:
-            current_text = self.module.list_widget.QList.currentItem().text()
-            pnts = self.module.mask_dict[current_text]['data']
-        self.draw_roi(pnts)
-
     def update_image(self, img=None):
         if img is None:
             img = self.module.img

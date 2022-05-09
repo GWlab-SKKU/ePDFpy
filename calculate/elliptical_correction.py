@@ -22,7 +22,7 @@ from scipy.ndimage.filters import gaussian_filter
 
 ###### Fitting a 1d elliptical curve to a 2d array, e.g. a Bragg vector map ######
 
-def ellipse_err(p, x, y, val):
+def _ellipse_err(p, x, y, val):
     """
     For a point (x,y) in a 2d cartesian space, and a function taking the value
     val at point (x,y), and some 1d ellipse in this space given by
@@ -40,7 +40,7 @@ def ellipse_err(p, x, y, val):
 
 ###### Fitting from amorphous diffraction rings ######
 
-def fit_ellipse_amorphous_ring(data,center,fitradii,p0=None,mask=None):
+def _fit_ellipse_amorphous_ring(data, center, fitradii, p0=None, mask=None):
     """
     Fit the amorphous halo of a diffraction pattern, including any elliptical distortion.
     The fit function is::
@@ -123,10 +123,10 @@ def fit_ellipse_amorphous_ring(data,center,fitradii,p0=None,mask=None):
     sigma2 = (ro-ri)/4.
     c_bkgd = np.min(data)
     # To guess R, we take a radial integral
-    q,radial_profile = radial_integral(data,x0,y0,1)
+    q,radial_profile = _radial_integral(data, x0, y0, 1)
     R = q[(q>ri)*(q<ro)][np.argmax(radial_profile[(q>ri)*(q<ro)])]
     # Initial guess at A,B,C
-    A,B,C = convert_ellipse_params_r(R,R,0)
+    A,B,C = _convert_ellipse_params_r(R, R, 0)
 
     # Populate initial parameters
     p0_guess = tuple([I0,I1,sigma0,sigma1,sigma2,c_bkgd,x0,y0,A,B,C])
@@ -137,30 +137,31 @@ def fit_ellipse_amorphous_ring(data,center,fitradii,p0=None,mask=None):
         _p0 = tuple([p0_guess[i] if p0[i] is None else p0[i] for i in range(len(p0))])
 
     # Perform fit
-    p = leastsq(double_sided_gaussian_fiterr, _p0, args=(x_inds, y_inds, vals))[0]
+    p = leastsq(_double_sided_gaussian_fiterr, _p0, args=(x_inds, y_inds, vals))[0]
 
     # Return
     _x0,_y0 = p[6],p[7]
     _A,_B,_C = p[8],p[9],p[10]
-    # _a,_b,_theta = convert_ellipse_params(_A,_B,_C)
-    # return (_x0, _y0, _a, _b, _theta), p
-    return (_x0,_y0,_A,_B,_C),p
+    # return (_x0, _y0, _A, _B, _C), p
+    _a,_b,_theta = _convert_ellipse_params(_A,_B,_C)
+    return (_x0, _y0, _a, _b, _theta), p
 
-def double_sided_gaussian_fiterr(p, x, y, val):
+
+def _double_sided_gaussian_fiterr(p, x, y, val):
     """
     Returns the fit error associated with a point (x,y) with value val, given parameters p.
     """
-    return double_sided_gaussian(p, x, y) - val
+    return _double_sided_gaussian(p, x, y) - val
 
 
-def double_sided_gaussian(p, x, y):
+def _double_sided_gaussian(p, x, y):
     """
     Return the value of the double-sided gaussian function at point (x,y) given
     parameters p, described in detail in the fit_ellipse_amorphous_ring docstring.
     """
     # Unpack parameters
     I0, I1, sigma0, sigma1, sigma2, c_bkgd, x0, y0, A, B, C = p
-    a,b,theta = convert_ellipse_params(A,B,C)
+    a,b,theta = _convert_ellipse_params(A, B, C)
     R = np.mean((a,b))
     R2 = R**2
     A,B,C = A*R2,B*R2,C*R2
@@ -174,7 +175,7 @@ def double_sided_gaussian(p, x, y):
         + c_bkgd
     )
 
-def radial_elliptical_integral(ar, dr, p_ellipse):
+def _radial_elliptical_integral(ar, dr, p_ellipse):
     """
     Computes the radial integral of array ar from center (x0,y0) with a step size in r of
     dr.
@@ -199,7 +200,7 @@ def radial_elliptical_integral(ar, dr, p_ellipse):
             )
         )
     )
-    polarAr, rr, pp = cartesian_to_polarelliptical_transform(
+    polarAr, rr, pp = _cartesian_to_polarelliptical_transform(
         ar, p_ellipse=p_ellipse, dr=dr, dphi=np.radians(2), r_range=rmax
     )
     radial_integral = np.sum(polarAr, axis=0)
@@ -207,7 +208,7 @@ def radial_elliptical_integral(ar, dr, p_ellipse):
     return rbin_centers,radial_integral
 
 
-def radial_integral(ar, x0, y0, dr):
+def _radial_integral(ar, x0, y0, dr):
     """
     Computes the radial integral of array ar from center (x0,y0) with a step size in r of dr.
     Args:
@@ -219,9 +220,9 @@ def radial_integral(ar, x0, y0, dr):
             * **rbin_centers**: *(1d array)* the bins centers of the radial integral
             * **radial_integral**: *(1d array)* the radial integral
     """
-    return radial_elliptical_integral(ar, dr, (x0,y0,1,1,0))
+    return _radial_elliptical_integral(ar, dr, (x0, y0, 1, 1, 0))
 
-def convert_ellipse_params_r(a,b,theta):
+def _convert_ellipse_params_r(a, b, theta):
     """
     Converts from ellipse parameters (a,b,theta) to (A,B,C).
     See module docstring for more info.
@@ -241,7 +242,7 @@ def convert_ellipse_params_r(a,b,theta):
     return A,B,C
 
 
-def convert_ellipse_params(A,B,C):
+def _convert_ellipse_params(A, B, C):
     """
     Converts ellipse parameters from canonical form (A,B,C) into semi-axis lengths and
     tilt (a,b,theta).
@@ -273,7 +274,7 @@ def convert_ellipse_params(A,B,C):
     return a,b,theta
 
 
-def cartesian_to_polarelliptical_transform(
+def _cartesian_to_polarelliptical_transform(
     cartesianData,
     p_ellipse,
     dr=1,
@@ -282,25 +283,46 @@ def cartesian_to_polarelliptical_transform(
     mask=None,
     maskThresh=0.99,
 ):
+    """
+    Args:
+        cartesianData:
+        center: y,x
+        p_ellipse:
+        dr:
+        dphi:
+        r_range:
+        mask:
+        maskThresh:
+
+    Returns:
+
+    """
+    data = cartesianData.copy()
+    if cartesianData.ndim == 3:
+        data = data.swapaxes(0, 1)
+        data = data.swapaxes(1, 2)
+    # assert
+
     if mask is None:
-        mask = np.ones_like(cartesianData, dtype=bool)
+        mask = np.ones(data.shape[0:2], dtype=bool)
     assert (
-        cartesianData.shape == mask.shape
+        data.shape[0:2] == mask.shape
     ), "Mask and cartesian data array shapes must match."
-    assert len(p_ellipse) == 5, "p_ellipse must have length 5"
+
+    assert len(p_ellipse) == 5, "p_ellipse must have length 3: qy, qx, a, b, theta"
 
     # Get params
-    qx0, qy0, a, b, theta = p_ellipse
-    Nx, Ny = cartesianData.shape
+    qy0, qx0, a, b, theta = p_ellipse
+    Nx, Ny = data.shape[0:2]
 
     # Define r_range:
     if r_range is None:
         #find corners of image
         corners = np.array([
                             [0,0],
-                            [0,cartesianData.shape[0]],
-                            [0,cartesianData.shape[1]],
-                            [cartesianData.shape[0], cartesianData.shape[1]]
+                            [0,data.shape[0]],
+                            [0,data.shape[1]],
+                            [data.shape[0], data.shape[1]]
                             ])
         #find maximum corner distance
         r_min, r_max =0, np.ceil(
@@ -345,24 +367,46 @@ def cartesian_to_polarelliptical_transform(
         ((1 - dx) * (1 - dy), (dx) * (1 - dy), (1 - dx) * (dy), (dx) * (dy))
     )
     transform_mask = transform_mask.ravel()
-    polarEllipticalData = np.zeros(Nr * Np)
-    polarEllipticalData[transform_mask] = np.sum(
-        cartesianData[x_inds, y_inds] * weights, axis=0
-    )
-    polarEllipticalData = np.reshape(polarEllipticalData, (Nr, Np))
 
-    # Transform mask
-    polarEllipticalMask = np.zeros(Nr * Np)
-    polarEllipticalMask[transform_mask] = np.sum(mask[x_inds, y_inds] * weights, axis=0)
-    polarEllipticalMask = np.reshape(polarEllipticalMask, (Nr, Np))
+    if cartesianData.ndim == 2:
+        polarEllipticalData = np.zeros(Nr * Np)
+        polarEllipticalData[transform_mask] = np.sum(
+            cartesianData[x_inds, y_inds] * weights, axis=0
+        )
+        polarEllipticalData = np.reshape(polarEllipticalData, (Nr, Np))
 
-    polarEllipticalData = np.ma.array(
-        data=polarEllipticalData, mask=polarEllipticalMask < maskThresh
-    )
-    return polarEllipticalData, rr, pp
+        # Transform mask
+        polarEllipticalMask = np.zeros(Nr * Np)
+        polarEllipticalMask[transform_mask] = np.sum(mask[x_inds, y_inds] * weights, axis=0)
+        polarEllipticalMask = np.reshape(polarEllipticalMask, (Nr, Np))
+
+        polarEllipticalData = np.ma.array(
+            data=polarEllipticalData, mask=polarEllipticalMask < maskThresh
+        )
+        return polarEllipticalData, rr, pp
+
+    elif cartesianData.ndim == 3:
+        polarEllipticalData_all = np.ma.array(np.zeros((cartesianData.shape[0],Nr,Np)))
+        for i in range(cartesianData.shape[0]):
+            polarEllipticalData = np.zeros(Nr * Np)
+            polarEllipticalData[transform_mask] = np.sum(
+                cartesianData[i, x_inds, y_inds] * weights, axis=0
+            )
+            polarEllipticalData = np.reshape(polarEllipticalData, (Nr, Np))
+
+            # Transform mask
+            polarEllipticalMask = np.zeros(Nr * Np)
+            polarEllipticalMask[transform_mask] = np.sum(mask[x_inds, y_inds] * weights, axis=0)
+            polarEllipticalMask = np.reshape(polarEllipticalMask, (Nr, Np))
+
+            polarEllipticalData = np.ma.array(
+                data=polarEllipticalData, mask=polarEllipticalMask < maskThresh
+            )
+            polarEllipticalData_all[i] = polarEllipticalData
+        return polarEllipticalData_all, rr, pp
 
 
-def accum(accmap, a, func=None, size=None, fill_value=0, dtype=None):
+def _accum(accmap, a, func=None, size=None, fill_value=0, dtype=None):
     """
     An accumulation function similar to Matlab's `accumarray` function.
 
@@ -414,7 +458,7 @@ def accum(accmap, a, func=None, size=None, fill_value=0, dtype=None):
            [-1,  8,  9]])
     >>> # Sum the diagonals.
     >>> accmap = array([[0,1,2],[2,0,1],[1,2,0]])
-    >>> s = accum(accmap, a)
+    >>> s = _accum(accmap, a)
     array([9, 7, 15])
     >>> # A 2D output, from sub-arrays with shapes and positions like this:
     >>> # [ (2,2) (2,1)]
@@ -425,11 +469,11 @@ def accum(accmap, a, func=None, size=None, fill_value=0, dtype=None):
             [[1,0],[1,0],[1,1]],
         ])
     >>> # Accumulate using a product.
-    >>> accum(accmap, a, func=prod, dtype=float)
+    >>> _accum(accmap, a, func=prod, dtype=float)
     array([[ -8.,  18.],
            [ -8.,   9.]])
     >>> # Same accmap, but create an array of lists of values.
-    >>> accum(accmap, a, func=lambda x: x, dtype='O')
+    >>> _accum(accmap, a, func=lambda x: x, dtype='O')
     array([[[1, 2, 4, -1], [3, 6]],
            [[-1, 8], [9]]], dtype=object)
     """
@@ -467,49 +511,7 @@ def accum(accmap, a, func=None, size=None, fill_value=0, dtype=None):
 
     return out
 
-def autofit(dc, mask=None):
-    initial_center = [dc.shape[2]//2,dc.shape[1]//2]
-    if mask is not None:
-        idxs = np.where(np.sum(mask, axis=0) > 0)
-        percent1 = dc.shape[1] // 100
-        inner_rad = idxs[0][0] + percent1
-        outer_rad = idxs[0][-1] - percent1
-    else:
-        # longest point
-        inner_rad = 0
-        outer_rad = np.min(initial_center)
-    fitting_img = np.median(dc, axis=0)
-    ellipse_rs = fit_ellipse_amorphous_ring(fitting_img.data, center=initial_center, mask=mask, fitradii=(inner_rad,outer_rad))
-    return ellipse_rs[0]
-
-def get_FEM(dc, mask, elliptical_p):
-    # FEM42
-    ringInt = np.zeros(dc.shape[0])
-    for i in range(len(ringInt)):
-        ringInt[i] = dc[i][mask.astype(bool)].mean()
-
-    scaleInt = np.mean(ringInt) / ringInt
-    for i in range(len(ringInt)):
-        dc[i] = dc[i]*scaleInt[i]
-    CBEDmean = np.median(dc, 0)  # have to use median?
-
-    # FEM44
-    polarCBEDmean, _, _ = cartesian_to_polarelliptical_transform(CBEDmean, elliptical_p, mask=mask)
-    polar_dc = np.zeros([dc.shape[0], polarCBEDmean.shape[0], polarCBEDmean.shape[1]])
-    polar_dc = np.ma.array(data=polar_dc)
-    for i in range(dc.shape[0]):
-        polar_dc[i] = cartesian_to_polarelliptical_transform(dc[i], elliptical_p, mask=mask)[0]
-
-    # FEM45
-    polarCBEDvar = np.mean((polar_dc - polarCBEDmean) ** 2, axis=0)
-    radialVar = np.mean(polarCBEDvar,0)
-    radialMean = np.mean(polarCBEDmean,0)
-    radialVarNorm = radialVar / radialMean ** 2
-
-    return radialVarNorm
-
-
-def elliptical_fitting_matlab(image, mask=None):
+def _fit_ellipse_amorphous_ring_matlab(image, mask=None, p0=None):
     def fit_func(x, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11):
         Rsq = (x[:, 0] - c1) ** 2 + c4 * (x[:, 0] - c1) * (x[:, 1] - c2) + c3 * (x[:, 1] - c2) ** 2
         rs = c5 + \
@@ -523,13 +525,16 @@ def elliptical_fitting_matlab(image, mask=None):
     skipFit = [11, 1]
     stackSize = image.shape
     ya, xa = np.meshgrid(np.arange(image.shape[0]), np.arange(image.shape[1]))
-    inds2D = np.ravel_multi_index([ya, xa], stackSize[1:3])
+    inds2D = np.ravel_multi_index([ya, xa], stackSize[0:2])
     basis = np.array((ya.reshape(-1), xa.reshape(-1))).transpose()
-    p0 = 1.0e+03 * np.array([0.2565, 0.2624, 0.0010, 0.0001, 0.0, 1.4273, 0.0535,
-                             0.1198, 0.2895, 0.0118, 0.0104])
+    if p0 is None:
+        p0 = 1.0e+03 * np.array([0.2565, 0.2624, 0.0010, 0.0001, 0.0, 1.4273, 0.0535,
+                                 0.1198, 0.2895, 0.0118, 0.0104])
+        p0[0] = image.shape[0] / 2
+        p0[1] = image.shape[1] / 2
     lb = [0, 0, 0.5, -0.5,
           0, 0, 0, 0, 0, 0, 0];
-    ub = [stackSize[1], stackSize[2], 2, 0.5
+    ub = [stackSize[0], stackSize[1], 2, 0.5
         , np.Inf, np.Inf, np.Inf, np.Inf, np.Inf, np.Inf, np.Inf];
     coefsInit = p0
     for a0 in range(0, len(skipFit)):
@@ -540,40 +545,107 @@ def elliptical_fitting_matlab(image, mask=None):
                               p0=coefsInit,
                               bounds=(lb, ub)
                               )[0]
-    A = 1.0
-    B = coefsInit[3]
-    C = coefsInit[2]
-    coefs = [coefsInit[1], coefsInit[0], A, C, B]
-
-    ellipse_rs = [coefs, coefsInit]
-    return ellipse_rs
+    return coefsInit
 
 
-def polar_transformation_matlab(image, ellipse_rs, mask=None, **kargs):
+def elliptical_fitting_py4d(image, mask=None):
+    """
+    Args:
+        image:
+        mask:
+    Returns:
+        (y, x), (a, b, theta)
+    """
+    initial_center = np.array(image.shape) / 2
+    corner = np.array([[0,0],[0,image.shape[0]],[image.shape[1],0],[image.shape[1],image.shape[0]]])
+    diff = corner - initial_center
+    dists = np.hypot(diff[:, 0], diff[:, 1])
+    dist = np.max(dists).astype(np.uint16)
+    coefsInit = _fit_ellipse_amorphous_ring(image, initial_center, (1, dist), mask=mask)
+
+    center = (coefsInit[0][1], coefsInit[0][0])
+    p_ellipse = coefsInit[0][2:5]
+    return center, p_ellipse
+
+def elliptical_fitting_py4d_center_fixed(image, center, mask=None):
+    """
+    Args:
+        image:
+        mask:
+    Returns:
+        (y, x), (a, b, theta)
+    """
+    initial_center = center
+    corner = np.array([[0,0],[0,image.shape[0]],[image.shape[1],0],[image.shape[1],image.shape[0]]])
+    diff = corner - initial_center
+    dists = np.hypot(diff[:, 0], diff[:, 1])
+    dist = np.max(dists).astype(np.uint16)
+    coefsInit = _fit_ellipse_amorphous_ring_fixed_center(image, initial_center, (1, dist), mask=mask)
+
+    center = (coefsInit[0][1], coefsInit[0][0])
+    p_ellipse = coefsInit[0][2:5]
+    return center, p_ellipse
+
+
+def elliptical_fitting_matlab(image, mask=None):
+    coefsInit = _fit_ellipse_amorphous_ring_matlab(image, mask)
+    center = (coefsInit[1], coefsInit[0])
+    p_ellipse = _convert_ellipse_params(1, coefsInit[2], coefsInit[3])
+    return center, p_ellipse
+
+
+def polar_transformation_py4d(data, center, a, b, theta, dr=1, dphi=np.radians(2), mask=None):
+    parameters = (*center, a,b,theta)
+    polar_all = _cartesian_to_polarelliptical_transform(data, parameters, dr=dr, dphi=dphi, mask=mask)[0]
+    return polar_all
+
+
+def polar_transformation_matlab(image, center, a, b, theta, mask=None, **kargs):
+    """
+    Args:
+        image: 2d or 3d cartesian image
+        center: y,x tuple
+        p_ellipse: a, b, theta
+        mask: one binary image
+        **kargs:
+
+    Returns:
+        polar transformed image
+    """
+    p_ellipse = np.array(_convert_ellipse_params_r(a, b, theta))
+    p_ellipse /= p_ellipse[0]
+    parameters = (*center, *p_ellipse[1:][::-1])
+    return _cartesian_to_polarelliptical_transform_matlab(image, parameters, mask, **kargs)
+
+
+def _cartesian_to_polarelliptical_transform_matlab(image, coefs, mask=None, **kargs):
     pixelSize = kargs.get('pixelSize', 1)
-    rSigma = kargs.get('rSigma', 0.1)
-    tSigma = kargs.get('tSigma', 1)
+    # rSigma = kargs.get('rSigma', 0.1)
+    # tSigma = kargs.get('tSigma', 1)
     rMax = kargs.get('rMax', 240)
     dr = kargs.get('dr', 2)
     dt = kargs.get('dt', 5)
 
+    data = image.copy()
+    if image.ndim == 3:
+        data = data.swapaxes(0, 1)
+        data = data.swapaxes(1, 2)
+
     polarRadius = np.arange(0, rMax, dr) * pixelSize;
     polarTheta = np.arange(0, 360, dt) * (np.pi / 180)
-    ya, xa = np.meshgrid(np.arange(image.shape[0]), np.arange(image.shape[1]))
+    ya, xa = np.meshgrid(np.arange(data.shape[0]), np.arange(data.shape[1]))
 
-    A, B, C = ellipse_rs[0][2], ellipse_rs[0][3], ellipse_rs[0][4]
-    A, B, C = A/A, B/A, C/A
-    coefs = [ellipse_rs[0][0], ellipse_rs[0][1], C, B]
+
     xa = xa - coefs[0]
     ya = ya - coefs[1]
     # Correction factors
-    if abs(C) > -6:
-        p0 = -np.arctan((1 - B + np.sqrt((B - 1) ** 2 + C ** 2)) / C);
+    if abs(coefs[2]) > -6:
+        p0 = -np.arctan((1 - coefs[3] + np.sqrt((coefs[3] - 1) ** 2 + coefs[2] ** 2)) / coefs[2]);
     else:
         p0 = 0;
 
-    a0 = np.sqrt(2 * (1 + C + np.sqrt((C - 1) ** 2 + B ** 2)) / (4 * C - B ** 2))
-    b0 = np.sqrt(2 * (1 + C - np.sqrt((C - 1) ** 2 + B ** 2)) / (4 * C - B ** 2))
+    a0 = np.sqrt(2 * (1 + coefs[2] + np.sqrt((coefs[2] - 1) ** 2 + coefs[3] ** 2)) / (4 * coefs[2] - coefs[3] ** 2))
+    b0 = np.sqrt(2 * (1 + coefs[2] - np.sqrt((coefs[2] - 1) ** 2 + coefs[3] ** 2)) / (4 * coefs[2] - coefs[3] ** 2))
     ratio = b0 / a0;
     m = [[ratio * np.cos(p0) ** 2 + np.sin(p0) ** 2,
           -np.cos(p0) * np.sin(p0) + ratio * np.cos(p0) * np.sin(p0)],
@@ -584,31 +656,113 @@ def polar_transformation_matlab(image, ellipse_rs, mask=None, **kargs):
     ra = np.sqrt(xa ** 2 + coefs[2] * ya ** 2 + coefs[3] * xa * ya) * b0
 
     # Resamping coordinates
-    Nout = [len(polarRadius), len(polarTheta)];
+    Nout = [len(polarRadius), len(polarTheta)]
     rInd = (np.round((ra - polarRadius[0]) / dr)).astype(np.uint)
     tInd = (np.mod(np.round((ta - polarTheta[0]) / (dt * np.pi / 180)), Nout[1])).astype(np.uint)
     sub = np.logical_and(rInd <= Nout[0] - 1, rInd >= 0)
-    rtIndsSub = np.array([rInd[sub], tInd[sub]]).T;
+    rtIndsSub = np.array([rInd[sub], tInd[sub]]).T
 
-    polarNorm = accum(rtIndsSub, np.ones(np.sum(sub)))
-    polarImg = accum(rtIndsSub, image[sub])
-    polarImg = polarImg / polarNorm
+    if image.ndim == 2:
+        polarNorm = _accum(rtIndsSub, np.ones(np.sum(sub)))
+        polarImg = _accum(rtIndsSub, image[sub])
+        polarImg = polarImg / polarNorm
+        if mask is None:
+            mask = np.ones(image.shape)
+        polarMask = _accum(rtIndsSub, mask[sub]) == 0
+
+        polarImg = np.ma.masked_array(polarImg, polarMask)
+        return polarImg
+    elif image.ndim == 3:
+        polarAll = np.ma.masked_array(np.zeros((len(image),*Nout)))
+        for i in range(len(image)):
+            polarNorm = _accum(rtIndsSub, np.ones(np.sum(sub)))
+            polarImg = _accum(rtIndsSub, image[i][sub])
+            polarImg = polarImg / polarNorm
+            if mask is None:
+                mask = np.ones(image.shape[1:3])
+            polarMask = _accum(rtIndsSub, mask[sub]) == 0
+            polarImg = np.ma.masked_array(polarImg, polarMask)
+            polarAll[i] = polarImg
+        return polarAll
+
+
+def _double_sided_gaussian_fixed_center(p, center, x, y, val):
+    # Unpack parameters
+    x0, y0 = center
+    I0, I1, sigma0, sigma1, sigma2, c_bkgd, A, B, C = p
+    a,b,theta = _convert_ellipse_params(A,B,C)
+    R = np.mean((a,b))
+    R2 = R**2
+    A,B,C = A*R2,B*R2,C*R2
+    r2 = A*(x - x0)**2 + B*(x - x0)*(y - y0) + C*(y - y0)**2
+    r = np.sqrt(r2) - R
+
+    return (
+        I0 * np.exp(-r2 / (2 * sigma0 ** 2))
+        + I1 * np.exp(-r ** 2 / (2 * sigma1 ** 2)) * np.heaviside(-r, 0.5)
+        + I1 * np.exp(-r ** 2 / (2 * sigma2 ** 2)) * np.heaviside(r, 0.5)
+        + c_bkgd
+    ) - val
+
+
+def _fit_ellipse_amorphous_ring_fixed_center(data,center,fitradii,p0=None,mask=None):
+
     if mask is None:
-        mask = np.ones(image.shape)
-    polarMask = accum(rtIndsSub, mask[sub]) == 0
+        mask = np.ones_like(data)
+    assert data.shape == mask.shape, "data and mask must have same shapes."
+    x0,y0 = center
+    ri,ro = fitradii
 
-    polarImg = np.ma.masked_array(polarImg, polarMask)
-    return polarImg
+    # Get data mask
+    Nx,Ny = data.shape
+    yy,xx = np.meshgrid(np.arange(Ny),np.arange(Nx))
+    rr = np.hypot(xx-x0,yy-y0)
+    _mask = ((rr>ri)*(rr<ro)).astype(bool)
+    _mask *= mask.astype(bool)
 
+    # Make coordinates, get data values
+    x_inds, y_inds = np.nonzero(_mask)
+    vals = data[_mask]
 
-if __name__ == "__main__":
-    from datacube import cube
-    fp = "C:\\Users\\vlftj\\Documents\\sample41_Ta_AD\\Camera 230 mm Ceta 20201030 1709 0001_1_5s_1f_area01.mrc"
-    dc = cube.PDFCube(fp, filetype='image')
-    dc.mask = np.loadtxt('../assets/mask_data.txt', delimiter=',', dtype=np.bool)
-    # dc.find_center()
-    # dc.calculate_azimuthal_average()
-    dc.center = [1201, 1073]
-    polar_img = polar_transformation_matlab(dc.img_display, [[1073, 1201, 1, 0, 1]])
-    plt.imshow(polar_img)
-    plt.show()
+    # Get initial parameter guesses
+    I0 = np.max(data)
+    I1 = np.max(data*mask)
+    sigma0 = ri/2.
+    sigma1 = (ro-ri)/4.
+    sigma2 = (ro-ri)/4.
+    c_bkgd = np.min(data)
+    # To guess R, we take a radial integral
+    q,radial_profile = _radial_integral(data,x0,y0,1)
+    R = q[(q>ri)*(q<ro)][np.argmax(radial_profile[(q>ri)*(q<ro)])]
+    # Initial guess at A,B,C
+    A,B,C = _convert_ellipse_params_r(R,R,0)
+
+    # Populate initial parameters
+    p0_guess = tuple([I0,I1,sigma0,sigma1,sigma2,c_bkgd,x0,y0,A,B,C])
+    if p0 is None:
+        _p0 = p0_guess
+    else:
+        assert len(p0)==11
+        _p0 = tuple([p0_guess[i] if p0[i] is None else p0[i] for i in range(len(p0))])
+    tmp = list(_p0[:6])
+    tmp.extend(list(_p0[8:]))
+    _p0 = tuple(tmp)
+    # Perform fit
+    p = leastsq(_double_sided_gaussian_fixed_center, _p0, args=(center, x_inds, y_inds, vals))[0]
+
+    # Return
+    _A,_B,_C = p[6],p[7],p[8]
+    _a,_b,_theta = _convert_ellipse_params(_A,_B,_C)
+    return (center[0],center[1],_a,_b,_theta),p
+
+# if __name__ == "__main__":
+#     from datacube import cube
+#     fp = "C:\\Users\\vlftj\\Documents\\sample41_Ta_AD\\Camera 230 mm Ceta 20201030 1709 0001_1_5s_1f_area01.mrc"
+#     dc = cube.PDFCube(fp, filetype='image')
+#     dc.mask = np.loadtxt('../assets/mask_data.txt', delimiter=',', dtype=np.bool)
+#     # dc.find_center()
+#     # dc.calculate_azimuthal_average()
+#     dc.center = [1201, 1073]
+#     polar_img = polar_transformation_matlab(dc.img_display, [[1073, 1201, 1, 0, 1]])
+#     plt.imshow(polar_img)
+#     plt.show()

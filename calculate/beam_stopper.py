@@ -34,8 +34,8 @@ def find_polygon(raw_img):
     # plt.show()
     kernel = np.ones(np.round(np.array(img.shape)/300).astype(np.uint8), np.uint8)
     trimed_thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel=kernel)  # Remove noise
-    plt.imshow(trimed_thresh)
-    plt.show()
+    # plt.imshow(trimed_thresh)
+    # plt.show()
     if np.sum(trimed_thresh) == 0:
         print("failed to find contours")
         return

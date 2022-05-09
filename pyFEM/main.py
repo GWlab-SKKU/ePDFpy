@@ -4,7 +4,7 @@ from PyQt5 import QtWidgets
 import pyqtgraph as pg
 import numpy as np
 import pandas as pd
-from calculate import image_process, polar_transform, fem_calculation
+from calculate import image_process, polar_transform, elliptical_correction
 from ui import ui_util
 from ui.roi_selector import roi_selector
 import definitions

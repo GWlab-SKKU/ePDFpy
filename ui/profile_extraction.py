@@ -116,6 +116,14 @@ class ProfileExtraction(QtWidgets.QWidget):
 
         self.mask_module.mask_changed.connect(self.update_img)
 
+        self.control_panel.ellipticalCorrectionPanel.chkbox_use_elliptical_correction.stateChanged.connect(self.use_elliptical_correction)
+
+    def use_elliptical_correction(self, state):
+        self.control_panel.ellipticalCorrectionPanel.spinBox_a.setEnabled(state)
+        self.control_panel.ellipticalCorrectionPanel.spinBox_b.setEnabled(state)
+        self.control_panel.ellipticalCorrectionPanel.spinBox_theta.setEnabled(state)
+        self.control_panel.ellipticalCorrectionPanel.btn_fit.setEnabled(state)
+
 
     def spinbox_changed_event(self):
         x = self.control_panel.settingPanel.spinBox_center_x.value()
@@ -267,6 +275,7 @@ class ControlPanel(QtWidgets.QWidget):
         self.temp_layout2 = QtWidgets.QHBoxLayout()
         self.settingPanel = self.SettingPanel("Center finding setting")
         self.operationPanel = self.OperationPanel("Operation")
+        self.ellipticalCorrectionPanel = self.EllipticalCorrectionPanel("Elliptical Correction")
         self.saveLoadPanel = self.SaveLoadPanel("Save and Load",mainWindow)
         self.maskPanel = self.MaskModule("Mask", profile_extraction)
         self.temp_layout2.addWidget(self.saveLoadPanel)
@@ -275,10 +284,13 @@ class ControlPanel(QtWidgets.QWidget):
         self.temp_layout.addWidget(self.settingPanel)
 
 
+
         layout = QtWidgets.QHBoxLayout()
         # layout.addWidget(self.openFilePanel)
         layout.addLayout(self.temp_layout)
         layout.addWidget(self.operationPanel)
+        self.operationPanel.setFixedWidth(200)
+        layout.addWidget(self.ellipticalCorrectionPanel)
         self.setLayout(layout)
 
     class MaskModule(QtWidgets.QGroupBox):
@@ -287,7 +299,7 @@ class ControlPanel(QtWidgets.QWidget):
             self.layout = QtWidgets.QHBoxLayout()
             self.setLayout(self.layout)
             self.mask_dropdown = profile_extraction.mask_module.dropdown
-            self.mask_dropdown.setMinimumWidth(100)
+            # self.mask_dropdown.setMinimumWidth(100)
             self.layout.addWidget(self.mask_dropdown)
 
     class SaveLoadPanel(QtWidgets.QGroupBox):
@@ -395,22 +407,64 @@ class ControlPanel(QtWidgets.QWidget):
     class OperationPanel(QtWidgets.QGroupBox):
         def __init__(self, arg):
             QtWidgets.QGroupBox.__init__(self, arg)
-            layout = QtWidgets.QGridLayout()
+
             self.btn_find_center = QtWidgets.QPushButton("Find center")
             self.btn_get_azimuthal_avg = QtWidgets.QPushButton("Get azimuthal data")
             self.btn_calculate_all_azimuthal = QtWidgets.QPushButton("Calculate all data")
             self.progress_bar = QtWidgets.QProgressBar()
             self.progress_bar.setValue(0)
 
-            layout.addWidget(self.btn_find_center, 0, 0)
-            layout.addWidget(self.btn_get_azimuthal_avg, 0, 1)
-            # layout.addWidget(self.btn_save_current_azimuthal, 1, 0,1,2)
-            layout.addWidget(self.btn_calculate_all_azimuthal, 2, 0, 1, 2)
-            layout.addWidget(self.progress_bar, 3, 0, 1, 2)
+            # layout = QtWidgets.QGridLayout()
+            # layout.addWidget(self.btn_find_center, 0, 0)
+            # layout.addWidget(self.btn_get_azimuthal_avg, 0, 1)
+            # # layout.addWidget(self.btn_save_current_azimuthal, 1, 0,1,2)
+            # layout.addWidget(self.btn_calculate_all_azimuthal, 2, 0, 1, 2)
+            # layout.addWidget(self.progress_bar, 3, 0, 1, 2)
+            layout = QtWidgets.QVBoxLayout()
+            layout.addWidget(self.btn_find_center)
+            layout.addWidget(self.btn_get_azimuthal_avg)
+            layout.addWidget(self.btn_calculate_all_azimuthal)
+            layout.addWidget(self.progress_bar)
 
             self.setLayout(layout)
 
+    class EllipticalCorrectionPanel(QtWidgets.QGroupBox):
+        def __init__(self, arg):
+            QtWidgets.QGroupBox.__init__(self, arg)
+            layout = QtWidgets.QVBoxLayout()
+            self.chkbox_use_elliptical_correction = QtWidgets.QCheckBox("Use elliptical correction")
+            self.chkbox_use_elliptical_correction.setChecked(True)
 
+            self.lbl_a = QtWidgets.QLabel("a")
+            self.lbl_b = QtWidgets.QLabel("b")
+            self.lbl_theta = QtWidgets.QLabel("θ")
+
+            self.spinBox_a = QtWidgets.QSpinBox()
+            self.spinBox_a.setValue(1)
+            layout_a = QtWidgets.QHBoxLayout()
+            layout_a.addWidget(self.lbl_a)
+            layout_a.addWidget(self.spinBox_a)
+
+            self.spinBox_b = QtWidgets.QSpinBox()
+            self.spinBox_b.setValue(1)
+            layout_b = QtWidgets.QHBoxLayout()
+            layout_b.addWidget(self.lbl_b)
+            layout_b.addWidget(self.spinBox_b)
+
+            self.spinBox_theta = QtWidgets.QSpinBox()
+            self.spinBox_theta.setValue(0)
+            layout_theta = QtWidgets.QHBoxLayout()
+            layout_theta.addWidget(self.lbl_theta)
+            layout_theta.addWidget(self.spinBox_theta)
+
+            self.btn_fit = QtWidgets.QPushButton("Fit")
+
+            layout.addWidget(self.chkbox_use_elliptical_correction)
+            layout.addWidget(self.btn_fit)
+            layout.addLayout(layout_a)
+            layout.addLayout(layout_b)
+            layout.addLayout(layout_theta)
+            self.setLayout(layout)
 
 class ImgPanel(QtWidgets.QWidget):
     def __init__(self):
