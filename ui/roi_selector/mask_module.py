@@ -82,7 +82,6 @@ class RoiCreater(QtWidgets.QMainWindow):
         QtWidgets.QWidget.__init__(self)
         self.module = module
         self.img = img
-        self.pnts = pnts
         self.name = name
 
         self.init_ui()
@@ -97,10 +96,11 @@ class RoiCreater(QtWidgets.QMainWindow):
 
     def initial_image_load(self, img):
         self.update_image(img)
-        if self.pnts is None:
+        handles = self.get_handles()
+        if handles is None:
             self.draw_roi()
-        else:
-            self.draw_roi(self.pnts)
+        # else:
+        #     self.draw_roi(handles)
 
         if self.name is not None:
             self.txt_name.setText(self.name)
@@ -245,13 +245,22 @@ class RoiCreater(QtWidgets.QMainWindow):
         fp, _ = QFileDialog.getOpenFileName()
         if fp:
             pnts = np.loadtxt(fp, delimiter=',')
-            self.pnts = pnts
             self.draw_poly(pnts)
 
+    def get_handles(self):
+        if not hasattr(self,'poly_line_roi'):
+            return None
+        else:
+            handles = [handle.pos() for handle in self.poly_line_roi.getHandles()]
+            handles = np.array(handles) + np.array(self.poly_line_roi.pos())
+            handles = handles.astype(int)
+            return handles
 
     def export_mask(self):
-        handles = [handle.pos() for handle in self.poly_line_roi.getHandles()]
-        handles = np.array(handles).astype(np.int)
+        handles = self.get_handles()
+        if handles is None:
+            QtWidgets.QMessageBox.about(self,"Error","No pnts are available now")
+            return
 
         img = np.zeros(self.imageView.image.shape)
         cv2.fillPoly(img, pts=[handles], color=(255, 255, 255))
@@ -266,8 +275,10 @@ class RoiCreater(QtWidgets.QMainWindow):
         print("save to {}".format(fp))
 
     def export_poly(self):
-        handles = [handle.pos() for handle in self.poly_line_roi.getHandles()]
-        handles = np.array(handles).astype(np.int)
+        handles = self.get_handles()
+        if handles is None:
+            QtWidgets.QMessageBox.about(self, "Error", "No pnts are available now")
+            return
 
         fp, _ = QFileDialog.getSaveFileName()
         if fp == "":
@@ -280,31 +291,14 @@ class RoiCreater(QtWidgets.QMainWindow):
         print("save to {}".format(fp))
 
 
-    def btn_export_clicked(self):
-        handles = [handle.pos() for handle in self.poly_line_roi.getHandles()]
-        handles = np.array(handles).astype(np.int)
-
-        img = np.zeros(self.imageView.image.shape)
-        cv2.fillPoly(img, pts=[handles], color=(255, 255, 255))
-
-        fp, _ = QFileDialog.getSaveFileName()
-        if fp == "":
-            return
-
-        name = self.txt_name.toPlainText()
-        if os.path.splitext(fp)[1] is None or os.path.splitext(fp)[1] != ".csv":
-            fp = fp + ".csv"
-        np.savetxt(name, img, delimiter=',', fmt='%s')
-        print("save to {}".format(fp))
-        return
-
     def btn_ok_clicked(self):
         if self.txt_name.toPlainText() == "":
             QtWidgets.QMessageBox.about(self, "", "Enter the mask name")
             return
-        handles = np.array([handle.pos() for handle in self.poly_line_roi.getHandles()])
-        handles = handles + np.array(self.poly_line_roi.pos())
-        handles = handles.astype(int)
+        handles = self.get_handles()
+        if handles is None:
+            QtWidgets.QMessageBox.about(self, "Error", "No pnts are available now")
+            return
         self.module.mask_dict.update(
             {self.txt_name.toPlainText():
                  {'size':self.module.img.shape,
