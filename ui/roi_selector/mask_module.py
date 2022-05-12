@@ -200,10 +200,12 @@ class RoiCreater(QtWidgets.QMainWindow):
                     [int(w / 2) + int(w / 10), int(h / 2) - int(h / 10)],
                     [int(w / 2) + int(w / 10), int(h / 2) + int(h / 10)],
                     [int(w / 2) - int(w / 10), int(h / 2) + int(h / 10)]]
+
         self.draw_poly(pnts)
 
     def draw_poly(self, pnts):
         if hasattr(self,'poly_line_roi') and isinstance(self.poly_line_roi,pg.ROI):
+            pnts = pnts - self.poly_line_roi.pos()
             self.poly_line_roi.setPoints(pnts, closed=True)
         else:
             self.poly_line_roi = pg.PolyLineROI(pnts, closed=True)
@@ -258,6 +260,7 @@ class RoiCreater(QtWidgets.QMainWindow):
             handles = [handle.pos() for handle in self.poly_line_roi.getHandles()]
             handles = np.array(handles) + np.array(self.poly_line_roi.pos())
             handles = handles.astype(int)
+            self.draw_poly(handles)
             return handles
 
     def export_mask(self):
