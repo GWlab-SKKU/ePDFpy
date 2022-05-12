@@ -11,7 +11,7 @@ from PyQt5 import QtCore
 import json
 import sys
 
-print("version 5.12.11.45")
+print("version 5.12.13.06")
 
 
 class MaskModule(QtCore.QObject):
@@ -226,6 +226,7 @@ class RoiCreater(QtWidgets.QMainWindow):
         if fp:
             img = load.load_diffraction_image(fp)
             self.initial_image_load(img)
+            print(f"diffraction image is imported, {fp}")
 
     def import_stem_image(self):
         fp, _ = QFileDialog.getOpenFileName()
@@ -237,6 +238,8 @@ class RoiCreater(QtWidgets.QMainWindow):
             else:
                 img = np.mean(img, axis=0)
             self.initial_image_load(img)
+            print(f"stem image is imported, {fp}")
+
 
     def import_poly(self):
         if self.img is None:
@@ -246,6 +249,7 @@ class RoiCreater(QtWidgets.QMainWindow):
         if fp:
             pnts = np.loadtxt(fp, delimiter=',')
             self.draw_poly(pnts)
+            print(f"poly is imported, {fp}")
 
     def get_handles(self):
         if not hasattr(self,'poly_line_roi'):
