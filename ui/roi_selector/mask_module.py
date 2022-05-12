@@ -71,9 +71,6 @@ class MaskModule(QtCore.QObject):
             cv2.fillPoly(img, pts=[x_y], color=(255, 255, 255))
             self.mask = img
 
-    def _load_mask(self):
-         self.image = json.load(definitions.MASK_PATH)
-
     def _mask_reload(self):
         self.dropdown.mask_reload()
         self.list_widget.mask_reload()
@@ -246,6 +243,7 @@ class RoiCreater(QtWidgets.QMainWindow):
         fp, _ = QFileDialog.getOpenFileName()
         if fp:
             pnts = np.loadtxt(fp, delimiter=',')
+            self.pnts = pnts
             self.draw_poly(pnts)
 
 
