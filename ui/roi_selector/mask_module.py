@@ -11,8 +11,6 @@ from PyQt5 import QtCore
 import json
 import sys
 
-print("version 5.12.13.06")
-
 
 class MaskModule(QtCore.QObject):
     mask_changed = QtCore.pyqtSignal()  # to update mask image
