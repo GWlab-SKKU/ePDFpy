@@ -3,7 +3,7 @@ import pyqtgraph as pg
 import numpy as np
 import util
 import time
-from calculate import image_process, polar_transform
+from calculate import image_process, polar_transform, elliptical_correction
 from ui import ui_util
 pg.setConfigOptions(antialias=True)
 import definitions
@@ -95,8 +95,12 @@ class ProfileExtraction(QtWidgets.QWidget):
 
         self.control_panel.operationPanel.btn_find_center.clicked.connect(lambda: (self.find_center(),self.update_img()))
         self.control_panel.operationPanel.btn_get_azimuthal_avg.clicked.connect(self.get_azimuthal_value)
+        self.control_panel.ellipticalCorrectionPanel.btn_fit.clicked.connect(self.elliptical_correction)
         self.control_panel.settingPanel.spinBox_center_x.valueChanged.connect(self.spinbox_changed_event)
         self.control_panel.settingPanel.spinBox_center_y.valueChanged.connect(self.spinbox_changed_event)
+        self.control_panel.ellipticalCorrectionPanel.spinBox_a.valueChanged.connect(self.spinbox_changed_event)
+        self.control_panel.ellipticalCorrectionPanel.spinBox_b.valueChanged.connect(self.spinbox_changed_event)
+        self.control_panel.ellipticalCorrectionPanel.spinBox_theta.valueChanged.connect(self.spinbox_changed_event)
         self.control_panel.operationPanel.btn_calculate_all_azimuthal.clicked.connect(self.calculate_all_azimuthal)
         self.control_panel.settingPanel.chkBox_show_centerLine.stateChanged.connect(self.update_img)
         self.control_panel.settingPanel.chkBox_show_beam_stopper_mask.stateChanged.connect(self.update_img)
@@ -124,11 +128,23 @@ class ProfileExtraction(QtWidgets.QWidget):
         self.control_panel.ellipticalCorrectionPanel.spinBox_theta.setEnabled(state)
         self.control_panel.ellipticalCorrectionPanel.btn_fit.setEnabled(state)
 
+    def elliptical_correction(self):
+        self.dc.elliptical_fitting()
+        a,b,theta = self.dc.p_ellipse
+        ui_util.update_value(self.control_panel.ellipticalCorrectionPanel.spinBox_a, a)
+        ui_util.update_value(self.control_panel.ellipticalCorrectionPanel.spinBox_b, b)
+        ui_util.update_value(self.control_panel.ellipticalCorrectionPanel.spinBox_theta, theta)
+
 
     def spinbox_changed_event(self):
         x = self.control_panel.settingPanel.spinBox_center_x.value()
         y = self.control_panel.settingPanel.spinBox_center_y.value()
+        a = self.control_panel.ellipticalCorrectionPanel.spinBox_a.value()
+        b = self.control_panel.ellipticalCorrectionPanel.spinBox_b.value()
+        theta = self.control_panel.ellipticalCorrectionPanel.spinBox_theta.value()
+        print("spinbox changed, ", x, y, a, b, theta)
         self.dc.center = (x, y)
+        self.dc.p_ellipse = (a,b,theta)
         self.update_img()
 
     def calculate_all_azimuthal(self):
@@ -151,6 +167,7 @@ class ProfileExtraction(QtWidgets.QWidget):
         # self.controlPanel.operationPanel.progress_bar.setValue(0)
 
     def get_azimuthal_value(self):
+        self.dc.mask = self.mask_module.get_current_mask()
         self.dc.calculate_azimuthal_average()
 
         # update ui
@@ -168,8 +185,12 @@ class ProfileExtraction(QtWidgets.QWidget):
     def update_polar_img(self):
         if self.dc.center[0] is None:
             return
-        p_ellipse = [self.dc.center[1],self.dc.center[0],1,1,0]
-        polar_img, _, _ = polar_transform.cartesian_to_polarelliptical_transform(self.dc.img_raw,p_ellipse, dphi=np.radians(0.5))
+        if self.control_panel.ellipticalCorrectionPanel.chkbox_use_elliptical_correction.isChecked() and self.dc.p_ellipse is not None:
+            p_ellipse = self.dc.p_ellipse
+        else:
+            p_ellipse = [1,1,0]
+        self.dc.p_ellipse = p_ellipse
+        polar_img = self.dc.elliptical_transformation(dphi=np.radians(0.5))
         self.polar_image_panel.update_img(polar_img)
 
     def find_center(self):
@@ -177,6 +198,9 @@ class ProfileExtraction(QtWidgets.QWidget):
         i2 = self.control_panel.settingPanel.spinBox_irange2.value()
         intensity_range = (i1, i2)
         slice_count = int(self.control_panel.settingPanel.spinBox_slice_count.value())
+        mask = self.mask_module.get_current_mask()
+        if mask is not None:
+            self.dc.mask = ~mask # todo: mask 방향정리
         self.dc.find_center()
         self.update_center_spinBox()
         # you must use self.draw_center() after find_center
@@ -439,20 +463,26 @@ class ControlPanel(QtWidgets.QWidget):
             self.lbl_b = QtWidgets.QLabel("b")
             self.lbl_theta = QtWidgets.QLabel("θ")
 
-            self.spinBox_a = QtWidgets.QSpinBox()
+            self.spinBox_a = QtWidgets.QDoubleSpinBox()
             self.spinBox_a.setValue(1)
+            self.spinBox_a.setMaximum(10e6)
+            self.spinBox_a.setSingleStep(0.01)
             layout_a = QtWidgets.QHBoxLayout()
             layout_a.addWidget(self.lbl_a)
             layout_a.addWidget(self.spinBox_a)
 
-            self.spinBox_b = QtWidgets.QSpinBox()
+            self.spinBox_b = QtWidgets.QDoubleSpinBox()
             self.spinBox_b.setValue(1)
+            self.spinBox_b.setMaximum(10e6)
+            self.spinBox_b.setSingleStep(0.01)
             layout_b = QtWidgets.QHBoxLayout()
             layout_b.addWidget(self.lbl_b)
             layout_b.addWidget(self.spinBox_b)
 
-            self.spinBox_theta = QtWidgets.QSpinBox()
+            self.spinBox_theta = QtWidgets.QDoubleSpinBox()
             self.spinBox_theta.setValue(0)
+            self.spinBox_theta.setMaximum(10e6)
+            self.spinBox_theta.setSingleStep(0.1)
             layout_theta = QtWidgets.QHBoxLayout()
             layout_theta.addWidget(self.lbl_theta)
             layout_theta.addWidget(self.spinBox_theta)

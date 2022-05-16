@@ -619,6 +619,15 @@ def polar_transformation_matlab(image, center, a, b, theta, mask=None, **kargs):
 
 
 def _cartesian_to_polarelliptical_transform_matlab(image, coefs, mask=None, **kargs):
+    """
+    Args:
+        image:
+        coefs: qx, qy, A, B
+        mask:
+        **kargs:
+    Returns:
+
+    """
     pixelSize = kargs.get('pixelSize', 1)
     # rSigma = kargs.get('rSigma', 0.1)
     # tSigma = kargs.get('tSigma', 1)

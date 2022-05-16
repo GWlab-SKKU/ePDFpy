@@ -20,7 +20,6 @@ logger = logging.getLogger("Cube")
 class Cube(metaclass=ABCMeta):
     def __init__(self, load_file_path: str = None, filetype: str = None, **kwargs):
         """
-
         Args:
             load_file_path:
             filetype: "image", "profile", "preset"
@@ -38,10 +37,12 @@ class Cube(metaclass=ABCMeta):
         self.kwargs = kwargs
 
         self.data = None
+        self.polar_data = None
         self.img_display = None
         self.center = [None, None]
 
         self.mask = None
+        self.p_ellipse = None
 
         if self.use_ready is False and load_file_path is not None:
             self.load_image(load_file_path)
@@ -49,7 +50,7 @@ class Cube(metaclass=ABCMeta):
 
     @abstractmethod
     def load_image(self, fp=None) -> np.array:
-        pass
+        self.find_center()
 
     @abstractmethod
     def get_display_img(self):
@@ -58,6 +59,15 @@ class Cube(metaclass=ABCMeta):
     @abstractmethod
     def find_center(self):
         pass
+
+    @abstractmethod
+    def elliptical_fitting(self):
+        pass
+
+    @abstractmethod
+    def elliptical_transformation(self):
+        pass
+
 
 
 class PDFCube(Cube):
@@ -120,7 +130,7 @@ class PDFCube(Cube):
         return self.img_raw
 
     def find_center(self):
-        self.center = list(image_process.calculate_center_gradient(self.img_raw.copy(), self.mask))
+        self.center = list(image_process.calculate_center_gradient(self.img_display.copy(), self.mask))
         return self.center
 
     def calculate_azimuthal_average(self, version=0):
@@ -129,7 +139,7 @@ class PDFCube(Cube):
             self.azavg = image_process.calculate_azimuthal_average(self.img_raw, self.center, self.mask)
         elif version == 1:
             # py4dstem polar transformation
-            self.azavg = fem_calculation._fit_ellipse_amorphous_ring()
+            self.azavg = elliptical_correction._fit_ellipse_amorphous_ring()
         elif version == 2:
             pass
         elif version == 3:
@@ -150,6 +160,15 @@ class PDFCube(Cube):
         assert self.ds is not None, "Put parameters first."
         pdf_calculator.calculation(
             self.ds, self.pixel_start_n, self.pixel_end_n, self.element_nums, self.ratio, self.azavg, self.is_full_q, self.damping, self.rmax, self.dr, self.electron_voltage, fit_at_q=None, N=None, scattering_factor_type="Kirkland", fitting_range=None)
+
+    def elliptical_fitting(self):
+        center, p_ellipse = elliptical_correction.elliptical_fitting_py4d_center_fixed(self.data, self.center[::-1], self.mask) # todo: center x,y
+        self.p_ellipse = p_ellipse
+
+    def elliptical_transformation(self, **kwargs):
+        self.polar_data = elliptical_correction.polar_transformation_py4d(self.data, self.center, *self.p_ellipse, mask=self.mask, *kwargs)
+        return self.polar_data
+
 
 
 class FEMCube(Cube):
@@ -214,98 +233,11 @@ class FEMCube(Cube):
 
     def elliptical_fitting_matlab(self, mask=None):
         use_mask = self.choose_mask(mask, self.mask)
-        def fit_func(x, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11):
-            Rsq = (x[:, 0] - c1) ** 2 + c4 * (x[:, 0] - c1) * (x[:, 1] - c2) + c3 * (x[:, 1] - c2) ** 2
-            rs = c5 + \
-                 c6 * np.exp(-1 / 2 / c7 ** 2 * Rsq) + \
-                 c9 * np.exp(-1 / 2 / c10 ** 2 * np.abs(c8 - np.sqrt(Rsq)) ** 2) * (c8 ** 2 > Rsq) + \
-                 c9 * np.exp(-1 / 2 / c11 ** 2 * np.abs(c8 - np.sqrt(Rsq)) ** 2) * (c8 ** 2 < Rsq)
-            return rs
 
-        if use_mask is None:
-            use_mask = np.ones(self.data.shape)
-        skipFit = [11, 1]
-        stackSize = self.data.shape
-        inds2D = np.ravel_multi_index([self.ya, self.xa], stackSize[1:3])
-        basis = np.array((self.ya.reshape(-1), self.xa.reshape(-1))).transpose()
-        p0 = 1.0e+03 * np.array([0.2565, 0.2624, 0.0010, 0.0001, 0.0, 1.4273, 0.0535,
-                                 0.1198, 0.2895, 0.0118, 0.0104])
-        lb = [0, 0, 0.5, -0.5,
-              0, 0, 0, 0, 0, 0, 0];
-        ub = [stackSize[1], stackSize[2], 2, 0.5
-            , np.Inf, np.Inf, np.Inf, np.Inf, np.Inf, np.Inf, np.Inf];
-        coefsInit = p0
-        for a0 in range(0, len(skipFit)):
-            maskFit = (inds2D % skipFit[a0]) == 0;
-            coefsInit = curve_fit(fit_func,
-                                  basis[np.logical_and(use_mask.reshape(-1), maskFit.reshape(-1))],
-                                  self.repres_img[np.logical_and(use_mask, maskFit)],
-                                  p0=coefsInit,
-                                  bounds=(lb, ub)
-                                  )[0]
-        self.A = 1.0
-        self.B = coefsInit[3]
-        self.C = coefsInit[2]
-        coefs = [coefsInit[1], coefsInit[0], self.A, self.C, self.B]
-
-        self.ellipse_rs = [coefs, coefsInit]
 
     def polar_transformation_matlab(self, mask=None, **kargs):
-        fem_calculation.polar_transformation_matlab(self.polarAll)
-        # pixelSize = kargs.get('pixelSize', 1)
-        # rSigma = kargs.get('rSigma', 0.1)
-        # tSigma = kargs.get('tSigma', 1)
-        # rMax = kargs.get('rMax', 240)
-        # dr = kargs.get('dr', 2)
-        # dt = kargs.get('dt', 5)
-        #
-        # use_mask = self.choose_mask(mask, self.mask)
-        #
-        # polarRadius = np.arange(0, rMax, dr) * pixelSize;
-        # polarTheta = np.arange(0, 360, dt) * (np.pi / 180)
-        # ya, xa = np.meshgrid(np.arange(self.data.shape[1]), np.arange(self.data.shape[2]))
-        #
-        # coefs = [self.ellipse_rs[0][0], self.ellipse_rs[0][1], self.C, self.B]
-        # xa = self.xa - coefs[0]
-        # ya = self.ya - coefs[1]
-        # # Correction factors
-        # if abs(self.C) > -6:
-        #     p0 = -np.arctan((1 - self.B + np.sqrt((self.B - 1) ** 2 + self.C ** 2)) / self.C);
-        # else:
-        #     p0 = 0;
-        #
-        # a0 = np.sqrt(2 * (1 + self.C + np.sqrt((self.C - 1) ** 2 + self.B ** 2)) / (4 * self.C - self.B ** 2))
-        # b0 = np.sqrt(2 * (1 + self.C - np.sqrt((self.C - 1) ** 2 + self.B ** 2)) / (4 * self.C - self.B ** 2))
-        # ratio = b0 / a0;
-        # m = [[ratio * np.cos(p0) ** 2 + np.sin(p0) ** 2,
-        #       -np.cos(p0) * np.sin(p0) + ratio * np.cos(p0) * np.sin(p0)],
-        #      [-np.cos(p0) * np.sin(p0) + ratio * np.cos(p0) * np.sin(p0),
-        #       np.cos(p0) ** 2 + ratio * np.sin(p0) ** 2]]
-        # m = np.array(m)
-        # ta = np.arctan2(m[1, 0] * xa + m[1, 1] * ya, m[0, 0] * xa + m[0, 1] * ya)
-        # ra = np.sqrt(xa ** 2 + coefs[2] * ya ** 2 + coefs[3] * xa * ya) * b0
-        #
-        # # Resamping coordinates
-        # Nout = [len(polarRadius), len(polarTheta)];
-        # rInd = (np.round((ra - polarRadius[0]) / dr)).astype(np.uint)
-        # tInd = (np.mod(np.round((ta - polarTheta[0]) / (dt * np.pi / 180)), Nout[1])).astype(np.uint)
-        # sub = np.logical_and(rInd <= Nout[0] - 1, rInd >= 0)
-        # rtIndsSub = np.array([rInd[sub], tInd[sub]]).T;
-        #
-        # polarNorm = fem_calculation.accum(rtIndsSub, np.ones(np.sum(sub)))
-        # self.polarRepresImg = fem_calculation.accum(rtIndsSub, self.repres_img[sub])
-        # self.polarRepresImg = self.polarRepresImg / polarNorm
-        # if use_mask is None:
-        #     use_mask = np.ones(self.data.shape[1:])
-        # polarMask = fem_calculation.accum(rtIndsSub, use_mask[sub]) == 0
-        #
-        # self.polarRepresImg = np.ma.masked_array(self.polarRepresImg, polarMask)
-        # self.polarAll = np.zeros((self.data.shape[0], Nout[0], Nout[1]))
-        # for a0 in range(self.data.shape[0]):
-        #     CBED = self.data[a0];
-        #     polarCBED = fem_calculation.accum(rtIndsSub, CBED[sub])
-        #     polarCBED = polarCBED / polarNorm
-        #     self.polarAll[a0] = polarCBED;
+        elliptical_correction.polar_transformation_matlab(self.polarAll)
+
 
     def getVk(self):
         self.polarCBEDvar = np.mean((self.polarAll - self.polarRepresImg) ** 2, axis=0)

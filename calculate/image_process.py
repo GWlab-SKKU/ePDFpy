@@ -4,8 +4,7 @@ import time
 import util
 import definitions
 from scipy import ndimage
-from calculate import polar_transform
-
+from calculate import polar_transform, elliptical_correction
 
 try:
     import cupy as cp
@@ -79,12 +78,12 @@ def _evaluate_center(img, center, max_d=None, mask=None):
     dphi = np.radians(2)
 
     if mask is not None:
-        polar_img = polar_transform.cartesian_to_polarelliptical_transform(img, [center[1], center[0], 1, 1, 0], dr=dr,
+        polar_img = elliptical_correction.polar_transformation_py4d(img, [center[1], center[0]], 1, 1, 0, dr=dr,
                                                                            dphi=dphi, mask=~mask)
     else:
-        polar_img = polar_transform.cartesian_to_polarelliptical_transform(img, [center[1], center[0], 1, 1, 0], dr=dr,
+        polar_img = elliptical_correction.polar_transformation_py4d(img, [center[1], center[0]], 1, 1, 0, dr=dr,
                                                                            dphi=dphi)
-    norm_std_graph = np.std(polar_img[0], axis=0)/np.average(polar_img[0], axis=0)
+    norm_std_graph = np.std(polar_img, axis=0)/np.average(polar_img, axis=0)
     if max_d is not None:
         return np.sum(norm_std_graph[:max_d])
     else:
@@ -299,7 +298,6 @@ def calculate_azimuthal_average(raw_image, center, mask=None):
     rr = np.rint(rr).astype('uint16')
     n_rr = np.uint16(rr.max())
 
-
     #### radial mean ####
     # radial_mean = ndimage.mean(raw_image, labels=rr, index=np.arange(0, n_rr + 1))
     radial_mean = ndimage.mean(raw_image, labels=rr, index=np.arange(1, n_rr + 1))
@@ -308,6 +306,24 @@ def calculate_azimuthal_average(raw_image, center, mask=None):
 
     return radial_mean
 
+
+def calculate_azimuthal_average_ellipse(raw_image, center, ellipse_p, mask=None):
+    rs = elliptical_correction._cartesian_to_polarelliptical_transform(raw_image, [*center,*ellipse_p], mask)
+    rr = rs[1]
+    if mask is not None:
+        rr = cv2.bitwise_and(rr, rr, mask=np.bitwise_not(mask))
+    else:
+        rr = cv2.bitwise_and(rr, rr)
+    rr = np.rint(rr).astype('uint16')
+    n_rr = np.uint16(rr.max())
+
+    #### radial mean ####
+    # radial_mean = ndimage.mean(raw_image, labels=rr, index=np.arange(0, n_rr + 1))
+    radial_mean = ndimage.mean(raw_image, labels=rr, index=np.arange(1, n_rr + 1))
+    radial_mean = np.insert(radial_mean, 0, 0)
+    radial_mean = np.nan_to_num(radial_mean, 0)
+
+    return radial_mean
 
 def calculate_azimuthal_average_(raw_image, center):
     raw_image = raw_image.copy()

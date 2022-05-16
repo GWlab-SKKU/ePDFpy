@@ -263,7 +263,8 @@ class DataViewer(QtWidgets.QMainWindow):
         # to reduce the memory
         if not len(self.dcs) == 1 and hasattr(self,"current_page")\
                 and len(self.dcs) > self.current_page:
-            self.dcs[self.current_page].release()
+            # self.dcs[self.current_page].release()
+            pass
         self.current_page = index
 
         # update quality number

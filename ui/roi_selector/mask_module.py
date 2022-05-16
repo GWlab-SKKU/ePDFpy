@@ -70,6 +70,7 @@ class MaskModule(QtCore.QObject):
             img = np.zeros(self.img.shape, dtype=np.uint8)
             cv2.fillPoly(img, pts=[x_y], color=(255, 255, 255))
             self.mask = img
+        return self.mask
 
     def _mask_reload(self):
         self.dropdown.mask_reload()
