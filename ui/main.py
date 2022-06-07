@@ -43,6 +43,65 @@ class DataViewer(QtWidgets.QMainWindow):
         self.sig_binding()
         self.resize(1300,800)
 
+        self.default_setting_dic = {}
+        self.bind_default_setting()
+
+    def load_default_setting(self):
+        # todo: load
+        load_dic = {}
+        for name, value in load_dic.items():
+            if name not in self.default_setting_dic.keys():
+                continue
+            widget = self.default_setting_dic[name]
+            if issubclass(type(widget), QtWidgets.QCheckBox):
+                widget: QtWidgets.QCheckBox
+                widget.setChecked(value)
+            elif issubclass(type(widget), QtWidgets.QDoubleSpinBox):
+                widget: QtWidgets.QDoubleSpinBox
+                widget.setValue(value)
+            elif issubclass(type(widget), QtWidgets.QSpinBox):
+                widget: QtWidgets.QSpinBox
+                widget.setValue(value)
+
+    def save_default_setting(self):
+        save_dic = {}
+        for name, widget in self.default_setting_dic.items():
+            if issubclass(type(widget), QtWidgets.QCheckBox):
+                widget: QtWidgets.QCheckBox
+                value = widget.isChecked()
+            elif issubclass(type(widget), QtWidgets.QDoubleSpinBox):
+                widget: QtWidgets.QDoubleSpinBox
+                value = widget.value()
+            elif issubclass(type(widget), QtWidgets.QSpinBox):
+                widget: QtWidgets.QSpinBox
+                value = widget.value()
+            save_dic.update({name: value})
+        save_dic = file.type_changer(save_dic)
+
+
+        # todo: save
+
+    def bind_default_setting(self):
+        update_dic = {
+            # profile extraction tab
+            "use_elliptical_correction": self.profile_extraction.control_panel.ellipticalCorrectionPanel.chkbox_use_elliptical_correction,
+            "show_center_line": self.profile_extraction.control_panel.settingPanel.chkBox_show_centerLine,
+            "show_beam_stopper_mask": self.profile_extraction.control_panel.settingPanel.chkBox_show_beam_stopper_mask,
+            # pdf analysis tab
+            "scattering_factor": self.PDF_analyser.controlPanel.fitting_elements.combo_scattering_factor,
+            "calibration_factor": self.PDF_analyser.controlPanel.fitting_elements.spinbox_ds,
+            "calibration_factor_step": self.PDF_analyser.controlPanel.fitting_elements.spinbox_ds_step,
+            "fit_at_q_step": self.PDF_analyser.controlPanel.fitting_factors.spinbox_fit_at_q_step,
+            "N_step": self.PDF_analyser.controlPanel.fitting_factors.spinbox_N_step,
+            "damping_step": self.PDF_analyser.controlPanel.fitting_factors.spinbox_damping_step,
+            "r_max_step": self.PDF_analyser.controlPanel.fitting_factors.spinbox_rmax_step,
+            "dr_step": self.PDF_analyser.controlPanel.fitting_factors.spinbox_dr_step,
+            "instant_update": self.PDF_analyser.controlPanel.fitting_factors.chkbox_instant_update,
+            "EV": self.PDF_analyser.controlPanel.fitting_factors.spinbox_electron_voltage
+        }
+        self.default_setting_dic.update(update_dic)
+
+
     class TopMenu(QtWidgets.QWidget):
         def __init__(self, mainWindow):
             self.mainWindow = mainWindow
@@ -291,7 +350,7 @@ class DataViewer(QtWidgets.QMainWindow):
         self.top_menu.lbl_current_num.setText(str(self.current_page + 1) + "/" + str(len(self.dcs)))
 
         # mask module
-        self.profile_extraction.mask_module.update_img(self.dcs[self.current_page].img_raw)
+        self.profile_extraction.mask_module.update_img(self.dcs[self.current_page].data)
 
     def apply_element_to_all(self, datacube):
         for dc in self.dcs:
@@ -340,7 +399,7 @@ class DataViewer(QtWidgets.QMainWindow):
 
     def menu_open_azavg_only(self, azavg=None):  # azavg arguments is for averaging_multiple_gr.py
         if azavg is None or azavg is False:
-            fp, _ = QtWidgets.QFileDialog.getOpenFileName(self, filter="csv (*.csv); text file (*.txt)")
+            fp, _ = QtWidgets.QFileDialog.getOpenFileName(self, filter="profile (*.csv *.txt)")
             if fp is '':
                 return
             dc = PDFCube(fp,'profile')

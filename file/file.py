@@ -1,5 +1,3 @@
-from datacube.datacube import DataCube
-
 import mrcfile
 import os
 import numpy as np
@@ -13,6 +11,7 @@ import re
 import cv2
 from PIL import Image
 import hyperspy.api as hs
+from datacube.cube import PDFCube
 
 ePDFpy_analysis_folder_name = "Analysis ePDFpy"
 preset_ext = ".preset.json"
@@ -121,8 +120,8 @@ def save_preset(datacubes, main_window, fpth, stack=True, saveas=True):
             df_r = pd.DataFrame({name: getattr(datacube, name) for name in lst if getattr(datacube, name) is not None})
             df_r.to_csv(data_r_path, index=None)
         # save img data
-        if imgPanel is not None and datacube.img is not None:
-            imgPanel.imageView.export(img_path)
+        # if imgPanel is not None and datacube.display_img is not None:
+        #     imgPanel.imageView.export(img_path)
         # save screenshot
         if datacube.Gr is not None:
             main_window.PDF_analyser.grab().save(rdf_screen_path)
@@ -153,11 +152,7 @@ def save_preset(datacubes, main_window, fpth, stack=True, saveas=True):
                 del presets[remove_item]
 
         # type exception handling
-        for key, value in presets.items():
-            if type(value) in [np.int64, np.int32, np.uint]:
-                presets[key] = int(value)
-            if type(value) in [np.float64, np.float32]:
-                presets[key] = float(value)
+        presets = type_changer(presets)
 
         # # deprecated
         # if presets['center'][0] is not None:
@@ -169,14 +164,37 @@ def save_preset(datacubes, main_window, fpth, stack=True, saveas=True):
         return True
 
 
-def load_preset(fp:str=None, dc:DataCube=None) -> DataCube:
+def type_changer(items):
+    if type(items) == dict:
+        for k,v in items.items():
+            if type(v) in [np.int64, np.int32, np.uint]:
+                items[k] = int(v)
+            if type(v) in [np.float64, np.float32]:
+                items[k] = float(v)
+            if type(v) == dict or type(v) == list:
+                items[k] = type_changer(v)
+    elif type(items) == list:
+        tmp_list = []
+        for v in items:
+            if type(v) in [np.int64, np.int32, np.uint]:
+                v = int(v)
+            if type(v) in [np.float64, np.float32]:
+                v = float(v)
+            if type(v) == dict or type(v) == list:
+                v = type_changer(v)
+            tmp_list.append(v)
+        items = tmp_list
+    return items
+
+
+def load_preset(fp:str=None, dc=None):
     if fp is None:
         fp, _ = QFileDialog.getOpenFileName(filter="preset Files (*.preset.json)")
     if fp == '':
         return
 
     if dc is None:
-        dc = DataCube()
+        dc = PDFCube()
     try:
         content = json.load(open(fp))
     except:
@@ -273,9 +291,15 @@ def save_azavg_only(azavg):
     if fp == '':
         return
     if 'csv' in ext:
-        np.savetxt(fp,azavg,delimiter=',')
-    if 'txt' in ext:
-        np.savetxt(fp,azavg)
+        if fp[-4:] == ".csv":
+            np.savetxt(fp, azavg, delimiter=',')
+        else:
+            np.savetxt(fp+".csv", azavg, delimiter=',')
+    elif 'txt' in ext:
+        if fp[-4:] == ".txt":
+            np.savetxt(fp, azavg)
+        else:
+            np.savetxt(fp + ".txt", azavg)
 
 def save_azavg_stack(dcs):
     dirpth = QFileDialog.getExistingDirectory(None, '')

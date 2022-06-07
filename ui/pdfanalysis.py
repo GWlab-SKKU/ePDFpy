@@ -1,6 +1,5 @@
 from ui.advanced_fit import MainWindowAdvancedFit
 from file import file
-from datacube.datacube import DataCube
 import pyqtgraph as pg
 import util
 from calculate import pdf_calculator
@@ -9,6 +8,7 @@ import ui.ui_util as ui_util
 from PyQt5 import QtCore, QtWidgets
 import numpy as np
 from calculate import q_range_selector
+from datacube.cube import PDFCube
 
 pg.setConfigOptions(antialias=True)
 
@@ -17,7 +17,7 @@ class PdfAnalysis(QtWidgets.QWidget):
     def __init__(self, Dataviewer):
         super().__init__()
         self.Dataviewer = Dataviewer
-        self.datacube = DataCube()
+        self.datacube = PDFCube()
         self.datacube.analyser = self
         if self.datacube.element_nums is None:
             self.datacube.element_nums = []
@@ -40,7 +40,7 @@ class PdfAnalysis(QtWidgets.QWidget):
 
         self.update_graph()
 
-    def put_datacube(self,datacube):
+    def put_datacube(self, datacube):
         self.controlPanel.blockSignals(True)
         self.datacube = datacube
         if self.datacube.element_nums is None:

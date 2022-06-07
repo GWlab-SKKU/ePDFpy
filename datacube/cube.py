@@ -13,24 +13,22 @@ import scipy.io
 import cv2
 from scipy.optimize import curve_fit
 import pandas as pd
+from file import load
 
 logger = logging.getLogger("Cube")
 
 
 class Cube(metaclass=ABCMeta):
-    def __init__(self, load_file_path: str = None, filetype: str = None, **kwargs):
+    def __init__(self, load_file_path: str = None, **kwargs):
         """
         Args:
             load_file_path:
-            filetype: "image", "profile", "preset"
-            use_ready:
+            use_ready: True or False, for future use to reduce memory usage
             **kwargs:
         """
-        assert not np.logical_xor(load_file_path is None, filetype is None),\
-            "Expected load_file_path and filetype simultaneously"
+
 
         self.load_file_path = load_file_path
-        self.filetype = filetype
 
         self.use_ready = kwargs.get("use_ready", False)
 
@@ -44,13 +42,14 @@ class Cube(metaclass=ABCMeta):
         self.mask = None
         self.p_ellipse = None
 
-        if self.use_ready is False and load_file_path is not None:
-            self.load_image(load_file_path)
-            self.get_display_img()
+        # if self.use_ready is False and load_file_path is not None:
+        #     self.load_image(load_file_path)
+        #     self.get_display_img()
 
     @abstractmethod
     def load_image(self, fp=None) -> np.array:
-        self.find_center()
+        # self.find_center()
+        pass
 
     @abstractmethod
     def get_display_img(self):
@@ -72,9 +71,18 @@ class Cube(metaclass=ABCMeta):
 
 class PDFCube(Cube):
     def __init__(self, load_file_path: str = None, filetype: str = None, **kwargs):
+        """
+        :param load_file_path:
+        :param filetype: 'profile' or 'image' or None
+        :param kwargs:
+        """
+        super().__init__(load_file_path, **kwargs)
+        assert not np.logical_xor(load_file_path is None, filetype is None),\
+            "Expected load_file_path and filetype simultaneously"
+
         self.azavg = None
         self.azvar = None
-        self.img_raw = None
+        self.preset_file_path = None
 
         self.pixel_start_n = None
         self.pixel_end_n = None
@@ -108,10 +116,13 @@ class PDFCube(Cube):
         self.scattering_factor = None
         self.electron_voltage = None
 
-        self.original_data = None
         self.mask = None
 
-        super().__init__(load_file_path, filetype, **kwargs)
+        if filetype == 'profile':
+            self.azavg = load._load_txt_img(self.load_file_path)
+        elif filetype == 'image':
+            self.data = load.load_diffraction_image(self.load_file_path)
+            self.get_display_img()
 
     def get_display_img(self):
         assert isinstance(self.data, np.ndarray) and self.data.ndim == 2, "Expected 2d numpy array"
@@ -126,17 +137,16 @@ class PDFCube(Cube):
             return
         self.data = load.load_diffraction_image(use_fp)
         assert self.data.ndim == 2, "Expected 2D array"
-        self.img_raw = self.data.copy()
-        return self.img_raw
+        return self.data
 
     def find_center(self):
         self.center = list(image_process.calculate_center_gradient(self.img_display.copy(), self.mask))
         return self.center
 
     def calculate_azimuthal_average(self, version=0):
-        assert self.img_raw is not None, "You don't have img data"
+        assert self.data is not None, "You don't have img data"
         if version == 0:
-            self.azavg = image_process.calculate_azimuthal_average(self.img_raw, self.center, self.mask)
+            self.azavg = image_process.calculate_azimuthal_average(self.data, self.center, self.mask)
         elif version == 1:
             # py4dstem polar transformation
             self.azavg = elliptical_correction._fit_ellipse_amorphous_ring()
@@ -166,7 +176,7 @@ class PDFCube(Cube):
         self.p_ellipse = p_ellipse
 
     def elliptical_transformation(self, **kwargs):
-        self.polar_data = elliptical_correction.polar_transformation_py4d(self.data, self.center, *self.p_ellipse, mask=self.mask, *kwargs)
+        self.polar_data = elliptical_correction.polar_transformation_py4d(self.data, self.center, *self.p_ellipse, mask=self.mask, **kwargs)
         return self.polar_data
 
 

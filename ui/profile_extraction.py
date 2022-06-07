@@ -183,7 +183,7 @@ class ProfileExtraction(QtWidgets.QWidget):
         self.profile_graph_panel.update_graph(self.dc.azavg)
 
     def update_polar_img(self):
-        if self.dc.center[0] is None:
+        if self.dc.center[0] is None or self.dc.data is None:
             return
         if self.control_panel.ellipticalCorrectionPanel.chkbox_use_elliptical_correction.isChecked() and self.dc.p_ellipse is not None:
             p_ellipse = self.dc.p_ellipse
@@ -240,9 +240,9 @@ class ProfileExtraction(QtWidgets.QWidget):
         #         self.controlPanel.openFilePanel.lbl_file_name.setText(fn)
 
     def update_center_spinBox(self):
-        if not self.dc.img_raw is None:
-            self.control_panel.settingPanel.spinBox_center_x.setMaximum(self.dc.img_raw.shape[0])  # todo : confusing x,y
-            self.control_panel.settingPanel.spinBox_center_y.setMaximum(self.dc.img_raw.shape[1])
+        if not self.dc.data is None:
+            self.control_panel.settingPanel.spinBox_center_x.setMaximum(self.dc.data.shape[0])  # todo : confusing x,y
+            self.control_panel.settingPanel.spinBox_center_y.setMaximum(self.dc.data.shape[1])
 
         if not self.dc.center[0] is None:
             ui_util.update_value(self.control_panel.settingPanel.spinBox_center_x, self.dc.center[0])
@@ -251,8 +251,9 @@ class ProfileExtraction(QtWidgets.QWidget):
     def update_img(self):
         if not hasattr(self,'dc'):
             return
-        if self.dc.img_raw is None:
+        if self.dc.data is None:
             self.img_panel.clear_img()
+            self.polar_image_panel.imageView.clear()
             return
         img = self.dc.img_display.copy()
         if self.control_panel.settingPanel.chkBox_show_beam_stopper_mask.isChecked():
