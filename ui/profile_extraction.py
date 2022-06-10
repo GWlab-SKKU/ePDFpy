@@ -18,10 +18,8 @@ class ProfileExtraction(QtWidgets.QWidget):
         self.Dataviewer = Dataviewer
         self.mask_module = mask_module.MaskModule(fp=definitions.MASK_PATH)
         self.init_ui()
-        self.default_setting = util.DefaultSetting()
         self.isShowCenter = True
         self.flag_range_update = False
-        self.load_default()
         self.sig_binding()
         self.dc:PDFCube = None
 
@@ -69,18 +67,6 @@ class ProfileExtraction(QtWidgets.QWidget):
 
         self.setLayout(self.layout)
 
-    def load_default(self):
-        if util.default_setting.intensity_range_1 is not None:
-            self.control_panel.settingPanel.spinBox_irange1.setValue(util.default_setting.intensity_range_1)
-        if util.default_setting.intensity_range_2 is not None:
-            self.control_panel.settingPanel.spinBox_irange2.setValue(util.default_setting.intensity_range_2)
-        if util.default_setting.slice_count is not None:
-            self.control_panel.settingPanel.spinBox_slice_count.setValue(util.default_setting.slice_count)
-        if util.default_setting.show_center_line is not None:
-            self.control_panel.settingPanel.chkBox_show_centerLine.setChecked(util.default_setting.show_center_line)
-        if util.default_setting.show_beam_stopper_mask is not None:
-            self.control_panel.settingPanel.chkBox_show_beam_stopper_mask.setChecked(
-                util.default_setting.show_beam_stopper_mask)
 
     def sig_binding(self):
         # self.controlPanel.openFilePanel.open_img_file.triggered.connect(self.menu_open_image_file)
@@ -249,7 +235,7 @@ class ProfileExtraction(QtWidgets.QWidget):
             ui_util.update_value(self.control_panel.settingPanel.spinBox_center_y, self.dc.center[1])
 
     def update_img(self):
-        if not hasattr(self,'dc'):
+        if not hasattr(self,'dc') or self.dc is None:
             return
         if self.dc.data is None:
             self.img_panel.clear_img()

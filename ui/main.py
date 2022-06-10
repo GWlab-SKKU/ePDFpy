@@ -9,6 +9,7 @@ from ui.pdfanalysis import PdfAnalysis
 from PyQt5.QtWidgets import QMessageBox
 import ui.selection_analysis.averaging_multiple_gr as averaging_multiple_gr
 from ui import ui_util
+import json
 
 pg.setConfigOptions(antialias=True)
 import definitions
@@ -45,10 +46,11 @@ class DataViewer(QtWidgets.QMainWindow):
 
         self.default_setting_dic = {}
         self.bind_default_setting()
+        self.load_default_setting()
 
     def load_default_setting(self):
         # todo: load
-        load_dic = {}
+        load_dic = json.load(open(definitions.DEFAULT_JSON_PATH))
         for name, value in load_dic.items():
             if name not in self.default_setting_dic.keys():
                 continue
@@ -62,6 +64,12 @@ class DataViewer(QtWidgets.QMainWindow):
             elif issubclass(type(widget), QtWidgets.QSpinBox):
                 widget: QtWidgets.QSpinBox
                 widget.setValue(value)
+            elif issubclass(type(widget), QtWidgets.QTextEdit):
+                widget: QtWidgets.QTextEdit
+                widget.setText(str(value))
+            elif issubclass(type(widget), QtWidgets.QLineEdit):
+                widget: QtWidgets.QLineEdit
+                widget.setText(str(value))
 
     def save_default_setting(self):
         save_dic = {}
@@ -75,11 +83,15 @@ class DataViewer(QtWidgets.QMainWindow):
             elif issubclass(type(widget), QtWidgets.QSpinBox):
                 widget: QtWidgets.QSpinBox
                 value = widget.value()
+            elif issubclass(type(widget), QtWidgets.QTextEdit):
+                widget: QtWidgets.QTextEdit
+                value = widget.toPlainText()
+            elif issubclass(type(widget), QtWidgets.QLineEdit):
+                widget: QtWidgets.QLineEdit
+                value = widget.text()
             save_dic.update({name: value})
         save_dic = file.type_changer(save_dic)
-
-
-        # todo: save
+        json.dump(save_dic, open(definitions.DEFAULT_JSON_PATH, 'w'), indent=2)
 
     def bind_default_setting(self):
         update_dic = {
@@ -97,7 +109,10 @@ class DataViewer(QtWidgets.QMainWindow):
             "r_max_step": self.PDF_analyser.controlPanel.fitting_factors.spinbox_rmax_step,
             "dr_step": self.PDF_analyser.controlPanel.fitting_factors.spinbox_dr_step,
             "instant_update": self.PDF_analyser.controlPanel.fitting_factors.chkbox_instant_update,
-            "EV": self.PDF_analyser.controlPanel.fitting_factors.spinbox_electron_voltage
+            "dr": self.PDF_analyser.controlPanel.fitting_factors.spinbox_dr,
+            "r_max": self.PDF_analyser.controlPanel.fitting_factors.spinbox_rmax,
+            "damping": self.PDF_analyser.controlPanel.fitting_factors.spinbox_damping,
+            "EV": self.PDF_analyser.controlPanel.fitting_factors.spinbox_electron_voltage,
         }
         self.default_setting_dic.update(update_dic)
 
@@ -512,11 +527,7 @@ class DataViewer(QtWidgets.QMainWindow):
             self.btn_page_right_clicked()
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
-        util.default_setting.intensity_range_1 = self.profile_extraction.control_panel.settingPanel.spinBox_irange1.value()
-        util.default_setting.intensity_range_2 = self.profile_extraction.control_panel.settingPanel.spinBox_irange2.value()
-        util.default_setting.slice_count = self.profile_extraction.control_panel.settingPanel.spinBox_slice_count.value()
-        util.default_setting.show_center_line = self.profile_extraction.control_panel.settingPanel.chkBox_show_centerLine.isChecked()
-        util.default_setting.save_settings()
+        self.save_default_setting()
         super().closeEvent(a0)
 
 
