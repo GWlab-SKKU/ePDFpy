@@ -126,14 +126,13 @@ class DataViewer(QtWidgets.QMainWindow):
             # left_section = QtWidgets.QWidget()
             center_section = self.create_navigator()
             right_section = self.create_data_quality()
-            layout.addWidget(left_section)
             # layout.addWidget(center_section)
             # layout.addWidget(right_section)
 
-            progress_bar = QtWidgets.QProgressBar()
+            # progress_bar = QtWidgets.QProgressBar()
 
             layout.addWidget(left_section,0,0,alignment=QtCore.Qt.AlignLeft)
-            layout.addWidget(progress_bar,0,1,alignment=QtCore.Qt.AlignLeft)
+            # layout.addWidget(progress_bar,0,1,alignment=QtCore.Qt.AlignLeft)
             layout.addWidget(center_section,0,2,alignment=QtCore.Qt.AlignCenter)
             layout.addWidget(right_section,0,3,alignment=QtCore.Qt.AlignRight)
 
