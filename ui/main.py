@@ -414,7 +414,7 @@ class DataViewer(QtWidgets.QMainWindow):
     def menu_open_azavg_only(self, azavg=None):  # azavg arguments is for averaging_multiple_gr.py
         if azavg is None or azavg is False:
             fp, _ = QtWidgets.QFileDialog.getOpenFileName(self, filter="profile (*.csv *.txt)")
-            if fp is '':
+            if fp == '':
                 return
             dc = PDFCube(fp,'profile')
             self.dcs.clear()
@@ -427,7 +427,7 @@ class DataViewer(QtWidgets.QMainWindow):
 
     def menu_open_azavg_stack(self, ext):  # azavg arguments is for averaging_multiple_gr.py
         dirpth = QtWidgets.QFileDialog.getExistingDirectory(self, '')
-        if dirpth is '':
+        if dirpth == '':
             return
         lst1 = file.get_file_list_from_path(dirpth, ext)
 
