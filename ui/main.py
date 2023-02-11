@@ -18,19 +18,24 @@ from ui.profile_extraction import ProfileExtraction
 class DataViewer(QtWidgets.QMainWindow):
     def __init__(self):
         QtWidgets.QMainWindow.__init__(self)
+
+        # Main Window UI
         self.top_menu = self.TopMenu(self)
         self.bottom = QtWidgets.QTabWidget()
 
+        # Main Window Tab
         self.profile_extraction = ProfileExtraction(self)
         self.PDF_analyser = PdfAnalysis(self)
 
         self.bottom.addTab(self.profile_extraction,"Profile extraction")
         self.bottom.addTab(self.PDF_analyser, "PDF analysis")
 
+        # DataCube initialization
         self.dcs: List[PDFCube] = []
 
         self.setStyleSheet(ui_util.get_style_sheet())
 
+        # Layout Setting
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.top_menu)
         layout.addWidget(self.bottom)
@@ -199,8 +204,9 @@ class DataViewer(QtWidgets.QMainWindow):
             # save_menu.addSeparator()
             # save_menu.addAction(self.save_azavg_only)
 
-            utility_menu = menubar.addMenu("     &Utility     ")
-            utility_menu.addAction(self.averaging_gr)
+            # # remove deprecated feature
+            # utility_menu = menubar.addMenu("     &Utility     ")
+            # utility_menu.addAction(self.averaging_gr)
 
             menubar.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
             return menubar
