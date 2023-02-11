@@ -495,12 +495,12 @@ class DataViewer(QtWidgets.QMainWindow):
         if not fpth:
             return
 
-        temp_page_num = self.current_page
+        prev_page = self.current_page
         for i in range(len(self.dcs)):
             self.load_dc(i)
             self.PDF_analyser.manualfit()
             file.save_preset([self.dcs[self.current_page]], self, fpth, stack=True, saveas=True)
-        self.load_dc(temp_page_num)
+        self.load_dc(prev_page)
 
     def menu_save_azavg_only(self):
         if self.dcs[self.current_page].azavg is not None:

@@ -21,7 +21,7 @@ class MaskModule(QtCore.QObject):
         self.img = img
         self.fp = fp
         self.imageView = imageView
-        self.mask_dict = self.mask_load()
+        self.mask_dict = {}
 
         self.roi_creator: RoiCreater = None
         self.dropdown = DropDown(self)
@@ -50,17 +50,6 @@ class MaskModule(QtCore.QObject):
         with open(self.fp, 'w') as json_file:
             json.dump(save_dict, json_file)
 
-    def mask_load(self):
-        try:
-            with open(self.fp, 'r') as json_file:
-                self.mask_dict = json.load(json_file)
-                for key, value in self.mask_dict.items():
-                    value.update({'data': np.array(value['data'])})
-                    self.mask_dict.update({key: value})
-            return self.mask_dict
-        except Exception as e:
-            print("failed to load ",self.fp, e)
-            return {}
 
     def get_current_mask(self):
         if self.dropdown.currentText() in ['None', "[Edit]", '']:
@@ -199,7 +188,6 @@ class RoiCreater(QtWidgets.QMainWindow):
                     [int(w / 2) + int(w / 10), int(h / 2) - int(h / 10)],
                     [int(w / 2) + int(w / 10), int(h / 2) + int(h / 10)],
                     [int(w / 2) - int(w / 10), int(h / 2) + int(h / 10)]]
-
         self.draw_poly(pnts)
 
     def draw_poly(self, pnts):
@@ -240,7 +228,6 @@ class RoiCreater(QtWidgets.QMainWindow):
                 img = np.mean(img, axis=0)
             self.initial_image_load(img)
             print(f"stem image is imported, {fp}")
-
 
     def import_poly(self):
         if self.img is None:
