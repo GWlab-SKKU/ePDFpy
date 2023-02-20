@@ -111,8 +111,8 @@ def load_previous_tiff(dc):
     if not os.path.isfile(load_save):
         print('There is no such file:', load_save)
         return
-    dc.display_img = np.array(Image.open(load_save))
-    return dc.display_img
+    dc.img_display = np.array(Image.open(load_save))
+    return dc.img_display
 
 
 def get_multiple_dc(folder_path):
@@ -125,42 +125,12 @@ def xor(lst):
     else:
         return False
 
+
 def find_nearest(array, value):
     array = np.asarray(array)
     idx = (np.abs(array - value)).argmin()
     return idx, array[idx]
 
-class DefaultSetting:
-    def __init__(self):
-        self.intensity_range_1 = None
-        self.intensity_range_2 = None
-        self.slice_count = None
-        self.show_center_line = None
-        self.show_beam_stopper_mask = None
-        self.electron_voltage = None
-
-        self.calibration_factor = None
-        self.calibration_factor_step = None
-        self.fit_at_q_step = None
-        self.N_step = None
-        self.dr = None
-        self.dr_step = None
-        self.damping = None
-        self.damping_step = None
-        self.rmax = None
-        self.rmax_step = None
-        self.load()
-
-    def load(self):
-        if os.path.isfile(setting_path):
-            dic_ = json.load(open(setting_path))
-            for key, value in dic_.items():
-                setattr(self, key, value)
-        else:
-            Path(setting_path).touch()
-
-    def save_settings(self):
-        json.dump(vars(self), open(setting_path, 'w'), indent=2)
 
 df_data_quality = pd.read_csv(definitions.DATA_QUALITY_PATH)
 def get_data_quality(max_pixel):
@@ -170,7 +140,6 @@ def get_data_quality(max_pixel):
             result = df_data_quality.iloc[i][0]
             return result
 
-default_setting = DefaultSetting()
 
 if __name__ == '__main__':
     # mask = create_estimated_mask()

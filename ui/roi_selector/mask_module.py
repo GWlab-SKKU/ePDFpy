@@ -1,20 +1,16 @@
 import pyqtgraph as pg
-import PyQt5
-from PyQt5 import QtWidgets, Qt, QtGui
+from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtWidgets import QFileDialog
-import sys
-import hyperspy.api as hs
 import numpy as np
 import cv2
 import os
-import file
-from pathlib import Path
-from PyQt5.QtCore import QItemSelectionModel
-import json
+from file import load
 import definitions
 from calculate import beam_stopper
 from PyQt5 import QtCore
 import json
+import sys
+
 
 class MaskModule(QtCore.QObject):
     mask_changed = QtCore.pyqtSignal()  # to update mask image
@@ -68,30 +64,50 @@ class MaskModule(QtCore.QObject):
 
     def get_current_mask(self):
         if self.dropdown.currentText() in ['None', "[Edit]", '']:
-            self.mask = None
+            self.mask = np.loadtxt(definitions.MASK_PATH_DEFAULT,delimiter=',').astype(np.uint8)
         else:
             x_y = self.mask_dict[self.dropdown.currentText()]['data']
             img = np.zeros(self.img.shape, dtype=np.uint8)
-            print(x_y)
             cv2.fillPoly(img, pts=[x_y], color=(255, 255, 255))
             self.mask = img
-
-    def _load_mask(self):
-         self.image = json.load(definitions.MASK_PATH)
+        return self.mask
 
     def _mask_reload(self):
         self.dropdown.mask_reload()
         self.list_widget.mask_reload()
 
-class RoiCreater(QtWidgets.QWidget):
+class RoiCreater(QtWidgets.QMainWindow):
     def __init__(self, module:MaskModule, img, name=None, pnts=None):
         QtWidgets.QWidget.__init__(self)
         self.module = module
         self.img = img
-        self.pnts = pnts
-        # self.setWindowFlags(self.windowFlags() | Qt.Qt.Window)
+        self.name = name
 
+        self.init_ui()
+
+        self.initial_image_load(self.img)
+
+        self.create_menubar()
+
+        self.binding()
+
+        self.setWindowTitle("Masking")
+
+    def initial_image_load(self, img):
+        self.update_image(img)
+        handles = self.get_handles()
+        if handles is None:
+            self.draw_roi()
+        # else:
+        #     self.draw_roi(handles)
+
+        if self.name is not None:
+            self.txt_name.setText(self.name)
+
+    def init_ui(self):
+        # self.setWindowFlags(self.windowFlags() | Qt.Qt.Window)
         layout = QtWidgets.QVBoxLayout()
+        control_layout = QtWidgets.QHBoxLayout()
         self.imageView = pg.ImageView()
         layout_bottom = QtWidgets.QHBoxLayout()
         self.lbl_name = QtWidgets.QLabel("Name:")
@@ -121,40 +137,42 @@ class RoiCreater(QtWidgets.QWidget):
         grp_view_mode.setLayout(view_mode_layout)
         self.radio_raw.setChecked(True)
 
+        control_layout.addWidget(grp_view_mode)
+        control_layout.addWidget(grp_save)
         layout.addWidget(self.imageView)
-        layout.addWidget(grp_view_mode)
-        layout.addWidget(grp_save)
-        self.setLayout(layout)
+        layout.addLayout(control_layout)
+        self.mainWidget = QtWidgets.QWidget()
+        self.mainWidget.setLayout(layout)
+        self.setCentralWidget(self.mainWidget)
+
         # self.setBaseSize(800,800)
-        self.setMinimumSize(800,700)
+        self.setMinimumSize(800, 700)
 
-        self.update_image(self.img)
-        if pnts is None:
-            self.draw_roi()
-        else:
-            self.draw_roi(pnts)
+    def create_menubar(self):
+        menubar = self.menuBar()
+        menu_file = menubar.addMenu("\tFile\t")
 
-        if name is not None:
-            self.txt_name.setText(name)
+        self.action_import_image = QtWidgets.QAction("Import image", self)
+        self.action_import_stem_image = QtWidgets.QAction("Import stem image", self)
+        self.action_import_poly = QtWidgets.QAction("Import polygon", self)
+        self.action_export_poly = QtWidgets.QAction("Export polygon", self)
+        self.action_export_mask = QtWidgets.QAction("Export mask", self)
 
-        self.binding()
-
-        self.setWindowTitle("Masking")
-
-    def start(self, new:bool):
-        print("start Hello")
-        self.show()
-        pnts = None
-        if not new:
-            current_text = self.module.list_widget.QList.currentItem().text()
-            pnts = self.module.mask_dict[current_text]['data']
-        self.draw_roi(pnts)
+        menu_file.addAction(self.action_import_image)
+        menu_file.addAction(self.action_import_stem_image)
+        menu_file.addAction(self.action_import_poly)
+        menu_file.addAction(self.action_export_poly)
+        menu_file.addAction(self.action_export_mask)
+        return menubar
 
     def update_image(self, img=None):
         if img is None:
             img = self.module.img
         if img is None:
+            img = self.img
+        if img is None:
             return
+        self.img = img
         if self.radio_raw.isChecked():
             disp_img = img
         if self.radio_root.isChecked():
@@ -164,22 +182,33 @@ class RoiCreater(QtWidgets.QWidget):
         self.imageView.setImage(disp_img.T)
 
     def draw_roi(self, pnts=None):
-        if self.module.img is None:
+        if hasattr(self,'poly_line_roi'):
+            pass  # todo:
+
+        if self.img is None:
             return
         if pnts is None:
-            pnts = beam_stopper.find_polygon(self.module.img)
+            pnts = beam_stopper.find_polygon(self.img)
             if pnts is not None:
                 pnts = pnts[:,0,:]
                 # pnts = np.flip(pnts, axis=None)
         if pnts is None:
-            w = self.module.img.shape[0]
-            h = self.module.img.shape[1]
+            w = self.img.shape[0]
+            h = self.img.shape[1]
             pnts = [[int(w / 2) - int(w / 10), int(h / 2) - int(h / 10)],
                     [int(w / 2) + int(w / 10), int(h / 2) - int(h / 10)],
                     [int(w / 2) + int(w / 10), int(h / 2) + int(h / 10)],
                     [int(w / 2) - int(w / 10), int(h / 2) + int(h / 10)]]
-        self.poly_line_roi = pg.PolyLineROI(pnts, closed=True)
-        self.imageView.addItem(self.poly_line_roi)
+
+        self.draw_poly(pnts)
+
+    def draw_poly(self, pnts):
+        if hasattr(self,'poly_line_roi') and isinstance(self.poly_line_roi,pg.ROI):
+            pnts = pnts - self.poly_line_roi.pos()
+            self.poly_line_roi.setPoints(pnts, closed=True)
+        else:
+            self.poly_line_roi = pg.PolyLineROI(pnts, closed=True)
+            self.imageView.addItem(self.poly_line_roi)
 
     def binding(self):
         self.btn_ok.clicked.connect(self.btn_ok_clicked)
@@ -187,10 +216,57 @@ class RoiCreater(QtWidgets.QWidget):
         self.radio_raw.toggled.connect(lambda x: self.update_image())
         self.radio_root.toggled.connect(lambda x: self.update_image())
         self.radio_log.toggled.connect(lambda x: self.update_image())
+        self.action_import_image.triggered.connect(self.import_image)
+        self.action_import_stem_image.triggered.connect(self.import_stem_image)
+        self.action_import_poly.triggered.connect(self.import_poly)
+        self.action_export_mask.triggered.connect(self.export_mask)
+        self.action_export_poly.triggered.connect(self.export_poly)
 
-    def btn_export_clicked(self):
-        handles = [handle.pos() for handle in self.poly_line_roi.getHandles()]
-        handles = np.array(handles).astype(np.int)
+    def import_image(self):
+        fp, _ = QFileDialog.getOpenFileName()
+        if fp:
+            img = load.load_diffraction_image(fp)
+            self.initial_image_load(img)
+            print(f"diffraction image is imported, {fp}")
+
+    def import_stem_image(self):
+        fp, _ = QFileDialog.getOpenFileName()
+        if fp:
+            img = load.load_stem_image(fp)
+            reply = QtWidgets.QMessageBox.question(None, "","Use variance for representative image?", QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No)
+            if reply == QtWidgets.QMessageBox.Yes:
+                img = np.var(img,axis=0)
+            else:
+                img = np.mean(img, axis=0)
+            self.initial_image_load(img)
+            print(f"stem image is imported, {fp}")
+
+
+    def import_poly(self):
+        if self.img is None:
+            QtWidgets.QMessageBox.about(None, "You have to load image first.")
+            return
+        fp, _ = QFileDialog.getOpenFileName()
+        if fp:
+            pnts = np.loadtxt(fp, delimiter=',')
+            self.draw_poly(pnts)
+            print(f"poly is imported, {fp}")
+
+    def get_handles(self):
+        if not hasattr(self,'poly_line_roi'):
+            return None
+        else:
+            handles = [handle.pos() for handle in self.poly_line_roi.getHandles()]
+            handles = np.array(handles) + np.array(self.poly_line_roi.pos())
+            handles = handles.astype(int)
+            self.draw_poly(handles)
+            return handles
+
+    def export_mask(self):
+        handles = self.get_handles()
+        if handles is None:
+            QtWidgets.QMessageBox.about(self,"Error","No pnts are available now")
+            return
 
         img = np.zeros(self.imageView.image.shape)
         cv2.fillPoly(img, pts=[handles], color=(255, 255, 255))
@@ -199,20 +275,36 @@ class RoiCreater(QtWidgets.QWidget):
         if fp == "":
             return
 
-        name = self.txt_name.toPlainText()
         if os.path.splitext(fp)[1] is None or os.path.splitext(fp)[1] != ".csv":
             fp = fp + ".csv"
-        np.savetxt(name, img, delimiter=',', fmt='%s')
+        np.savetxt(fp, img, delimiter=',', fmt='%s')
         print("save to {}".format(fp))
-        return
+
+    def export_poly(self):
+        handles = self.get_handles()
+        if handles is None:
+            QtWidgets.QMessageBox.about(self, "Error", "No pnts are available now")
+            return
+
+        fp, _ = QFileDialog.getSaveFileName()
+        if fp == "":
+            return
+
+        if os.path.splitext(fp)[1] is None or os.path.splitext(fp)[1] != ".csv":
+            fp = fp + ".csv"
+
+        np.savetxt(fp, handles, delimiter=',', fmt='%s')
+        print("save to {}".format(fp))
+
 
     def btn_ok_clicked(self):
         if self.txt_name.toPlainText() == "":
             QtWidgets.QMessageBox.about(self, "", "Enter the mask name")
             return
-        handles = np.array([handle.pos() for handle in self.poly_line_roi.getHandles()])
-        handles = handles + np.array(self.poly_line_roi.pos())
-        handles = handles.astype(int)
+        handles = self.get_handles()
+        if handles is None:
+            QtWidgets.QMessageBox.about(self, "Error", "No pnts are available now")
+            return
         self.module.mask_dict.update(
             {self.txt_name.toPlainText():
                  {'size':self.module.img.shape,
@@ -342,7 +434,7 @@ class ListWidget(QtWidgets.QWidget):
         if self.module is not None:
             for i in range(len(self.QList)):
                 name = self.QList.item(i).text()
-                new_mask_dict.update({name:self.module.mask_dict[name]})
+                new_mask_dict.update({name: self.module.mask_dict[name]})
             self.module.mask_dict = new_mask_dict
             self.module._mask_reload()
 
@@ -366,7 +458,6 @@ class ListWidget(QtWidgets.QWidget):
             self.QList.currentItem().text()), QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
         if reply == QtWidgets.QMessageBox.No:
             return
-        print(indexes)
         for idx in indexes[::-1]:
             key = self.items.pop(idx.row())
             self.module.mask_dict.pop(key)
@@ -380,3 +471,14 @@ class ListWidget(QtWidgets.QWidget):
         self.module.get_current_mask()
         self.module.mask_changed.emit()
 
+
+if __name__ == '__main__':
+    qtapp = QtWidgets.QApplication.instance()
+    if not qtapp:
+        qtapp = QtWidgets.QApplication(sys.argv)
+    maskModule = MaskModule(fp=definitions.MASK_PATH)
+
+    app = maskModule.list_widget
+    app.btn_new_clicked()
+
+    sys.exit(qtapp.exec_())

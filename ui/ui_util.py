@@ -346,19 +346,17 @@ class IntensityPlotWidget(CoordinatesPlotWidget):
 def update_value(widget:QtWidgets.QWidget, value):
     """ update value without occuring signal """
     widget.blockSignals(True)
-    if issubclass(type(widget),QtWidgets.QRadioButton):
+    if issubclass(type(widget), QtWidgets.QRadioButton):
         widget.setChecked(value)
-    if issubclass(type(widget),QtWidgets.QDoubleSpinBox):
+    if issubclass(type(widget), QtWidgets.QDoubleSpinBox):
         widget.setValue(value)
-    if issubclass(type(widget),QtWidgets.QSpinBox):
+    if issubclass(type(widget), QtWidgets.QSpinBox):
         widget.setValue(value)
-    if issubclass(type(widget),pg.LinearRegionItem):
+    if issubclass(type(widget), pg.LinearRegionItem):
         widget.setRegion(value)
-    if issubclass(type(widget),QtWidgets.QComboBox):
+    if issubclass(type(widget), QtWidgets.QComboBox):
         widget.setCurrentIndex(value)
     widget.blockSignals(False)
-
-
 
 
 class QHLine(QtWidgets.QFrame):

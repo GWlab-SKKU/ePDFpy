@@ -22,18 +22,14 @@
 # 22nd edit 220226 Edited for ePDFpy application
 # 23rd edit 220307 Reduced time -> np.dot to matmul + no vstack
 # 24th edit 220308 Reduced time -> judge_oo from matrix calculation
+# 25th edit 230119 Added relativistic effect
 
 import numpy as np
-import matplotlib as mpl
-from matplotlib import pyplot as pt
-import scipy as sc
-import math
 import time
 import pandas as pd
 import os
-import glob
-import json as js
 import definitions
+from calculate.pdf_calculator import calculate_relativistic  # 25th edit
 
 kirkland_fp = definitions.KIRKLAND_PATH
 lobato_fp = definitions.LOBATO_PATH
@@ -150,7 +146,7 @@ def createDirectory(directory):
 
 
 def Autofit(Iq, qkran_start, qkran_end, qkran_step, pixran_start, pixran_end, pixran_step, Elem, Rat, pixel_start_n,
-            Calibration_factor, Damping_factor, Noise_threshold, Select, use_lobato):
+            Calibration_factor, Damping_factor, Noise_threshold, Select, use_lobato, Voltage):# 25th edit
     #######################preset######################
     if Noise_threshold == '':
         Noise_threshold = 1.0
@@ -186,6 +182,7 @@ def Autofit(Iq, qkran_start, qkran_end, qkran_step, pixran_start, pixran_end, pi
         Kf = Kirkland_factor(cal, 0, pix_max)  # Kirkland scattering factor
         print('Kirkland')
 
+    Kf = Kf * calculate_relativistic(Voltage)  # 25th edit
     Ratio = Rat / np.sum(Rat)
 
     kf1, kf2, kf3, kf4, kf5 = Kf[Elem[0], :], Kf[Elem[1], :], Kf[Elem[2], :], Kf[Elem[3], :], Kf[Elem[4],

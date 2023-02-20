@@ -86,10 +86,12 @@ class AdvancedFitWindow(QtWidgets.QWidget):
         Damping_factor = self.dc.damping
         Noise_threshold = self.panel_control.spinBox_noise_thresholding.value()
         Select = 10
+        TEM_voltage = self.dc.electron_voltage   #edited by MH 230119
         use_lobato = True if self.dc.scattering_factor =='Lobato' else False
 
+
         self.Candidates, qualitycheck, self.total_n = Autofit(Iq,qkran_start,qkran_end,qkran_step,pixran_start,pixran_end,pixran_step,Elem,Rat,
-            pixel_start_n,Calibration_factor,Damping_factor,Noise_threshold,Select,use_lobato)
+            pixel_start_n,Calibration_factor,Damping_factor,Noise_threshold,Select,use_lobato,TEM_voltage)
 
         # with open('candidates.p', 'rb') as file:
         #     self.Candidates = pickle.load(file)
@@ -225,8 +227,11 @@ class AdvancedFitWindow(QtWidgets.QWidget):
             self.table.setDragEnabled(False)
             self.table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
             self.setLayout(layout)
-            self.table.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
-            self.table.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
+            # self.table.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+            # self.table.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
+            self.table.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+            self.table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+            
             self.btn_select = QtWidgets.QPushButton("Select")
             layout.addWidget(self.btn_select)
 

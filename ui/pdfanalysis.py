@@ -1,18 +1,14 @@
-import typing
-
-from ui.advanced_fit import AdvancedFitWindow, MainWindowAdvancedFit
-import file
-from datacube import DataCube
+from ui.advanced_fit import MainWindowAdvancedFit
+from file import file
 import pyqtgraph as pg
 import util
 from calculate import pdf_calculator
 from PyQt5.QtWidgets import QMessageBox
 import ui.ui_util as ui_util
-from PyQt5 import QtCore, QtWidgets, QtGui
-import os
+from PyQt5 import QtCore, QtWidgets
 import numpy as np
-import definitions
 from calculate import q_range_selector
+from datacube.cube import PDFCube
 
 pg.setConfigOptions(antialias=True)
 
@@ -21,7 +17,7 @@ class PdfAnalysis(QtWidgets.QWidget):
     def __init__(self, Dataviewer):
         super().__init__()
         self.Dataviewer = Dataviewer
-        self.datacube = DataCube()
+        self.datacube = PDFCube()
         self.datacube.analyser = self
         if self.datacube.element_nums is None:
             self.datacube.element_nums = []
@@ -44,7 +40,7 @@ class PdfAnalysis(QtWidgets.QWidget):
 
         self.update_graph()
 
-    def put_datacube(self,datacube):
+    def put_datacube(self, datacube):
         self.controlPanel.blockSignals(True)
         self.datacube = datacube
         if self.datacube.element_nums is None:
@@ -184,35 +180,16 @@ class PdfAnalysis(QtWidgets.QWidget):
         self.setLayout(self.layout)
 
     def load_default_setting(self):
-        if util.default_setting.calibration_factor is not None and self.datacube.ds is None:
-            # self.controlPanel.fitting_elements.spinbox_ds.setValue(util.default_setting.calibration_factor)
-            self.datacube.ds = util.default_setting.calibration_factor
-        if util.default_setting.dr is not None and self.datacube.dr is None:
-            # self.controlPanel.fitting_factors.spinbox_dr.setValue(util.default_setting.dr)
-            self.datacube.dr = util.default_setting.dr
-        if util.default_setting.damping is not None and self.datacube.damping is None:
-            # self.controlPanel.fitting_factors.spinbox_damping.setValue(util.default_setting.damping)
-            self.datacube.damping = util.default_setting.damping
-        if util.default_setting.rmax is not None and self.datacube.rmax is None:
-            # self.controlPanel.fitting_factors.spinbox_rmax.setValue(util.default_setting.rmax)
-            self.datacube.rmax = util.default_setting.rmax
-        if util.default_setting.electron_voltage is not None and self.datacube.electron_voltage is None:
-            # self.controlPanel.fitting_factors.spinbox_electron_voltage.setText(util.default_setting.electron_voltage)
-            self.datacube.electron_voltage = util.default_setting.electron_voltage
-
-        # steps
-        if util.default_setting.calibration_factor_step is not None:
-            self.controlPanel.fitting_elements.spinbox_ds_step.setText(util.default_setting.calibration_factor_step)
-        if util.default_setting.fit_at_q_step is not None:
-            self.controlPanel.fitting_factors.spinbox_fit_at_q_step.setText(util.default_setting.fit_at_q_step)
-        if util.default_setting.N_step is not None:
-            self.controlPanel.fitting_factors.spinbox_N_step.setText(util.default_setting.N_step)
-        if util.default_setting.dr_step is not None:
-            self.controlPanel.fitting_factors.spinbox_dr_step.setText(util.default_setting.dr_step)
-        if util.default_setting.damping_step is not None:
-            self.controlPanel.fitting_factors.spinbox_damping_step.setText(util.default_setting.damping_step)
-        if util.default_setting.rmax_step is not None:
-            self.controlPanel.fitting_factors.spinbox_rmax_step.setText(util.default_setting.rmax_step)
+        if self.datacube.ds is None:
+            self.datacube.ds = self.controlPanel.fitting_elements.spinbox_ds.value()
+        if self.datacube.dr is None:
+            self.datacube.dr = self.controlPanel.fitting_factors.spinbox_dr.value()
+        if self.datacube.damping is None:
+            self.datacube.damping = self.controlPanel.fitting_factors.spinbox_damping.value()
+        if self.datacube.rmax is None:
+            self.datacube.rmax = self.controlPanel.fitting_factors.spinbox_rmax.value()
+        if self.datacube.electron_voltage is None:
+            self.datacube.electron_voltage = self.controlPanel.fitting_factors.spinbox_electron_voltage.text()
 
     def element_initial_load(self):
         self.element_presets = file.load_element_preset()
@@ -285,7 +262,6 @@ class PdfAnalysis(QtWidgets.QWidget):
 
         file.save_element_preset(self.element_presets)
         self.element_initial_load()
-
 
     def put_data_to_ui(self):
         # elements
@@ -423,7 +399,6 @@ class PdfAnalysis(QtWidgets.QWidget):
         else:
             print("Cancel applying calibration factors and elements to all")
 
-
     def btn_radiotail_clicked(self):
         if hasattr(self.graphPanel.graph_Iq, "region") and self.graphPanel.graph_Iq.region is not None:
             return
@@ -492,18 +467,6 @@ class PdfAnalysis(QtWidgets.QWidget):
         self.range_fit()
 
     def update_parameter(self):
-        # default setting
-        util.default_setting.calibration_factor = self.controlPanel.fitting_elements.spinbox_ds.value()
-        util.default_setting.calibration_factor_step = self.controlPanel.fitting_elements.spinbox_ds_step.text()
-        util.default_setting.electron_voltage = self.controlPanel.fitting_factors.spinbox_electron_voltage.text()
-        util.default_setting.fit_at_q_step = self.controlPanel.fitting_factors.spinbox_fit_at_q_step.text()
-        util.default_setting.N_step = self.controlPanel.fitting_factors.spinbox_N_step.text()
-        util.default_setting.dr = self.controlPanel.fitting_factors.spinbox_dr.value()
-        util.default_setting.dr_step = self.controlPanel.fitting_factors.spinbox_dr_step.text()
-        util.default_setting.damping = self.controlPanel.fitting_factors.spinbox_damping.value()
-        util.default_setting.damping_step = self.controlPanel.fitting_factors.spinbox_damping_step.text()
-        util.default_setting.rmax = self.controlPanel.fitting_factors.spinbox_rmax.value()
-        util.default_setting.rmax_step = self.controlPanel.fitting_factors.spinbox_rmax_step.text()
 
         # elements
         self.datacube.element_nums.clear()
@@ -766,12 +729,10 @@ class ControlPanel(QtWidgets.QWidget):
             lbl_calibration_factor = QtWidgets.QLabel("Calibration factors")
 
             self.spinbox_ds = ui_util.DoubleSpinBox()
-            self.spinbox_ds.setValue(0.001)
             self.spinbox_ds_step = ui_util.DoubleLineEdit()
             self.spinbox_ds_step.textChanged.connect(
                 lambda : self.spinbox_ds.setSingleStep(float(self.spinbox_ds_step.text())))
             self.spinbox_ds.setRange(0,1e+10)
-            self.spinbox_ds_step.setText("0.01")
 
             layout_calibration_factor = QtWidgets.QHBoxLayout()
             layout_calibration_factor.addWidget(lbl_calibration_factor)
@@ -920,7 +881,10 @@ class ControlPanel(QtWidgets.QWidget):
             self.spinbox_dr.setRange(0, 1e+10)
 
             layout_last_line = QtWidgets.QHBoxLayout()
-            lbl_electron_voltage = QtWidgets.QLabel("EV / kW")
+            # lbl_electron_voltage = QtWidgets.QLabel("eV / kW")
+            lbl_electron_voltage = QtWidgets.QLabel("Acc.Voltage (KeV)")
+            # electron_voltage_unit = QtWidgets.QLabel("KeV")
+            # electron_voltage_unit.setMargin(1)
             self.spinbox_electron_voltage = ui_util.DoubleLineEdit()
             self.spinbox_electron_voltage.setMaximumWidth(50)
             self.spinbox_electron_voltage.setSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed,QtWidgets.QSizePolicy.Policy.Fixed)
@@ -928,9 +892,12 @@ class ControlPanel(QtWidgets.QWidget):
             self.chkbox_instant_update = QtWidgets.QCheckBox()
             layout_last_line.addWidget(lbl_instant_update)
             layout_last_line.addWidget(self.chkbox_instant_update)
-            layout_last_line.addWidget(lbl_electron_voltage)
-            layout_last_line.addWidget(self.spinbox_electron_voltage)
-            # self.btn_manual_fit.setMaximumWidth(30)
+            # layout_last_line.addWidget(lbl_electron_voltage)
+            # layout_last_line.addWidget(self.spinbox_electron_voltage)
+            # layout_last_line.addWidget(electron_voltage_unit)
+            # layout_last_line.addWidget(self.spinbox_electron_voltage)
+            # layout_last_line.addWidget(lbl_electron_voltage)
+            # # self.btn_manual_fit.setMaximumWidth(30)
             # self.btn_manual_fit.setSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Expanding)
             self.btn_manual_fit = QtWidgets.QPushButton("Manual fitting")
 
@@ -962,15 +929,15 @@ class ControlPanel(QtWidgets.QWidget):
             layout.addWidget(self.spinbox_damping, 6, 2, 1, 1)
             layout.addWidget(self.spinbox_damping_step, 6, 3, 1, 1)
 
-            layout.addWidget(lbl_rmax, 7, 0, 1, 2)
+            layout.addWidget(lbl_rmax, 7, 0, 1, 1)
             layout.addWidget(self.spinbox_rmax, 7, 2, 1, 1)
             layout.addWidget(self.spinbox_rmax_step, 7, 3, 1, 1)
 
-            layout.addWidget(lbl_dr, 8, 0, 1, 2)
+            layout.addWidget(lbl_dr, 8, 0, 1, 1)
             layout.addWidget(self.spinbox_dr, 8, 2, 1, 1)
             layout.addWidget(self.spinbox_dr_step, 8, 3, 1, 1)
 
-            layout.addLayout(layout_last_line,9,0,1,5)
+            layout.addLayout(layout_last_line,9,0,1,3)
 
             # layout.addWidget(ui_util.QHLine(), 10, 0, 1, 5)
             layout.addWidget(self.btn_manual_fit, 10, 0, 1, 5)

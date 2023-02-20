@@ -4,8 +4,9 @@ import time
 import util
 import definitions
 from scipy import ndimage
-from calculate import polar_transform
-
+from calculate import polar_transform, elliptical_correction
+import matplotlib.pyplot as plt
+import pandas as pd
 
 try:
     import cupy as cp
@@ -78,15 +79,20 @@ def _evaluate_center(img, center, max_d=None, mask=None):
     dr = 1
     dphi = np.radians(2)
 
-    if mask:
+    if mask is not None:
+        # polar_img = elliptical_correction.polar_transformation_py4d(img, [center[1], center[0]], 1, 1, 0, dr=dr,
+        #                                                                    dphi=dphi, mask=~mask)
         polar_img = polar_transform.cartesian_to_polarelliptical_transform(img, [center[1], center[0], 1, 1, 0], dr=dr,
-                                                                           dphi=dphi, mask=~mask)
+                                                                           dphi=dphi, mask=mask)
+        # polar_img = polar_transformation_mh(img, [center[1], center[0], 1, 1, 0], mask=mask)
     else:
-        polar_img = polar_transform.cartesian_to_polarelliptical_transform(img, [center[1], center[0], 1, 1, 0], dr=dr,
+        polar_img = elliptical_correction.polar_transformation_py4d(img, [center[1], center[0]], 1, 1, 0, dr=dr,
                                                                            dphi=dphi)
-    norm_std_graph = np.std(polar_img[0], axis=0)/np.average(polar_img[0], axis=0)
+    # norm_std_graph = np.std(polar_img, axis=0)/np.average(polar_img, axis=0)
+    norm_std_graph = np.std(polar_img[0], axis=0) / np.average(polar_img[0], axis=0)
     if max_d is not None:
         return np.sum(norm_std_graph[:max_d])
+        # return np.sum(norm_std_graph[:400])
     else:
         return np.sum(norm_std_graph)
 
@@ -114,9 +120,11 @@ def calculate_center_gradient(img, mask=None):
                 if not np.isnan(cost_img[x, y]):
                     continue
                 cost_img[x, y] = _evaluate_center(img, (x, y), minimum_d, mask)
+                # cost_img[x, y] = _evaluate_center(img, (x, y), minimum_d)
         #         print("xy loop:",x,y,cost_img[x, y])
         # print(cnt)
         if cost_img[cursor[0],cursor[1]] != np.nanmin(cost_img):
+            print(cost_img[cursor[0],cursor[1]])
             cursor = np.unravel_index(np.nanargmin(cost_img), cost_img.shape)
             cnt = cnt + 1
         else:
@@ -142,11 +150,12 @@ def _calculate_initial_center(img):
     thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
     thresh = np.uint8(thresh / 255)
     center_x, center_y = get_CoM(thresh)
+    print('initial')
     return center_x, center_y
 
 
 def get_CoM(img):
-    grid_x, grid_y = np.meshgrid(np.arange(img.shape[0]), np.arange(img.shape[1]))
+    grid_x, grid_y = np.meshgrid(np.arange(img.shape[0]), np.arange(img.shape[1])) ## Needs to be converted!
     center_x = np.sum(img * grid_x) / np.sum(img)
     center_y = np.sum(img * grid_y) / np.sum(img)
     return center_x, center_y
@@ -292,13 +301,12 @@ def calculate_azimuthal_average(raw_image, center, mask=None):
     mesh_x = mesh[0] - center[0]
     mesh_y = mesh[1] - center[1]
     rr = np.power(np.square(mesh_x) + np.square(mesh_y), 0.5)
-    if mask:
+    if mask is not None:
         rr = cv2.bitwise_and(rr, rr, mask=np.bitwise_not(mask))
     else:
         rr = cv2.bitwise_and(rr, rr)
     rr = np.rint(rr).astype('uint16')
     n_rr = np.uint16(rr.max())
-
 
     #### radial mean ####
     # radial_mean = ndimage.mean(raw_image, labels=rr, index=np.arange(0, n_rr + 1))
@@ -308,6 +316,24 @@ def calculate_azimuthal_average(raw_image, center, mask=None):
 
     return radial_mean
 
+
+def calculate_azimuthal_average_ellipse(raw_image, center, ellipse_p, mask=None):
+    rs = elliptical_correction._cartesian_to_polarelliptical_transform(raw_image, [*center,*ellipse_p], mask)
+    rr = rs[1]
+    if mask is not None:
+        rr = cv2.bitwise_and(rr, rr, mask=np.bitwise_not(mask))
+    else:
+        rr = cv2.bitwise_and(rr, rr)
+    rr = np.rint(rr).astype('uint16')
+    n_rr = np.uint16(rr.max())
+
+    #### radial mean ####
+    # radial_mean = ndimage.mean(raw_image, labels=rr, index=np.arange(0, n_rr + 1))
+    radial_mean = ndimage.mean(raw_image, labels=rr, index=np.arange(1, n_rr + 1))
+    radial_mean = np.insert(radial_mean, 0, 0)
+    radial_mean = np.nan_to_num(radial_mean, 0)
+
+    return radial_mean
 
 def calculate_azimuthal_average_(raw_image, center):
     raw_image = raw_image.copy()
@@ -488,3 +514,108 @@ def _calculate_azimuthal_average_cuda_deprecated(raw_image, center):
     azvar = np.nan_to_num(azvar.get(), 0)
 
     return azav, azvar
+
+
+def polar_transformation_mh(img, coefs, mask=None):
+    dr = 1
+    dt = 2
+    # coefs = [self.ellipse_rs[0][0],self.ellipse_rs[0][1],self.A, self.C, self.B]
+    A, B, C = coefs[2], coefs[4], coefs[3]
+    fit = 0
+
+    if [B, C] == [0, 1]:
+        fit == False
+    else:
+        fit == True
+
+    if mask is None:
+        masked_img = np.ones((img.shape[-1], img.shape[-2]))
+    else:
+        masked_img = mask.astype('float')
+        masked_img[np.where(masked_img == 255)] = np.nan
+        masked_img[np.where(masked_img == 0)] = 1
+
+    cx, cy = coefs[0], coefs[1]  # for ePDFpy
+    # qx, qy =  self.ya, self.xa      # 7/7 edit
+    qx, qy = np.meshgrid(np.arange(img.shape[-1]), np.arange(img.shape[-2]))
+    QX, QY = qx - cx, qy - cy
+
+    if abs(C) > -6:
+        p0 = -np.arctan((1 - B + np.sqrt((B - 1) ** 2 + C ** 2)) / C);
+    else:
+        p0 = 0;
+
+    a0 = np.sqrt(2 * (1 + C + np.sqrt((C - 1) ** 2 + B ** 2)) / (4 * C - B ** 2))
+    b0 = np.sqrt(2 * (1 + C - np.sqrt((C - 1) ** 2 + B ** 2)) / (4 * C - B ** 2))
+
+    m = np.array([[((1 / a0) * ((np.cos(p0)) ** 2)) + ((1 / b0) * ((np.sin(p0)) ** 2)), \
+                   ((1 / a0) * np.cos(p0) * np.sin(p0)) - ((1 / b0) * np.sin(p0) * np.cos(p0))],
+                  [((1 / a0) * np.cos(p0) * np.sin(p0)) - ((1 / b0) * np.sin(p0) * np.cos(p0)), \
+                   ((1 / a0) * ((np.sin(p0)) ** 2)) + ((1 / b0) * ((np.cos(p0)) ** 2))]])
+
+    if fit == True:
+        R = np.sqrt(coefs[2] * QY ** 2 + coefs[3] * QX ** 2 + coefs[4] * QX * QY)  # edit 7/19
+        T = np.mod(np.rad2deg(np.arctan2(m[1, 0] * QY + m[1, 1] * QX, m[0, 0] * QY + m[0, 1] * QX)) + 360,
+                   360)  # edit 7/19
+
+    if fit == False:
+        R = np.sqrt(QX ** 2 + QY ** 2)
+        T = np.mod(np.rad2deg(np.arctan2(QY, QX)) + 360, 360)  # edit 7/19
+
+    testx, testy, testR, testT, masked_img = np.ravel(qx), np.ravel(qy), np.ravel(R), np.ravel(T), np.ravel(masked_img)
+
+    r_max = np.max(np.round(testR / dr))
+    t_max = np.max(np.round(testT / dt))
+
+    df = pd.DataFrame({'Exist': masked_img, 'X': testx, 'Y': testy, \
+                       'Distance': np.round(testR / dr), 'Angle': np.mod(np.round(testT / dt), t_max)})
+    pt_img = np.zeros((int(r_max + 1), int(t_max)))
+    del (testx, testy, testT, testR, masked_img)
+    df['Positional'] = df['Distance'] * (t_max) + (df['Angle'])
+
+    # CBEDmean = np.median(img,axis=0)
+    if img.ndim > 2:
+        data_med = pd.DataFrame({'CBEDmean': np.ravel(CBEDmean)})
+        data_tmp = pd.DataFrame(img.reshape(img.shape[0], \
+                                            img.shape[1] * img.shape[2]).T)
+        df = pd.concat([df, data_med, data_tmp], axis=1)
+        del (data_med, data_tmp)
+
+        df = df.sort_values(['Distance', 'Angle']).dropna()
+        ind = np.unique(df['Positional'].to_numpy())
+
+        polarAll = np.zeros((int(pt_img.size), int(img.shape[0])))
+        polarAll[:] = np.nan
+        polarCBEDmean = np.zeros(int(pt_img.size))
+        polarCBEDmean[:] = np.nan
+        for i in ind:
+            data_check = np.mean(df[df['Positional'] == i].to_numpy(), axis=0)
+            # polarAll[:,int(r),int(phi)] = data_tmp[5:]
+            polarCBEDmean[int(i)] = data_check[6]
+            polarAll[int(i)] = data_check[7:]
+        polarCBEDmean = polarCBEDmean.reshape(int(r_max) + 1, int(t_max))
+        polarAll = polarAll.T.reshape(int(img.shape[0]), int(r_max) + 1, int(t_max))
+
+        return polarCBEDmean, polarAll
+
+    if img.ndim == 2:
+        data_rab = pd.DataFrame({'Data': np.ravel(img)})
+        df = pd.concat([df, data_rab], axis=1)
+
+        del (data_rab)
+
+        df = df.sort_values(['Distance', 'Angle']).dropna()
+        # ind, cou = np.unique(df['Positional'].to_numpy(),return_counts=True)
+        ind = np.unique(df['Distance'].to_numpy())
+        # return ind, cou, df
+
+        # polarCBEDmean = np.zeros(int(pt_img.size))
+        polarCBEDmean = np.zeros(int(r_max + 1))
+        # polarCBEDmean[:] = np.nan
+        for i in ind:
+            # print(i)
+            data_check = np.std(df[df['Distance'] == i].to_numpy(), axis=0)
+            data_check2 = np.mean(df[df['Distance'] == i].to_numpy(), axis=0)
+            polarCBEDmean[int(i)] = data_check[6] / data_check2[6]
+        # polarCBEDmean = polarCBEDmean.reshape(int(r_max)+1,int(t_max))
+        return polarCBEDmean

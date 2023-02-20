@@ -1,16 +1,6 @@
-from PyQt5 import QtWidgets, QtCore, Qt
-import ui.main as main
+from PyQt5 import QtWidgets, Qt
 import pyqtgraph as pg
-import os
-import glob
-import pandas as pd
-from pathlib import Path
-from PyQt5.QtWidgets import QMessageBox
-from PyQt5.QtCore import Qt, QRectF
-import numpy as np
-from ui import ui_util
-import datacube
-from PyQt5.QtGui import QColor
+from PyQt5.QtCore import Qt
 
 pg.setConfigOptions(antialias=True)
 

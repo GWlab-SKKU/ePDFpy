@@ -1,14 +1,15 @@
 from PyQt5 import QtCore, QtWidgets, QtGui
 import sys
 import pyqtgraph as pg
-import file
+from file import file
 import util
-from datacube import DataCube
+from datacube.cube import PDFCube
 from typing import List
 from ui.pdfanalysis import PdfAnalysis
 from PyQt5.QtWidgets import QMessageBox
 import ui.selection_analysis.averaging_multiple_gr as averaging_multiple_gr
 from ui import ui_util
+import json
 
 pg.setConfigOptions(antialias=True)
 import definitions
@@ -26,7 +27,7 @@ class DataViewer(QtWidgets.QMainWindow):
         self.bottom.addTab(self.profile_extraction,"Profile extraction")
         self.bottom.addTab(self.PDF_analyser, "PDF analysis")
 
-        self.dcs: List[DataCube] = []
+        self.dcs: List[PDFCube] = []
 
         self.setStyleSheet(ui_util.get_style_sheet())
 
@@ -42,6 +43,79 @@ class DataViewer(QtWidgets.QMainWindow):
         self.setWindowTitle(definitions.PROGRAM_NAME)
         self.sig_binding()
         self.resize(1300,800)
+
+        self.default_setting_dic = {}
+        self.bind_default_setting()
+        self.load_default_setting()
+
+    def load_default_setting(self):
+        # todo: load
+        load_dic = json.load(open(definitions.DEFAULT_JSON_PATH))
+        for name, value in load_dic.items():
+            if name not in self.default_setting_dic.keys():
+                continue
+            widget = self.default_setting_dic[name]
+            if issubclass(type(widget), QtWidgets.QCheckBox):
+                widget: QtWidgets.QCheckBox
+                widget.setChecked(value)
+            elif issubclass(type(widget), QtWidgets.QDoubleSpinBox):
+                widget: QtWidgets.QDoubleSpinBox
+                widget.setValue(value)
+            elif issubclass(type(widget), QtWidgets.QSpinBox):
+                widget: QtWidgets.QSpinBox
+                widget.setValue(value)
+            elif issubclass(type(widget), QtWidgets.QTextEdit):
+                widget: QtWidgets.QTextEdit
+                widget.setText(str(value))
+            elif issubclass(type(widget), QtWidgets.QLineEdit):
+                widget: QtWidgets.QLineEdit
+                widget.setText(str(value))
+
+    def save_default_setting(self):
+        save_dic = {}
+        for name, widget in self.default_setting_dic.items():
+            if issubclass(type(widget), QtWidgets.QCheckBox):
+                widget: QtWidgets.QCheckBox
+                value = widget.isChecked()
+            elif issubclass(type(widget), QtWidgets.QDoubleSpinBox):
+                widget: QtWidgets.QDoubleSpinBox
+                value = widget.value()
+            elif issubclass(type(widget), QtWidgets.QSpinBox):
+                widget: QtWidgets.QSpinBox
+                value = widget.value()
+            elif issubclass(type(widget), QtWidgets.QTextEdit):
+                widget: QtWidgets.QTextEdit
+                value = widget.toPlainText()
+            elif issubclass(type(widget), QtWidgets.QLineEdit):
+                widget: QtWidgets.QLineEdit
+                value = widget.text()
+            save_dic.update({name: value})
+        save_dic = file.type_changer(save_dic)
+        json.dump(save_dic, open(definitions.DEFAULT_JSON_PATH, 'w'), indent=2)
+
+    def bind_default_setting(self):
+        update_dic = {
+            # profile extraction tab
+            "use_elliptical_correction": self.profile_extraction.control_panel.ellipticalCorrectionPanel.chkbox_use_elliptical_correction,
+            "show_center_line": self.profile_extraction.control_panel.settingPanel.chkBox_show_centerLine,
+            "show_beam_stopper_mask": self.profile_extraction.control_panel.settingPanel.chkBox_show_beam_stopper_mask,
+            # pdf analysis tab
+            "scattering_factor": self.PDF_analyser.controlPanel.fitting_elements.combo_scattering_factor,
+            "calibration_factor": self.PDF_analyser.controlPanel.fitting_elements.spinbox_ds,
+            "calibration_factor_step": self.PDF_analyser.controlPanel.fitting_elements.spinbox_ds_step,
+            "fit_at_q_step": self.PDF_analyser.controlPanel.fitting_factors.spinbox_fit_at_q_step,
+            "N_step": self.PDF_analyser.controlPanel.fitting_factors.spinbox_N_step,
+            "damping_step": self.PDF_analyser.controlPanel.fitting_factors.spinbox_damping_step,
+            "r_max_step": self.PDF_analyser.controlPanel.fitting_factors.spinbox_rmax_step,
+            "dr_step": self.PDF_analyser.controlPanel.fitting_factors.spinbox_dr_step,
+            "instant_update": self.PDF_analyser.controlPanel.fitting_factors.chkbox_instant_update,
+            "dr": self.PDF_analyser.controlPanel.fitting_factors.spinbox_dr,
+            "r_max": self.PDF_analyser.controlPanel.fitting_factors.spinbox_rmax,
+            "damping": self.PDF_analyser.controlPanel.fitting_factors.spinbox_damping,
+            "EV": self.PDF_analyser.controlPanel.fitting_factors.spinbox_electron_voltage,
+        }
+        self.default_setting_dic.update(update_dic)
+
 
     class TopMenu(QtWidgets.QWidget):
         def __init__(self, mainWindow):
@@ -263,7 +337,8 @@ class DataViewer(QtWidgets.QMainWindow):
         # to reduce the memory
         if not len(self.dcs) == 1 and hasattr(self,"current_page")\
                 and len(self.dcs) > self.current_page:
-            self.dcs[self.current_page].release()
+            # self.dcs[self.current_page].release()
+            pass
         self.current_page = index
 
         # update quality number
@@ -274,7 +349,7 @@ class DataViewer(QtWidgets.QMainWindow):
             self.top_menu.combo_dataQuality.setCurrentIndex(0)
 
         # show image
-        self.dcs[self.current_page].image_ready()
+        # self.dcs[self.current_page].image_ready()
 
         # Update profile_extraction ui
         self.profile_extraction.update_dc(self.dcs[self.current_page])
@@ -290,7 +365,7 @@ class DataViewer(QtWidgets.QMainWindow):
         self.top_menu.lbl_current_num.setText(str(self.current_page + 1) + "/" + str(len(self.dcs)))
 
         # mask module
-        self.profile_extraction.mask_module.update_img(self.dcs[self.current_page].raw_img)
+        self.profile_extraction.mask_module.update_img(self.dcs[self.current_page].data)
 
     def apply_element_to_all(self, datacube):
         for dc in self.dcs:
@@ -305,7 +380,7 @@ class DataViewer(QtWidgets.QMainWindow):
             return
         load_paths.extend(path)
         self.dcs.clear()
-        self.dcs.extend([DataCube(path,'image') for path in load_paths])
+        self.dcs.extend([PDFCube(path,'image') for path in load_paths])
         self.load_dc(0)
 
     def menu_open_image_stack(self, file_type):
@@ -317,7 +392,7 @@ class DataViewer(QtWidgets.QMainWindow):
         if len(load_paths) == 0:
             QtWidgets.QMessageBox.about(None, "No file found", "No file found")
             return
-        dcs = [DataCube(path, 'image') for path in load_paths]
+        dcs = [PDFCube(path, 'image') for path in load_paths]
         if dcs is None:
             return
         self.dcs.clear()
@@ -339,15 +414,15 @@ class DataViewer(QtWidgets.QMainWindow):
 
     def menu_open_azavg_only(self, azavg=None):  # azavg arguments is for averaging_multiple_gr.py
         if azavg is None or azavg is False:
-            fp, _ = QtWidgets.QFileDialog.getOpenFileName(self, filter="csv (*.csv); text file (*.txt)")
+            fp, _ = QtWidgets.QFileDialog.getOpenFileName(self, filter="profile (*.csv *.txt)")
             if fp is '':
                 return
-            dc = DataCube(file_path=fp,file_type='azavg')
+            dc = PDFCube(fp,'profile')
             self.dcs.clear()
             self.dcs.append(dc)
         else:
             self.dcs.clear()
-            self.dcs.append(DataCube())
+            self.dcs.append(PDFCube())
             self.dcs[0].azavg = azavg
         self.load_dc(0)
 
@@ -360,7 +435,7 @@ class DataViewer(QtWidgets.QMainWindow):
         if len(lst1) == 0:
             QMessageBox.about(self, "", "No file detected")
             return
-        dc = [DataCube(file_path=pth, file_type='azavg') for pth in lst1]
+        dc = [PDFCube(file_path=pth, file_type='profile') for pth in lst1]
         self.dcs.clear()
         self.dcs.extend(dc)
         self.load_dc(0)
@@ -452,11 +527,7 @@ class DataViewer(QtWidgets.QMainWindow):
             self.btn_page_right_clicked()
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
-        util.default_setting.intensity_range_1 = self.profile_extraction.control_panel.settingPanel.spinBox_irange1.value()
-        util.default_setting.intensity_range_2 = self.profile_extraction.control_panel.settingPanel.spinBox_irange2.value()
-        util.default_setting.slice_count = self.profile_extraction.control_panel.settingPanel.spinBox_slice_count.value()
-        util.default_setting.show_center_line = self.profile_extraction.control_panel.settingPanel.chkBox_show_centerLine.isChecked()
-        util.default_setting.save_settings()
+        self.save_default_setting()
         super().closeEvent(a0)
 
 
