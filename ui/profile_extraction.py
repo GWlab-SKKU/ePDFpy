@@ -10,6 +10,7 @@ import definitions
 import cv2
 from datacube.cube import PDFCube
 from ui.roi_selector import mask_module
+from file import load
 
 
 class ProfileExtraction(QtWidgets.QWidget):
@@ -79,14 +80,15 @@ class ProfileExtraction(QtWidgets.QWidget):
         # self.controlPanel.openFilePanel.save_azavg_only.triggered.connect(self.menu_save_azavg_only)
         # self.controlPanel.openFilePanel.combo_dataQuality.currentIndexChanged.connect(self.set_data_quality)
 
+
         self.control_panel.operationPanel.btn_find_center.clicked.connect(lambda: (self.find_center(),self.update_img()))
         self.control_panel.operationPanel.btn_get_azimuthal_avg.clicked.connect(self.get_azimuthal_value)
-        self.control_panel.ellipticalCorrectionPanel.btn_fit.clicked.connect(self.elliptical_correction)
+        # self.control_panel.ellipticalCorrectionPanel.btn_fit.clicked.connect(self.elliptical_correction)
         self.control_panel.settingPanel.spinBox_center_x.valueChanged.connect(self.spinbox_changed_event)
         self.control_panel.settingPanel.spinBox_center_y.valueChanged.connect(self.spinbox_changed_event)
-        self.control_panel.ellipticalCorrectionPanel.spinBox_a.valueChanged.connect(self.spinbox_changed_event)
-        self.control_panel.ellipticalCorrectionPanel.spinBox_b.valueChanged.connect(self.spinbox_changed_event)
-        self.control_panel.ellipticalCorrectionPanel.spinBox_theta.valueChanged.connect(self.spinbox_changed_event)
+        # self.control_panel.ellipticalCorrectionPanel.spinBox_a.valueChanged.connect(self.spinbox_changed_event)
+        # self.control_panel.ellipticalCorrectionPanel.spinBox_b.valueChanged.connect(self.spinbox_changed_event)
+        # self.control_panel.ellipticalCorrectionPanel.spinBox_theta.valueChanged.connect(self.spinbox_changed_event)
         self.control_panel.operationPanel.btn_calculate_all_azimuthal.clicked.connect(self.calculate_all_azimuthal)
         self.control_panel.settingPanel.chkBox_show_centerLine.stateChanged.connect(self.update_img)
         self.control_panel.settingPanel.chkBox_show_beam_stopper_mask.stateChanged.connect(self.update_img)
@@ -105,30 +107,37 @@ class ProfileExtraction(QtWidgets.QWidget):
         self.control_panel.saveLoadPanel.save_azavg_stack.triggered.connect(self.Dataviewer.menu_save_azavg_stack)
 
         self.mask_module.mask_changed.connect(self.update_img)
+        self.control_panel.blankimagePanel.imagebutton.clicked.connect(self.imagebuttonClicked)   # MH edit 2023/07/05
+        self.control_panel.blankimagePanel.removebutton.clicked.connect(self.btn_blank_remove)    # MH edit 2023/07/05
+        self.control_panel.blankimagePanel.revertbutton.clicked.connect(self.btn_blank_revert)    # MH edit 2023/07/05
+        # self.control_panel.blankimagePanel.noiseremove.clicked.connect(self.blank_remove)
+        # self.control_panel.ellipticalCorrectionPanel.chkbox_use_elliptical_correction.stateChanged.connect(self.use_elliptical_correction)
 
-        self.control_panel.ellipticalCorrectionPanel.chkbox_use_elliptical_correction.stateChanged.connect(self.use_elliptical_correction)
-
-    def use_elliptical_correction(self, state):
-        self.control_panel.ellipticalCorrectionPanel.spinBox_a.setEnabled(state)
-        self.control_panel.ellipticalCorrectionPanel.spinBox_b.setEnabled(state)
-        self.control_panel.ellipticalCorrectionPanel.spinBox_theta.setEnabled(state)
-        self.control_panel.ellipticalCorrectionPanel.btn_fit.setEnabled(state)
-
-    def elliptical_correction(self):
-        self.dc.elliptical_fitting()
-        a,b,theta = self.dc.p_ellipse
-        ui_util.update_value(self.control_panel.ellipticalCorrectionPanel.spinBox_a, a)
-        ui_util.update_value(self.control_panel.ellipticalCorrectionPanel.spinBox_b, b)
-        ui_util.update_value(self.control_panel.ellipticalCorrectionPanel.spinBox_theta, theta)
+    # def use_elliptical_correction(self, state):
+    #     self.control_panel.ellipticalCorrectionPanel.spinBox_a.setEnabled(state)
+    #     self.control_panel.ellipticalCorrectionPanel.spinBox_b.setEnabled(state)
+    #     self.control_panel.ellipticalCorrectionPanel.spinBox_theta.setEnabled(state)
+    #     self.control_panel.ellipticalCorrectionPanel.btn_fit.setEnabled(state)
+    #
+    # def elliptical_correction(self):
+    #     self.dc.elliptical_fitting()
+    #     a,b,theta = self.dc.p_ellipse
+    #     ui_util.update_value(self.control_panel.ellipticalCorrectionPanel.spinBox_a, a)
+    #     ui_util.update_value(self.control_panel.ellipticalCorrectionPanel.spinBox_b, b)
+    #     ui_util.update_value(self.control_panel.ellipticalCorrectionPanel.spinBox_theta, theta)
 
 
     def spinbox_changed_event(self):
         x = self.control_panel.settingPanel.spinBox_center_x.value()
         y = self.control_panel.settingPanel.spinBox_center_y.value()
-        a = self.control_panel.ellipticalCorrectionPanel.spinBox_a.value()
-        b = self.control_panel.ellipticalCorrectionPanel.spinBox_b.value()
-        theta = self.control_panel.ellipticalCorrectionPanel.spinBox_theta.value()
-        print("spinbox changed, ", x, y, a, b, theta)
+        # a = self.control_panel.ellipticalCorrectionPanel.spinBox_a.value()           # MH edit 2023/07/06
+        # b = self.control_panel.ellipticalCorrectionPanel.spinBox_b.value()           # MH edit 2023/07/06
+        # theta = self.control_panel.ellipticalCorrectionPanel.spinBox_theta.value()   # MH edit 2023/07/06
+        a = 1
+        b = 1
+        theta = 0
+        # print("spinbox changed, ", x, y, a, b, theta)                                # MH edit 2023/07/06
+        print("spinbox changed, ", x, y)
         self.dc.center = (x, y)
         self.dc.p_ellipse = (a,b,theta)
         self.update_img()
@@ -164,6 +173,7 @@ class ProfileExtraction(QtWidgets.QWidget):
         self.Dataviewer.PDF_analyser.update_initial_iq_graph()
         self.update_center_spinBox()
         self.update_img()
+        # self.update_polar_img()   # MH edit 2023/07/06
 
     def update_azavg_graph(self):
         if self.dc.azavg is None:
@@ -173,13 +183,14 @@ class ProfileExtraction(QtWidgets.QWidget):
     def update_polar_img(self):
         if self.dc.center[0] is None or self.dc.data is None:
             return
-        if self.control_panel.ellipticalCorrectionPanel.chkbox_use_elliptical_correction.isChecked() and self.dc.p_ellipse is not None:
-            p_ellipse = self.dc.p_ellipse
+        # MH edit 2023/07/04 -> Remove elliptical fit
+        # if self.control_panel.ellipticalCorrectionPanel.chkbox_use_elliptical_correction.isChecked() and self.dc.p_ellipse is not None:
+        #     p_ellipse = self.dc.p_ellipse
         else:
             p_ellipse = [1,1,0]
         self.dc.p_ellipse = p_ellipse
         # polar_img = self.dc.elliptical_transformation(dphi=np.radians(0.5))
-        polar_img, _, _ = polar_transform.cartesian_to_polarelliptical_transform(self.dc.data,[self.dc.center[1],self.dc.center[0],p_ellipse[0],p_ellipse[1],p_ellipse[2]], dphi=np.radians(0.5))
+        polar_img, _, _ = polar_transform.cartesian_to_polarelliptical_transform(self.dc.data,[self.dc.center[1],self.dc.center[0],p_ellipse[0],p_ellipse[1],p_ellipse[2]], mask = ~self.mask_module.mask, dphi=np.radians(0.5))
         self.polar_image_panel.update_img(polar_img)
 
     def find_center(self):
@@ -227,6 +238,15 @@ class ProfileExtraction(QtWidgets.QWidget):
         #         self.controlPanel.openFilePanel.lbl_file_name.setText("..."+fn[-max_size:])
         #     else:
         #         self.controlPanel.openFilePanel.lbl_file_name.setText(fn)
+        self.control_panel.blankimagePanel.label.clear()
+        # if self.currentblankpath is None:
+        # if self.dc.origindata is None:
+        if self.dc.origindata is None:
+            return
+        if self.dc.blankpath is not None and (self.dc.data == self.dc.origindata).all() == False:
+            self.control_panel.blankimagePanel.label.setText(self.dc.blankpath[self.dc.blankpath.rfind('/') + 1:] + ' Removed')
+        if self.dc.blankpath is not None and (self.dc.data == self.dc.origindata).all() == True:
+            self.control_panel.blankimagePanel.label.setText(self.dc.blankpath[self.dc.blankpath.rfind('/') + 1:] + ' Opened')
 
     def update_center_spinBox(self):
         if not self.dc.data is None:
@@ -277,7 +297,74 @@ class ProfileExtraction(QtWidgets.QWidget):
         self.control_panel.openFilePanel.combo_dataQuality.setItemText(1, "Auto({})".format(txt_auto_quality))
         return txt_auto_quality
 
+    def imagebuttonClicked(self): # MH edit 2023/07/05
+        blankfp,_ = QtWidgets.QFileDialog.getOpenFileNames(None)
+        blankimg = load.load_diffraction_image(blankfp[0])
+        self.currentblankpath = blankfp[0]
+        self.control_panel.blankimagePanel.label.setText(self.currentblankpath[self.currentblankpath.rfind('/')+1:] + ' Opened')
+        assert self.dc.img_display.shape == blankimg.shape, "Check Image Shape!"
+        self.dc.blank, self.dc.blankpath, self.currentnoise = blankimg, self.currentblankpath, blankimg.copy()
 
+    def btn_blank_remove(self):
+        reply = QtWidgets.QMessageBox.question(self,'Remove noise',
+                                               'Remove noise from the data?\n\nYes: Current data\n Yes to all: All data',
+                                                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.YesToAll | QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Yes)
+        if reply == QtWidgets.QMessageBox.Yes:
+            # self.dc.blankpath = self.currentblankpath
+            self.dc.apply_blank()
+            self.update_dc(self.dc)
+
+        if reply == QtWidgets.QMessageBox.YesToAll:
+            self.currentnoise, self.currentblankpath = self.dc.blank, self.dc.blankpath
+            for i in range(len(self.Dataviewer.dcs)):
+                # print("processing azimuthal values", self.dc.img_file_path)
+                self.Dataviewer.load_dc(i)
+                # if self.Dataviewer.dcs[i].img is not None and self.Dataviewer.dcs[i].center[0] is None:
+                if self.Dataviewer.dcs[i].data is not None:  # edited 2023/07/05
+                    self.Dataviewer.dcs[i].blank, self.Dataviewer.dcs[i].blankpath = self.currentnoise, self.currentblankpath
+                    self.Dataviewer.dcs[i].apply_blank()
+                    self.update_dc(self.Dataviewer.dcs[i])
+                print("({}/{}) Noise subtraction applied".format(i + 1, len(self.Dataviewer.dcs)))
+
+    def btn_blank_revert(self):
+        reply = QtWidgets.QMessageBox.question(self,'Revert noise',
+                                               'Revert noise from the data?\n\nYes: Current data\n Yes to all: All data',
+                                                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.YesToAll | QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Yes)
+        if reply == QtWidgets.QMessageBox.Yes:
+            self.dc.remove_blank()
+            self.update_dc(self.dc)
+
+        if reply == QtWidgets.QMessageBox.YesToAll:
+            for i in range(len(self.Dataviewer.dcs)):
+                # print("processing azimuthal values", self.dc.img_file_path)
+                self.Dataviewer.load_dc(i)
+                # if self.Dataviewer.dcs[i].img is not None and self.Dataviewer.dcs[i].center[0] is None:
+                if self.Dataviewer.dcs[i].data is not None:  # edited 2023/07/05
+                    self.Dataviewer.dcs[i].remove_blank()
+                    self.update_dc(self.Dataviewer.dcs[i])
+                print("({}/{}) Noise subtraction reverted".format(i + 1, len(self.Dataviewer.dcs)))
+
+
+    def blank_apply(self):
+        self.dc.blankpath = self.currentblankpath
+        self.dc.apply_blank()
+        self.update_dc(self.dc)
+
+        # self.control_panel.blankimagePanel.label.setText(self.dc.blankpath[self.dc.blankpath.rfind('/') + 1:])
+    def blank_apply_all(self):
+        for i in range(len(self.Dataviewer.dcs)):
+            # print("processing azimuthal values", self.dc.img_file_path)
+            self.Dataviewer.load_dc(i)
+            # if self.Dataviewer.dcs[i].img is not None and self.Dataviewer.dcs[i].center[0] is None:
+            if self.Dataviewer.dcs[i].data is not None:  # edited 2023/07/05
+                self.Dataviewer.dcs[i].blank, self.Dataviewer.dcs[i].blankpath = self.currentnoise, self.currentblankpath
+                self.Dataviewer.dcs[i].apply_blank()
+                self.update_dc(self.Dataviewer.dcs[i])
+            print("({}/{}) Noise subtraction applied".format(i+1,len(self.Dataviewer.dcs)))
+
+    def blank_remove(self):
+        self.dc.remove_blank()
+        self.update_dc(self.dc)
 class ControlPanel(QtWidgets.QWidget):
     # text_fixed_height = 25
     # text_fixed_width = 70
@@ -289,23 +376,43 @@ class ControlPanel(QtWidgets.QWidget):
         self.temp_layout2 = QtWidgets.QHBoxLayout()
         self.settingPanel = self.SettingPanel("Center finding setting")
         self.operationPanel = self.OperationPanel("Operation")
-        self.ellipticalCorrectionPanel = self.EllipticalCorrectionPanel("Elliptical Correction")
+        # self.ellipticalCorrectionPanel = self.EllipticalCorrectionPanel("Elliptical Correction")
         self.saveLoadPanel = self.SaveLoadPanel("Save and Load",mainWindow)
         self.maskPanel = self.MaskModule("Mask", profile_extraction)
+        self.blankimagePanel = self.BlankImagePanel("Background noise")  # MH edit 2023/07/05
         self.temp_layout2.addWidget(self.saveLoadPanel)
         self.temp_layout2.addWidget(self.maskPanel)
         self.temp_layout.addLayout(self.temp_layout2)
         self.temp_layout.addWidget(self.settingPanel)
 
 
-
         layout = QtWidgets.QHBoxLayout()
         # layout.addWidget(self.openFilePanel)
         layout.addLayout(self.temp_layout)
+        layout.addWidget(self.blankimagePanel)
         layout.addWidget(self.operationPanel)
         self.operationPanel.setFixedWidth(200)
-        layout.addWidget(self.ellipticalCorrectionPanel)
+        # layout.addWidget(self.ellipticalCorrectionPanel)
         self.setLayout(layout)
+
+
+    class BlankImagePanel(QtWidgets.QGroupBox):   # MH edit 2023/07/05
+        def __init__(self, arg):
+            QtWidgets.QGroupBox.__init__(self,arg)
+            self.layout = QtWidgets.QVBoxLayout()
+            self.imagebutton = QtWidgets.QPushButton("Open Blank Image")
+            self.removebutton = QtWidgets.QPushButton("Remove noise")
+            self.revertbutton = QtWidgets.QPushButton("Revert noise")
+            # self.noiseremove = QtWidgets.QPushButton("Remove noise")
+            self.label = QtWidgets.QLabel()
+
+            self.layout.addWidget(self.imagebutton)
+            self.layout.addWidget(self.removebutton)
+            self.layout.addWidget(self.revertbutton)
+            # self.layout.addWidget(self.noiseremove)
+            self.layout.addWidget(self.label)
+            self.setLayout(self.layout)
+
 
     class MaskModule(QtWidgets.QGroupBox):
         def __init__(self, arg, profile_extraction):

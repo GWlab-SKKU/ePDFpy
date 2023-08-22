@@ -35,6 +35,7 @@ class Cube(metaclass=ABCMeta):
         self.kwargs = kwargs
 
         self.data = None
+        self.blank = None  # MH edit 2023/07/04
         self.polar_data = None
         self.img_display = None
         self.center = [None, None]
@@ -117,12 +118,18 @@ class PDFCube(Cube):
         self.electron_voltage = None
 
         self.mask = None
+        self.blank = None   #MH edit 2023/07/04
+        self.blankpath = None
+        self.origindata = None
+
 
         if filetype == 'profile':
             self.azavg = load._load_txt_img(self.load_file_path)
         elif filetype == 'image':
             self.data = load.load_diffraction_image(self.load_file_path)
+            self.origindata = self.data.copy()
             self.get_display_img()
+
 
     def get_display_img(self):
         assert isinstance(self.data, np.ndarray) and self.data.ndim == 2, "Expected 2d numpy array"
@@ -137,6 +144,24 @@ class PDFCube(Cube):
             return
         self.data = load.load_diffraction_image(use_fp)
         assert self.data.ndim == 2, "Expected 2D array"
+        return self.data
+
+    def apply_blank(self):  #MH edit 2023/07/05
+        print("Before min. value: {}".format(np.min(self.origindata)))
+        if self.blank is None:
+            print("No blank image")
+        else:
+            self.data = self.origindata.copy() - self.blank
+            print(self.blankpath[self.blankpath.rfind('/')+1:] + ' noise subtracted')
+        self.get_display_img()
+        print("After min. value: {}".format(np.min(self.data)))
+        return self.data
+
+    def remove_blank(self): #MH edit 2023/07/05
+        self.data = self.origindata.copy()
+        print('Return to original')
+        print(np.min(self.data))
+        self.get_display_img()
         return self.data
 
     def find_center(self):

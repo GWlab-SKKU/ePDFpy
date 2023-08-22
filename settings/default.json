@@ -1,5 +1,4 @@
 {
-  "use_elliptical_correction": false,
   "show_center_line": true,
   "show_beam_stopper_mask": true,
   "scattering_factor": true,

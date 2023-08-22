@@ -96,7 +96,7 @@ class DataViewer(QtWidgets.QMainWindow):
     def bind_default_setting(self):
         update_dic = {
             # profile extraction tab
-            "use_elliptical_correction": self.profile_extraction.control_panel.ellipticalCorrectionPanel.chkbox_use_elliptical_correction,
+            # "use_elliptical_correction": self.profile_extraction.control_panel.ellipticalCorrectionPanel.chkbox_use_elliptical_correction,
             "show_center_line": self.profile_extraction.control_panel.settingPanel.chkBox_show_centerLine,
             "show_beam_stopper_mask": self.profile_extraction.control_panel.settingPanel.chkBox_show_beam_stopper_mask,
             # pdf analysis tab

@@ -299,9 +299,16 @@ def Autofit(Iq, qkran_start, qkran_end, qkran_step, pixran_start, pixran_end, pi
     noise_area = np.arange(0, 100, 1)
     fir_peak_area = np.arange(100, 250, 1)
     oo_qarea = np.arange(200, 350, 1)
-    judge_noise = np.max(np.abs(Gk[:, noise_area]), axis=1)  # S.C 1
+    noise_r = r[:np.max(noise_area)+1]
+    # judge_noise = np.max(np.abs(Gk[:, noise_area]), axis=1)  # S.C 1
+    judge_noise = np.max((Gk[:, noise_area]), axis=1)  # S.C 1 #MH edit 2023/07/14
     judge_1st = np.max(Gk[:, fir_peak_area], axis=1)  # S.C 2
-    judge_std = np.std(Gk[:, noise_area], axis=1)  # Grading = std
+    # judge_std = np.std(Gk[:, noise_area], axis=1)  # Grading = std
+    judge_std = np.linalg.lstsq(noise_r[:,np.newaxis],np.array(Gk[:,noise_area]).T)[1]
+    # asym = np.polynomial.polynomial.polyfit(noise_area,Gk[:, noise_area].T,1)
+    #
+    # judge_asym = np.std(Gk[:,noise_area]-np.poly1d(asym)(noise_area),axis=1)
+    # print(judge_asym)
 
     ############ number of oo_peak ################
     gra = np.gradient(Gk[:, oo_qarea])[1]
@@ -333,7 +340,10 @@ def Autofit(Iq, qkran_start, qkran_end, qkran_step, pixran_start, pixran_end, pi
                            columns=['Min pix', 'Max pix', 'qk', 'N', 'Q', 'Phi(q)', 'Phi_d(q)', 'r', 'G(r)', 'judge1',
                                     'judge2', 'judge3', 'judge4'])
     Pre_Results = Results.sort_values('judge4')  # Ordering by std
-    Results = Pre_Results[Pre_Results['judge1'] < Noise_level]  # S.C 1
+    # Results = Pre_Results[Pre_Results['judge1'] < Noise_level]  # S.C 1
+    # print('original')
+    Results = Pre_Results.nsmallest(int((Noise_level / 100) * len(Pre_Results)),'judge1',keep='all') # S.C 1 # MH edit 2023/07/13
+    Results = Results.sort_values('judge4')
     Results = Results[Results['judge1'] < Results['judge2']]  # S.C 2
     Results = Results[Results['judge3'] == 3]  # S.C 3
     qualitycheck = len(Results)  # If good sample, this # is large

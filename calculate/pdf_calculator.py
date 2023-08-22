@@ -180,7 +180,8 @@ def _calculation_with_q(ds, q, Iq, element_nums, ratio, is_full_q, damping, rmax
     phiq = ((Iq - Autofit) * s) / (N * fq_sq);
     phiq_damp = phiq * np.exp(-s2 * damping)
 
-    Gr = 8 * np.pi * phiq_damp @ np.sin(q[:, None] * r) * ds
+    # Gr = 8 * np.pi * phiq_damp @ np.sin(q[:, None] * r) * ds
+    Gr = 8 * np.pi * phiq_damp @ np.sin(s[:, None] * r) * ds
 
     return q, r, Iq, Autofit, phiq, phiq_damp, Gr, SS, fit_at_q, N
 

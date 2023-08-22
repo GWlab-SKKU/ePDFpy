@@ -124,7 +124,6 @@ class Viewer(QtWidgets.QWidget):
         df_std = df_sum.std(axis=1)
         df_std.name = 'std'
         df = pd.concat([df_mean,df_std], axis=1)
-        selected_list = df_sum.columns.to_list()
 
         fp, ext = QtWidgets.QFileDialog.getSaveFileName(self, filter="CSV Files (*.csv)")
         if fp == '':
@@ -133,9 +132,6 @@ class Viewer(QtWidgets.QWidget):
         if index_column == "None":
             index_column = "pixel"
         df.to_csv(fp+'.csv', index=True, index_label=index_column)
-
-        with open(fp+'_filelist.txt', "w") as outfile:
-            outfile.write("\n".join(str(item) for item in selected_list))
 
     def save_intensity_avg(self):
         fp, ext = QtWidgets.QFileDialog.getSaveFileName(self, filter="text file (*.txt);;All Files (*)")

@@ -1,4 +1,4 @@
-import pyqtgraph as pg
+>?<import pyqtgraph as pg
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QFileDialog
 import numpy as np
