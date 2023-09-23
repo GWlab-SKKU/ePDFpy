@@ -165,7 +165,7 @@ class PDFCube(Cube):
         return self.data
 
     def find_center(self):
-        self.center = list(image_process.calculate_center_gradient(self.img_display.copy(), self.mask))
+        self.center = list(image_process.calculate_center_gradient(self.img_display.copy(), self.center, self.mask))
         return self.center
 
     def calculate_azimuthal_average(self, version=0):

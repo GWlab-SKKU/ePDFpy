@@ -4,7 +4,7 @@
   "scattering_factor": true,
   "calibration_factor": 0.00326,
   "calibration_factor_step": "0.001",
-  "fit_at_q_step": "0.1",
+  "fit_at_q_step": "0.01",
   "N_step": "1",
   "damping_step": "0.1",
   "r_max_step": "1",

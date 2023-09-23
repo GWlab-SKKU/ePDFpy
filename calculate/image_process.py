@@ -27,19 +27,23 @@ def draw_center_line(img, center):
     return rs
 
 ###################### calculate center #####################
-def calculate_center(img, mask=None):
-    center, cost = calculate_center_with_cost(img, mask)
+def calculate_center(img, i_center, mask=None):
+    center, cost = calculate_center_with_cost(img, i_center, mask)
     return center
 
-def calculate_center_with_cost(img, mask):
+def calculate_center_with_cost(img, i_center, mask): #230922 edited
     image = img.copy()
 
     # blur
     # image = cv2.GaussianBlur(image, (0,0), 1)
 
     # initial center
-    initial_center = np.round(_calculate_initial_center(image)).astype(int)
-    print("initial center is ", initial_center)
+    if i_center == [None, None]:
+        initial_center = np.round(_calculate_initial_center(image)).astype(int)
+        print("initial center is ", initial_center)
+    else:
+        print("Calculating center from ", i_center)
+        initial_center = i_center
 
     # minimum distance
     search_length = 15
@@ -97,15 +101,19 @@ def _evaluate_center(img, center, max_d=None, mask=None):
         return np.sum(norm_std_graph)
 
 
-def calculate_center_gradient(img, mask=None):
+def calculate_center_gradient(img, i_center, mask=None):   #230922 edited
     cost_img = np.empty(img.shape)
     cost_img[:] = np.NaN
 
     # minimum distance
-    cursor = np.around(_calculate_initial_center(img)).astype(int)
-    print("initial center is ", cursor)
+    if i_center == [None,None]:
+        cursor = np.around(_calculate_initial_center(img)).astype(int)
+        print("initial center is ", cursor)
+    else:
+        print("Calculating center from ", i_center)
+        cursor = i_center
 
-    search_length = 10
+    search_length = 20
     edge = [[0, img.shape[1]], [img.shape[0], 0]]
     minimum_d = np.floor(np.min(np.abs(edge - np.array(cursor)))).astype(int)
     minimum_d = minimum_d - search_length
@@ -131,7 +139,7 @@ def calculate_center_gradient(img, mask=None):
             print("calculated center is",cursor)
             return cursor
     print(f"Failed to find center in {cnt}px")
-    return calculate_center(img, mask)
+    return calculate_center(img, i_center, mask)
 
 
 def _calculate_initial_center(img):
