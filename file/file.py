@@ -1,7 +1,7 @@
 import mrcfile
 import os
 import numpy as np
-from PyQt5.QtWidgets import QFileDialog
+from PyQt6.QtWidgets import QFileDialog
 import json
 import copy
 import pandas as pd

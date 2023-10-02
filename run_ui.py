@@ -1,5 +1,5 @@
 import sys
-from PyQt5 import QtWidgets
+from PyQt6 import QtWidgets
 from ui import main
 import os
 import numpy as np
@@ -13,4 +13,4 @@ if __name__ == '__main__':
         qtapp = QtWidgets.QApplication(sys.argv)
     app = main.DataViewer()
     app.show()
-    sys.exit(qtapp.exec_())
+    sys.exit(qtapp.exec())

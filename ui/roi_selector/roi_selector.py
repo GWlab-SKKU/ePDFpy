@@ -1,6 +1,6 @@
->?<import pyqtgraph as pg
-from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QFileDialog
+import pyqtgraph as pg
+from PyQt6 import QtWidgets
+from PyQt6.QtWidgets import QFileDialog
 import numpy as np
 import cv2
 import os

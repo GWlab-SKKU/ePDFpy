@@ -1,4 +1,4 @@
-from PyQt5 import QtCore, QtWidgets, QtGui
+from PyQt6 import QtCore, QtWidgets, QtGui
 import sys
 import pyqtgraph as pg
 from file import file
@@ -6,7 +6,7 @@ import util
 from datacube.cube import PDFCube
 from typing import List
 from ui.pdfanalysis import PdfAnalysis
-from PyQt5.QtWidgets import QMessageBox
+from PyQt6.QtWidgets import QMessageBox
 import ui.selection_analysis.averaging_multiple_gr as averaging_multiple_gr
 from ui import ui_util
 import json
@@ -132,10 +132,10 @@ class DataViewer(QtWidgets.QMainWindow):
 
             progress_bar = QtWidgets.QProgressBar()
 
-            layout.addWidget(left_section,0,0,alignment=QtCore.Qt.AlignLeft)
-            layout.addWidget(progress_bar,0,1,alignment=QtCore.Qt.AlignLeft)
-            layout.addWidget(center_section,0,2,alignment=QtCore.Qt.AlignCenter)
-            layout.addWidget(right_section,0,3,alignment=QtCore.Qt.AlignRight)
+            layout.addWidget(left_section,0,0,alignment=QtCore.Qt.AlignmentFlag.AlignLeft)
+            layout.addWidget(progress_bar,0,1,alignment=QtCore.Qt.AlignmentFlag.AlignLeft)
+            layout.addWidget(center_section,0,2,alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
+            layout.addWidget(right_section,0,3,alignment=QtCore.Qt.AlignmentFlag.AlignRight)
 
             # layout.addWidget(center_section)
             layout.setSpacing(0)
@@ -154,7 +154,7 @@ class DataViewer(QtWidgets.QMainWindow):
             # self.save_preset_option.setDisabled(True)
             # self.open_azavg_only = QtWidgets.QAction("Open &azavg only", self)
             # self.save_azavg_only = QtWidgets.QAction("Save &azavg only", self)
-            self.averaging_gr = QtWidgets.QAction("Selection Analysis", self)
+            self.averaging_gr = QtGui.QAction("Selection Analysis", self)
             #
             # open_menu = menubar.addMenu("     &Open     ")
             # open_menu.addAction(self.open_img_file)
@@ -203,7 +203,7 @@ class DataViewer(QtWidgets.QMainWindow):
             utility_menu = menubar.addMenu("     &Utility     ")
             utility_menu.addAction(self.averaging_gr)
 
-            menubar.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+            menubar.setSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
             return menubar
 
         def create_tab(self):
@@ -246,7 +246,7 @@ class DataViewer(QtWidgets.QMainWindow):
             self.btn_left = QtWidgets.QPushButton("    <<    ")
             self.btn_right = QtWidgets.QPushButton("    >>    ")
             self.lbl_current_num = QtWidgets.QLabel("1")
-            self.lbl_current_num.setAlignment(QtCore.Qt.AlignCenter)
+            self.lbl_current_num.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
             self.navigator.layout.addWidget(self.btn_left)
             self.navigator.layout.addWidget(self.lbl_current_num)
             self.navigator.layout.addWidget(self.btn_right)

@@ -3,9 +3,9 @@ from file import file
 import pyqtgraph as pg
 import util
 from calculate import pdf_calculator
-from PyQt5.QtWidgets import QMessageBox
+from PyQt6.QtWidgets import QMessageBox
 import ui.ui_util as ui_util
-from PyQt5 import QtCore, QtWidgets
+from PyQt6 import QtCore, QtWidgets, QtGui
 import numpy as np
 from calculate import q_range_selector
 from datacube.cube import PDFCube
@@ -139,19 +139,19 @@ class PdfAnalysis(QtWidgets.QWidget):
         self.upper_right = self.graph_phiq_panel
         self.bottom_right = self.graph_Gr_panel
 
-        self.splitter_left_vertical = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        self.splitter_left_vertical = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
         self.splitter_left_vertical.addWidget(self.upper_left)
         self.splitter_left_vertical.addWidget(self.bottom_left)
         self.splitter_left_vertical.setStretchFactor(1, 1)
 
-        self.splitter_right_vertical = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        self.splitter_right_vertical = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
         self.splitter_right_vertical.addWidget(self.upper_right)
         self.splitter_right_vertical.addWidget(self.bottom_right)
 
         self.left = self.splitter_left_vertical
         self.right = self.splitter_right_vertical
 
-        self.splitter_horizontal = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+        self.splitter_horizontal = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         self.splitter_horizontal.addWidget(self.left)
         self.splitter_horizontal.addWidget(self.right)
 
@@ -673,15 +673,15 @@ class ControlPanel(QtWidgets.QWidget):
             open_menu = menubar.addMenu("&Open")
             save_menu = menubar.addMenu("&Save")
 
-            self.open_azavg_file = QtWidgets.QAction("Open azavg &file", self)
+            self.open_azavg_file = QtGui.QAction("Open azavg &file", self)
             open_menu.addAction(self.open_azavg_file)
 
             self.open_azavg_stack = open_menu.addMenu("Open azavg &stack")
-            self.open_azavg_stack_txt = QtWidgets.QAction("txt file stack")
-            self.open_azavg_stack_csv = QtWidgets.QAction("csv file stack")
-            self.open_azavg_stack_azavg_txt = QtWidgets.QAction("azavg.txt file stack")
-            self.open_azavg_stack_azavg_csv = QtWidgets.QAction("azavg.csv file stack")
-            self.open_azavg_stack_azavg_others = QtWidgets.QAction("Others ...")
+            self.open_azavg_stack_txt = QtGui.QAction("txt file stack")
+            self.open_azavg_stack_csv = QtGui.QAction("csv file stack")
+            self.open_azavg_stack_azavg_txt = QtGui.QAction("azavg.txt file stack")
+            self.open_azavg_stack_azavg_csv = QtGui.QAction("azavg.csv file stack")
+            self.open_azavg_stack_azavg_others = QtGui.QAction("Others ...")
             self.open_azavg_stack.addAction(self.open_azavg_stack_txt)
             self.open_azavg_stack.addAction(self.open_azavg_stack_csv)
             self.open_azavg_stack.addAction(self.open_azavg_stack_azavg_txt)
@@ -691,16 +691,16 @@ class ControlPanel(QtWidgets.QWidget):
 
             open_menu.addSeparator()
 
-            self.open_preset_file = QtWidgets.QAction("Open &preset file", self)
-            self.open_preset_stack = QtWidgets.QAction("Open p&reset stack", self)
+            self.open_preset_file = QtGui.QAction("Open &preset file", self)
+            self.open_preset_stack = QtGui.QAction("Open p&reset stack", self)
 
             open_menu.addAction(self.open_preset_file)
             open_menu.addAction(self.open_preset_stack)
 
-            self.save_current_preset = QtWidgets.QAction("Save current preset", self)
-            self.save_current_preset_as = QtWidgets.QAction("Save current preset as ...", self)
-            self.save_all_preset = QtWidgets.QAction("Save all preset", self)
-            self.save_all_preset_as = QtWidgets.QAction("Save all preset as ...", self)
+            self.save_current_preset = QtGui.QAction("Save current preset", self)
+            self.save_current_preset_as = QtGui.QAction("Save current preset as ...", self)
+            self.save_all_preset = QtGui.QAction("Save all preset", self)
+            self.save_all_preset_as = QtGui.QAction("Save all preset as ...", self)
             save_menu.addAction(self.save_current_preset)
             save_menu.addAction(self.save_current_preset_as)
             save_menu.addAction(self.save_all_preset)
@@ -718,7 +718,7 @@ class ControlPanel(QtWidgets.QWidget):
             layout.setSpacing(0)
             # layout.setContentsMargins(10, 0, 5, 5)
             menubar = self.create_menu(mainWindow)
-            layout.addWidget(menubar, alignment=QtCore.Qt.AlignCenter)
+            layout.addWidget(menubar, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
 
             self.element_group_widgets = [ControlPanel.element_group("Element" + str(num)) for num in range(1, 6)]
             for element_group_widgets in self.element_group_widgets:
@@ -768,11 +768,11 @@ class ControlPanel(QtWidgets.QWidget):
 
             self.load_menu = menubar.addMenu("  &Load  ")
             self.save_menu = menubar.addMenu("  &Save  ")
-            self.actions_new_preset = QtWidgets.QAction("[New]", self)
+            self.actions_new_preset = QtGui.QAction("[New]", self)
             self.save_menu.addAction(self.actions_new_preset)
             self.del_menu = menubar.addMenu("  &Del  ")
 
-            menubar.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+            menubar.setSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
 
             return menubar
 
@@ -790,19 +790,19 @@ class ControlPanel(QtWidgets.QWidget):
 
             # add menu
             for k,v in data.items():
-                action_load = QtWidgets.QAction(k, self)
+                action_load = QtGui.QAction(k, self)
                 self.load_menu.addAction(action_load)
                 # self.actions_load_preset.append(action_load)
 
-                action_save = QtWidgets.QAction(k, self)
+                action_save = QtGui.QAction(k, self)
                 self.save_menu.addAction(action_save)
                 # self.actions_save_preset.append(action_save)
 
-                action_del = QtWidgets.QAction(k, self)
+                action_del = QtGui.QAction(k, self)
                 self.del_menu.addAction(action_del)
                 # self.actions_del_preset.append(action_del)
             ## add new in save menu
-            self.actions_new_preset = QtWidgets.QAction("[New]", self)
+            self.actions_new_preset = QtGui.QAction("[New]", self)
             self.save_menu.addAction(self.actions_new_preset)
             # self.save_menu.addAction(self.actions_new_preset)
 

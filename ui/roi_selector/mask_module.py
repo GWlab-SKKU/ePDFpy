@@ -1,13 +1,13 @@
 import pyqtgraph as pg
-from PyQt5 import QtWidgets, QtGui
-from PyQt5.QtWidgets import QFileDialog
+from PyQt6 import QtWidgets, QtGui
+from PyQt6.QtWidgets import QFileDialog
 import numpy as np
 import cv2
 import os
 from file import load
 import definitions
 from calculate import beam_stopper
-from PyQt5 import QtCore
+from PyQt6 import QtCore
 import json
 import sys
 
@@ -64,7 +64,8 @@ class MaskModule(QtCore.QObject):
 
     def get_current_mask(self):
         if self.dropdown.currentText() in ['None', "[Edit]", '']:
-            self.mask = np.loadtxt(definitions.MASK_PATH_DEFAULT,delimiter=',').astype(np.uint8)
+            # self.mask = np.loadtxt(definitions.MASK_PATH_DEFAULT,delimiter=',').astype(np.uint8)
+            self.mask = None
         else:
             x_y = self.mask_dict[self.dropdown.currentText()]['data']
             img = np.zeros(self.img.shape, dtype=np.uint8)

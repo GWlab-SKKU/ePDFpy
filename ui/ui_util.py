@@ -1,9 +1,9 @@
 import typing
 
-from PyQt5 import QtCore, QtWidgets, QtGui
-from PyQt5.QtCore import QRegExp
-from PyQt5.QtGui import QRegExpValidator
-from PyQt5.QtWidgets import QWidget
+from PyQt6 import QtCore, QtWidgets, QtGui
+from PyQt6.QtCore import QRegularExpression
+from PyQt6.QtGui import QRegularExpressionValidator
+from PyQt6.QtWidgets import QWidget
 import numpy as np
 from pyqtgraph.graphicsItems.LegendItem import LegendItem
 import pyqtgraph as pg
@@ -39,9 +39,9 @@ class binding():
 class DoubleSpinBox(QtWidgets.QDoubleSpinBox):
     def __init__(self):
         super().__init__()
-        self.validator = QRegExpValidator(QRegExp(r"[0-9]+[.][0-9]+"))
+        self.validator = QRegularExpressionValidator(QRegularExpression(r"[0-9]+[.][0-9]+"))
         # self.validator = QRegExpValidator(QRegExp(r"?[0-9]+\.?[0-9]+"))
-        self.validator_int = QRegExpValidator(QRegExp(r"[0-9]+"))
+        self.validator_int = QRegularExpressionValidator(QRegularExpression(r"[0-9]+"))
         self.setDecimals(10)
 
     def validate(self, input: str, pos: int):
@@ -66,7 +66,7 @@ class DoubleSpinBox(QtWidgets.QDoubleSpinBox):
 class DoubleLineEdit(QtWidgets.QLineEdit):
     def __init__(self):
         super().__init__()
-        self.validator = QRegExpValidator(QRegExp(r"[0-9]+[.]{0,1}[0-9]+"))
+        self.validator = QRegularExpressionValidator(QRegularExpression(r"[0-9]+[.]{0,1}[0-9]+"))
 
     def validate(self, input: str, pos: int):
         return self.validator.validate(input, pos)
@@ -75,7 +75,7 @@ class DoubleLineEdit(QtWidgets.QLineEdit):
 class IntLineEdit(QtWidgets.QLineEdit):
     def __init__(self):
         super().__init__()
-        self.validator = QRegExpValidator(QRegExp(r"[0-9]+"))
+        self.validator = QRegularExpressionValidator(QRegularExpression(r"[0-9]+"))
 
     def validate(self, input: str, pos: int):
         return self.validator.validate(input, pos)
@@ -362,14 +362,14 @@ def update_value(widget:QtWidgets.QWidget, value):
 class QHLine(QtWidgets.QFrame):
     def __init__(self):
         super(QHLine, self).__init__()
-        self.setFrameShape(QtWidgets.QFrame.HLine)
-        self.setFrameShadow(QtWidgets.QFrame.Sunken)
+        self.setFrameShape(QtWidgets.QFrame.Shape.HLine)
+        self.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
 
 class QVLine(QtWidgets.QFrame):
     def __init__(self):
         super(QVLine, self).__init__()
-        self.setFrameShape(QtWidgets.QFrame.VLine)
-        self.setFrameShadow(QtWidgets.QFrame.Sunken)
+        self.setFrameShape(QtWidgets.QFrame.Shape.VLine)
+        self.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
 
 
 class ProfileGraphPanel(QtWidgets.QWidget):
@@ -514,7 +514,7 @@ class ProfileGraphPanel(QtWidgets.QWidget):
             maximum_width = 40
             self.button_start = QtWidgets.QPushButton("╟─")
             self.button_start.setMaximumWidth(maximum_width)
-            self.button_start.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
+            self.button_start.setSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed,QtWidgets.QSizePolicy.Policy.Fixed)
             self.button_all = QtWidgets.QPushButton("├─┤")
             self.button_all.setMaximumWidth(maximum_width)
             self.button_end = QtWidgets.QPushButton("─╢")
@@ -538,8 +538,8 @@ def get_style_sheet_dark():
 
 
 class DataFrameModel(QtCore.QAbstractTableModel):
-    DtypeRole = QtCore.Qt.UserRole + 1000
-    ValueRole = QtCore.Qt.UserRole + 1001
+    DtypeRole = QtCore.Qt.ItemDataRole.UserRole + 1000
+    ValueRole = QtCore.Qt.ItemDataRole.UserRole + 1001
 
     def __init__(self, df=pd.DataFrame(), parent=None):
         super(DataFrameModel, self).__init__(parent)
@@ -556,8 +556,8 @@ class DataFrameModel(QtCore.QAbstractTableModel):
     dataFrame = QtCore.pyqtProperty(pd.DataFrame, fget=dataFrame, fset=setDataFrame)
 
     @QtCore.pyqtSlot(int, QtCore.Qt.Orientation, result=str)
-    def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = QtCore.Qt.DisplayRole):
-        if role == QtCore.Qt.DisplayRole:
+    def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = QtCore.Qt.ItemDataRole.DisplayRole):
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             if orientation == QtCore.Qt.Horizontal:
                 return self._dataframe.columns[section]
             else:
@@ -574,7 +574,7 @@ class DataFrameModel(QtCore.QAbstractTableModel):
             return 0
         return self._dataframe.columns.size
 
-    def data(self, index, role=QtCore.Qt.DisplayRole):
+    def data(self, index, role=QtCore.Qt.ItemDataRole.DisplayRole):
         if not index.isValid() or not (0 <= index.row() < self.rowCount() \
             and 0 <= index.column() < self.columnCount()):
             return QtCore.QVariant()
@@ -593,7 +593,7 @@ class DataFrameModel(QtCore.QAbstractTableModel):
 
     def roleNames(self):
         roles = {
-            QtCore.Qt.DisplayRole: b'display',
+            QtCore.Qt.ItemDataRole.DisplayRole: b'display',
             DataFrameModel.DtypeRole: b'dtype',
             DataFrameModel.ValueRole: b'value'
         }

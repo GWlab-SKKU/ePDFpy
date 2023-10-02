@@ -1,14 +1,14 @@
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt6 import QtWidgets, QtCore, QtGui
 import pyqtgraph as pg
 import os
 import pandas as pd
 from pathlib import Path
-from PyQt5.QtWidgets import QMessageBox
-from PyQt5.QtCore import Qt
+from PyQt6.QtWidgets import QMessageBox
+from PyQt6.QtCore import Qt
 import numpy as np
 from ui import ui_util
 from datacube import datacube
-from PyQt5.QtGui import QColor
+from PyQt6.QtGui import QColor
 import util
 from typing import List
 import platform
@@ -47,7 +47,7 @@ class Viewer(QtWidgets.QWidget):
         self.average_plot = self.rightPanel.graphView.plot(pen=pg.mkPen(255, 255, 255, width=ui_util.highlight_pen_thickness))
         self.std_plot = self.rightPanel.graphView.plot(pen=pg.mkPen(255, 255, 255, width=ui_util.highlight_pen_thickness))
 
-        self.splitter_horizontal = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+        self.splitter_horizontal = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         self.splitter_horizontal.addWidget(self.leftPanel)
         self.splitter_horizontal.addWidget(self.rightPanel)
 
@@ -552,12 +552,12 @@ class Viewer(QtWidgets.QWidget):
         self.menubar = self.mainWindow.menuBar()
         self.menubar.setNativeMenuBar(False)
 
-        self.menu_open_csv = QtWidgets.QAction("csv", self.mainWindow)
-        self.menu_open_txt = QtWidgets.QAction("txt", self.mainWindow)
-        self.menu_open_preset = QtWidgets.QAction("preset", self.mainWindow)
+        self.menu_open_csv = QtGui.QAction("csv", self.mainWindow)
+        self.menu_open_txt = QtGui.QAction("txt", self.mainWindow)
+        self.menu_open_preset = QtGui.QAction("preset", self.mainWindow)
         self.menu_open_preset.setDisabled(True)
-        self.menu_open_gr = QtWidgets.QAction("gr", self.mainWindow)
-        self.menu_open_custom = QtWidgets.QAction("Custom name", self.mainWindow)
+        self.menu_open_gr = QtGui.QAction("gr", self.mainWindow)
+        self.menu_open_custom = QtGui.QAction("Custom name", self.mainWindow)
 
 
 
@@ -574,9 +574,9 @@ class Viewer(QtWidgets.QWidget):
         open_menu.addAction(self.menu_open_custom)
         open_menu.addSeparator()
 
-        self.menu_save_selected = QtWidgets.QAction("Save selected graphs", self.mainWindow)
-        self.menu_save_avg_std = QtWidgets.QAction("Save average,std only", self.mainWindow)
-        self.menu_save_intensity_profile_avg = QtWidgets.QAction("Save intensity profile averaging", self.mainWindow)
+        self.menu_save_selected = QtGui.QAction("Save selected graphs", self.mainWindow)
+        self.menu_save_avg_std = QtGui.QAction("Save average,std only", self.mainWindow)
+        self.menu_save_intensity_profile_avg = QtGui.QAction("Save intensity profile averaging", self.mainWindow)
 
         save_menu = self.menubar.addMenu("     &Save     ")
         save_menu.addAction(self.menu_save_selected)
@@ -704,7 +704,7 @@ class GraphPanel(QtWidgets.QWidget):
 class LeftPanel(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
-        self.splitter_left_vertical = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        self.splitter_left_vertical = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
         self.layout = QtWidgets.QVBoxLayout()
         self.setLayout(self.layout)
         if platform.system() == 'Darwin':
@@ -799,8 +799,8 @@ class LeftPanel(QtWidgets.QWidget):
             self.setWidget(self.graph_group_widget)
 
             self.setMinimumSize(200,300)
-            self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-            self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+            self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+            self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
             self.setWidgetResizable(True)
 
         def add_module(self, text):

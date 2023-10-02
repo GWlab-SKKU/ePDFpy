@@ -1,4 +1,4 @@
-from PyQt5 import QtCore, QtWidgets
+from PyQt6 import QtCore, QtWidgets, QtGui
 import pyqtgraph as pg
 import numpy as np
 import util
@@ -42,12 +42,12 @@ class ProfileExtraction(QtWidgets.QWidget):
         self.upper_right = self.profile_graph_panel
         self.bottom_right = self.polar_image_panel
 
-        self.splitter_left_vertical = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        self.splitter_left_vertical = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
         self.splitter_left_vertical.addWidget(self.upper_left)
         self.splitter_left_vertical.addWidget(self.bottom_left)
         self.splitter_left_vertical.setStretchFactor(1, 1)
 
-        self.splitter_right_vertical = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        self.splitter_right_vertical = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
         self.splitter_right_vertical.addWidget(self.upper_right)
         self.splitter_right_vertical.addWidget(self.bottom_right)
         # self.splitter_right_vertical.setStretchFactor(0, 1)
@@ -56,7 +56,7 @@ class ProfileExtraction(QtWidgets.QWidget):
         self.left = self.splitter_left_vertical
         self.right = self.splitter_right_vertical
 
-        self.splitter_horizontal = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+        self.splitter_horizontal = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         self.splitter_horizontal.addWidget(self.left)
         self.splitter_horizontal.addWidget(self.right)
         self.splitter_horizontal.setStretchFactor(0, 10)
@@ -431,17 +431,17 @@ class ControlPanel(QtWidgets.QWidget):
             open_menu = menubar.addMenu("&Open")
             save_menu = menubar.addMenu("&Save")
 
-            self.open_img_file = QtWidgets.QAction("Open &image file", self)
+            self.open_img_file = QtGui.QAction("Open &image file", self)
             open_menu.addAction(self.open_img_file)
             self.open_img_stack = open_menu.addMenu("Open image stack")
-            self.open_img_stack_mrc = QtWidgets.QAction("mrc file stack", self)
-            self.open_img_stack_txt = QtWidgets.QAction("txt file stack", self)
-            self.open_img_stack_csv = QtWidgets.QAction("csv file stack", self)
-            self.open_img_stack_tiff = QtWidgets.QAction("tiff file stack", self)
-            self.open_img_stack_jpg = QtWidgets.QAction("jpg file stack", self)
-            self.open_img_stack_jpeg = QtWidgets.QAction("jpeg file stack", self)
-            self.open_img_stack_png = QtWidgets.QAction("png file stack", self)
-            self.open_img_stack_custom = QtWidgets.QAction("Custom ...", self)
+            self.open_img_stack_mrc = QtGui.QAction("mrc file stack", self)
+            self.open_img_stack_txt = QtGui.QAction("txt file stack", self)
+            self.open_img_stack_csv = QtGui.QAction("csv file stack", self)
+            self.open_img_stack_tiff = QtGui.QAction("tiff file stack", self)
+            self.open_img_stack_jpg = QtGui.QAction("jpg file stack", self)
+            self.open_img_stack_jpeg = QtGui.QAction("jpeg file stack", self)
+            self.open_img_stack_png = QtGui.QAction("png file stack", self)
+            self.open_img_stack_custom = QtGui.QAction("Custom ...", self)
             self.open_img_stack.addAction(self.open_img_stack_mrc)
             self.open_img_stack.addAction(self.open_img_stack_txt)
             self.open_img_stack.addAction(self.open_img_stack_csv)
@@ -451,8 +451,8 @@ class ControlPanel(QtWidgets.QWidget):
             self.open_img_stack.addAction(self.open_img_stack_png)
             self.open_img_stack.addAction(self.open_img_stack_custom)
 
-            self.save_current_azavg = QtWidgets.QAction("Save current azavg file", self)
-            self.save_azavg_stack = QtWidgets.QAction("Save azavg stack", self)
+            self.save_current_azavg = QtGui.QAction("Save current azavg file", self)
+            self.save_azavg_stack = QtGui.QAction("Save azavg stack", self)
             save_menu.addAction(self.save_current_azavg)
             save_menu.addAction(self.save_azavg_stack)
 

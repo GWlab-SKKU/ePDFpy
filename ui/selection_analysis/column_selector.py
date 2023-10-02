@@ -1,6 +1,6 @@
-from PyQt5 import QtWidgets, Qt
+from PyQt6 import QtWidgets, Qt
 import pyqtgraph as pg
-from PyQt5.QtCore import Qt
+from PyQt6.QtCore import Qt
 
 pg.setConfigOptions(antialias=True)
 

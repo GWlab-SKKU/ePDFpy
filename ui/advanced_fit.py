@@ -1,5 +1,5 @@
 import ui.ui_util as ui_util
-from PyQt5 import QtCore, QtWidgets, QtGui
+from PyQt6 import QtCore, QtWidgets, QtGui
 import numpy as np
 from calculate.autofit import Autofit
 import pyqtgraph as pg
@@ -33,9 +33,9 @@ class AdvancedFitWindow(QtWidgets.QWidget):
         self.mainWindow = mainWindow
         self.dc = dc
         self.close_event = close_event
-        splitter_vertical = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
-        splitter_left_horizontal = QtWidgets.QSplitter(QtCore.Qt.Vertical)
-        splitter_right_horizontal = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        splitter_vertical = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
+        splitter_left_horizontal = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
+        splitter_right_horizontal = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
         splitter_vertical.addWidget(splitter_left_horizontal)
         splitter_vertical.addWidget(splitter_right_horizontal)
 
@@ -225,12 +225,12 @@ class AdvancedFitWindow(QtWidgets.QWidget):
                 self.table.setColumnWidth(i,50)
             self.table.setHorizontalHeaderLabels(table_head_lst)
             self.table.setDragEnabled(False)
-            self.table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+            self.table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
             self.setLayout(layout)
             # self.table.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
             # self.table.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
-            self.table.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
-            self.table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+            self.table.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
+            self.table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
             
             self.btn_select = QtWidgets.QPushButton("Select")
             layout.addWidget(self.btn_select)
