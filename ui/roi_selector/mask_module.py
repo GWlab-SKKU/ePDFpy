@@ -64,7 +64,8 @@ class MaskModule(QtCore.QObject):
 
     def get_current_mask(self):
         if self.dropdown.currentText() in ['None', "[Edit]", '']:
-            self.mask = np.loadtxt(definitions.MASK_PATH_DEFAULT,delimiter=',').astype(np.uint8)
+            # self.mask = np.loadtxt(definitions.MASK_PATH_DEFAULT,delimiter=',').astype(np.uint8)
+            self.mask = None
         else:
             x_y = self.mask_dict[self.dropdown.currentText()]['data']
             img = np.zeros(self.img.shape, dtype=np.uint8)
