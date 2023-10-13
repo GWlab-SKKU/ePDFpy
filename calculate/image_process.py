@@ -45,6 +45,7 @@ def calculate_center_with_cost(img, i_center, mask): #230922 edited
         print("Calculating center from ", i_center)
         initial_center = i_center
 
+
     # minimum distance
     search_length = 15
     edge = [[0,image.shape[1]],[image.shape[0],0]]
@@ -134,6 +135,7 @@ def calculate_center_gradient(img, i_center, mask=None):   #230922 edited
         if cost_img[cursor[0],cursor[1]] != np.nanmin(cost_img):
             print(cost_img[cursor[0],cursor[1]])
             cursor = np.unravel_index(np.nanargmin(cost_img), cost_img.shape)
+            print(cursor)
             cnt = cnt + 1
         else:
             print("calculated center is",cursor)
