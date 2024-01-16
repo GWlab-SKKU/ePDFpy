@@ -170,11 +170,11 @@ class PdfAnalysis(QtWidgets.QWidget):
         self.graph_Iq.addLegend(offset=(-30, 30))
         self.graph_phiq.addLegend(offset=(-30, 30))
         self.graph_Gr.addLegend(offset=(-30, 30))
-
+        # Edited for light background
         self.graph_Iq_Iq = self.graph_Iq.plot(pen=pg.mkPen(255, 0, 0, width=2), name='I')
-        self.graph_Iq_AutoFit = self.graph_Iq.plot(pen=pg.mkPen(0, 255, 0, width=2), name='AutoFit')
-        self.graph_phiq_phiq = self.graph_phiq.plot(pen=pg.mkPen(255, 0, 0, width=2), name='phiq')
-        self.graph_phiq_damp = self.graph_phiq.plot(pen=pg.mkPen(0, 255, 0, width=2), name='phiq_damp')
+        self.graph_Iq_AutoFit = self.graph_Iq.plot(pen=pg.mkPen(0, 0, 0, width=2), name='AutoFit')
+        self.graph_phiq_phiq = self.graph_phiq.plot(pen=pg.mkPen(0, 0, 0, width=2), name='phiq')
+        self.graph_phiq_damp = self.graph_phiq.plot(pen=pg.mkPen(255, 0, 0, width=2), name='phiq_damp')
         self.graph_Gr_Gr = self.graph_Gr.plot(pen=pg.mkPen(255, 0, 0, width=2), name='Gr')
 
         self.setLayout(self.layout)
@@ -615,6 +615,8 @@ class GraphIqPanel(ui_util.ProfileGraphPanel):
     def __init__(self):
         ui_util.ProfileGraphPanel.__init__(self,"I(q)")
         self.graph = self.plotWidget
+        self.graph.setLabel(axis='left', text='I(q)')
+        self.graph.setLabel(axis='bottom', text='q [1/Å]')
         self.axis = pg.InfiniteLine(angle=0)
         self.graph.addItem(self.axis)
         self.setting.lbl_range.setText("Q Range")
@@ -625,6 +627,8 @@ class GraphPhiqPanel(QtWidgets.QWidget):
         QtWidgets.QWidget.__init__(self)
         self.layout = QtWidgets.QVBoxLayout()
         self.graph = ui_util.CoordinatesPlotWidget(title='Φ(q)')
+        self.graph.setLabel(axis='left', text='Φ(q)')
+        self.graph.setLabel(axis='bottom', text='q [1/Å]')
         self.axis = pg.InfiniteLine(angle=0)
         self.graph.addItem(self.axis)
         self.layout.addWidget(self.graph)
@@ -637,6 +641,8 @@ class GraphGrPanel(QtWidgets.QWidget):
         QtWidgets.QWidget.__init__(self)
         self.layout = QtWidgets.QVBoxLayout()
         self.graph = ui_util.CoordinatesPlotWidget(title='G(r)')
+        self.graph.setLabel(axis='left', text='G(r)')
+        self.graph.setLabel(axis='bottom', text='r [Å]')
         self.axis = pg.InfiniteLine(angle=0)
         self.graph.addItem(self.axis)
         self.layout.addWidget(self.graph)

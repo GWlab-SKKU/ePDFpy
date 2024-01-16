@@ -63,7 +63,7 @@ class MaskModule(QtCore.QObject):
             return {}
 
     def get_current_mask(self):
-        if self.dropdown.currentText() in ['None', "[Edit]", '']:
+        if self.dropdown.currentText() in ['None', "[Edit]"]:
             # self.mask = np.loadtxt(definitions.MASK_PATH_DEFAULT,delimiter=',').astype(np.uint8)
             self.mask = None
         else:

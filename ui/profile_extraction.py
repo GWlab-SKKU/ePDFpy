@@ -6,12 +6,13 @@ import time
 from calculate import image_process, polar_transform, elliptical_correction
 from ui import ui_util
 pg.setConfigOptions(antialias=True)
+pg.setConfigOption('background', 'w')
 import definitions
 import cv2
 from datacube.cube import PDFCube
 from ui.roi_selector import mask_module
 from file import load
-
+import matplotlib.pyplot as pt
 
 class ProfileExtraction(QtWidgets.QWidget):
     def __init__(self, Dataviewer):
@@ -190,7 +191,11 @@ class ProfileExtraction(QtWidgets.QWidget):
             p_ellipse = [1,1,0]
         self.dc.p_ellipse = p_ellipse
         # polar_img = self.dc.elliptical_transformation(dphi=np.radians(0.5))
-        polar_img, _, _ = polar_transform.cartesian_to_polarelliptical_transform(self.dc.data,[self.dc.center[1],self.dc.center[0],p_ellipse[0],p_ellipse[1],p_ellipse[2]], mask = ~self.mask_module.mask, dphi=np.radians(0.5))
+        # polar_img, _, _ = polar_transform.cartesian_to_polarelliptical_transform(self.dc.data,[self.dc.center[1],self.dc.center[0],1,1,0], mask = ~self.mask_module.mask, dphi=np.radians(1)) # Changed to 1 rad
+        polar_img, _, _ = polar_transform.cartesian_to_polarelliptical_transform(self.dc.data.T,
+                                                                                 [self.dc.center[0], self.dc.center[1],
+                                                                                  p_ellipse[0],p_ellipse[1],p_ellipse[2]], mask=~self.mask_module.mask.T,
+                                                                                 dphi=np.radians(1))  # Changed to 1 rad, Change the direction of angle axis
         self.polar_image_panel.update_img(polar_img)
 
     def find_center(self):
@@ -622,6 +627,8 @@ class IntensityProfilePanel(QtWidgets.QWidget):
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
         self.plot_widget = ui_util.IntensityPlotWidget(title='Intensity Profile')
+        self.plot_widget.setLabel(axis='left', text='Counts')
+        self.plot_widget.setLabel(axis='bottom', text='Pixel')
         self.plot_widget.setYScaling(False)
         self.layout = QtWidgets.QHBoxLayout()
         self.layout.addWidget(self.plot_widget)
@@ -649,8 +656,8 @@ class PolarImagePanel(QtWidgets.QWidget):
         QtWidgets.QWidget.__init__(self)
 
         plot = pg.PlotItem()
-        plot.setLabel(axis='left')
-        plot.setLabel(axis='bottom')
+        plot.setLabel(axis='left', text='Angle')
+        plot.setLabel(axis='bottom', text='Distance')
 
         self.imageView = pg.ImageView(view=plot)
         self.layout = QtWidgets.QHBoxLayout()
@@ -670,9 +677,11 @@ class PolarImagePanel(QtWidgets.QWidget):
             self.imageView.ui.menuBtn.hide()
 
     def update_img(self, img):
-        self._current_data = img
+        disp_pt = img.data.copy()  # MH edit 24/01/16. P.T image revised.
+        disp_pt[np.where(img.mask == True)] = 0
+        self._current_data = disp_pt
         if len(img.shape) == 2:
-            self.imageView.setImage(self._current_data.transpose(1, 0), autoRange=False)
+            self.imageView.setImage(self._current_data.transpose(1, 0)[:int(img.shape[1]*0.7),], autoRange=False)#, scale=[1,0.5])
         if len(img.shape) == 3:
             self.imageView.setImage(self._current_data.transpose(1, 0, 2), autoRange=False)
 

@@ -17,14 +17,14 @@ idx_phiq_d = 6
 idx_r = 7
 idx_g = 8
 
-color = [pg.intColor(i, minValue=200, alpha=255) for i in range(100)]
+color = [pg.intColor(200-i, minValue=200, alpha=255) for i in range(100)]
 
 class MainWindowAdvancedFit(QtWidgets.QMainWindow):
     def __init__(self, dc, close_event):
         QtWidgets.QMainWindow.__init__(self)
         viewer = AdvancedFitWindow(dc, close_event, self)
         self.setCentralWidget(viewer)
-        self.setStyleSheet(ui_util.get_style_sheet())
+        # self.setStyleSheet(ui_util.get_style_sheet())
         self.resize(1200, 700)
 
 class AdvancedFitWindow(QtWidgets.QWidget):
@@ -148,7 +148,7 @@ class AdvancedFitWindow(QtWidgets.QWidget):
         if len(self.gr_plot_lst) == 0:
             return
         for irow in range(self.panel_control.spinBox_result_count.value()):
-            color = pg.intColor(irow, minValue=200, alpha=255)
+            color = pg.intColor(200-irow, minValue=200, alpha=255)
             if irow == row:
                 pen = pg.mkPen(color=color, width=ui_util.highlight_pen_thickness)
                 self.gr_plot_lst[irow].setPen(pen)
@@ -224,7 +224,7 @@ class AdvancedFitWindow(QtWidgets.QWidget):
             for i in range(column_count):
                 self.table.setColumnWidth(i,50)
             self.table.setHorizontalHeaderLabels(table_head_lst)
-            self.table.setDragEnabled(False)
+            self.table.setDragEnabled(True)
             self.table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
             self.setLayout(layout)
             # self.table.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
@@ -239,6 +239,8 @@ class AdvancedFitWindow(QtWidgets.QWidget):
         def __init__(self):
             QtWidgets.QWidget.__init__(self)
             self.graph = ui_util.CoordinatesPlotWidget(title='G(r)', setYScaling=False, button1mode=True)
+            self.graph.setLabel(axis='left', text='G(r)')
+            self.graph.setLabel(axis='bottom', text='r [Å]')
             layout = QtWidgets.QHBoxLayout()
             layout.addWidget(self.graph)
             self.setLayout(layout)
@@ -249,6 +251,8 @@ class AdvancedFitWindow(QtWidgets.QWidget):
         def __init__(self):
             QtWidgets.QWidget.__init__(self)
             self.graph = ui_util.CoordinatesPlotWidget(title='phi(q)', setYScaling=False, button1mode=True)
+            self.graph.setLabel(axis='left', text='Φ(q)')
+            self.graph.setLabel(axis='bottom', text='q [1/Å]')
             layout = QtWidgets.QHBoxLayout()
             layout.addWidget(self.graph)
             self.setLayout(layout)

@@ -59,7 +59,7 @@ class Viewer(QtWidgets.QWidget):
         self.layout.addWidget(self.menu_bar)
         self.layout.addWidget(self.splitter_horizontal)
 
-        self.setStyleSheet(ui_util.get_style_sheet())
+        # self.setStyleSheet(ui_util.get_style_sheet())
 
     def binding(self):
         self.menu_open_gr.triggered.connect(self.open_gr_clicked)
@@ -620,7 +620,7 @@ class GrCube(datacube.DataCube):
         self.enter_pen = pg.mkPen(self.color, width=ui_util.highlight_pen_thickness)
         self.default_pen = pg.mkPen(self.color,width=ui_util.default_pen_thickness)
 
-        ## default chkbox ##
+        ## default chkbox ## #444444 #111111
         self.styleSheet_default = "background-color: #444444;" \
                                   "padding-top: 10px;"\
                                   "padding-bottom: 10px;"\
@@ -629,7 +629,7 @@ class GrCube(datacube.DataCube):
                                      "padding-top: 10px;"\
                                      "padding-bottom: 10px;"\
                                      "color:{}".format(self.color_txt)
-        self.styleSheet_unuse =      "background-color: #111111;"\
+        self.styleSheet_unuse =      "background-color: transparent;"\
                                      "padding-top: 10px;"\
                                      "padding-bottom: 10px;"\
                                      "color:{}".format(self.color_txt)

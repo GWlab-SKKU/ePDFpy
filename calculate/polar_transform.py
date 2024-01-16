@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as pt
 
 def cartesian_to_polarelliptical_transform(
         cartesianData,
@@ -80,7 +81,8 @@ def cartesian_to_polarelliptical_transform(
 
     # Define the r/phi coords
     r_bins = np.arange(r_min + dr / 2.0, r_max + dr / 2.0, dr)  # values are bin centers
-    p_bins = np.arange(-np.pi + dphi / 2.0, np.pi + dphi / 2.0, dphi)
+    # p_bins = np.arange(-np.pi + dphi / 2.0, np.pi + dphi / 2.0, dphi)  # Change from -180 ~ 180 -> 0 ~ 360 => Angle start from 0
+    p_bins = np.arange(dphi / 2.0, 2*np.pi + dphi / 2.0, dphi)
     rr, pp = np.meshgrid(r_bins, p_bins)
     Nr, Np = rr.shape
 
@@ -118,6 +120,7 @@ def cartesian_to_polarelliptical_transform(
     polarEllipticalMask = np.zeros(Nr * Np)
     polarEllipticalMask[transform_mask] = np.sum(mask[x_inds, y_inds] * weights, axis=0)
     polarEllipticalMask = np.reshape(polarEllipticalMask, (Nr, Np))
+    # polarEllipticalData = polarEllipticalData * polarEllipticalMask
 
     polarEllipticalData = np.ma.array(
         data=polarEllipticalData, mask=polarEllipticalMask < maskThresh

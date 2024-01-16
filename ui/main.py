@@ -29,7 +29,7 @@ class DataViewer(QtWidgets.QMainWindow):
 
         self.dcs: List[PDFCube] = []
 
-        self.setStyleSheet(ui_util.get_style_sheet())
+        # self.setStyleSheet(ui_util.get_style_sheet())
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.top_menu)

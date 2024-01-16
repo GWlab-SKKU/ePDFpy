@@ -11,9 +11,10 @@ from calculate.pdf_calculator import pixel_to_q, q_to_pixel
 import platform
 import definitions
 import pandas as pd
+import qdarktheme
 
 if platform.system() == 'Darwin':
-    default_pen_thickness = 2
+    default_pen_thickness = 1
     highlight_pen_thickness = 5
 else:
     default_pen_thickness = 1
@@ -94,7 +95,10 @@ class CoordinatesPlotWidget(pg.PlotWidget):
         self.crosshair_plot = None
         self.graph_legend = self.getPlotItem().addLegend(offset=(-3, 3))
 
-        self.setBackground('#2a2a2a')
+        theme = qdarktheme.get_themes()
+        self.setBackground('#2a2a2a' if theme == "dark" else 'w')
+
+        # self.setBackground('#2a2a2a')
 
         # legend = self.addLegend()
         if offset is None:
@@ -102,6 +106,7 @@ class CoordinatesPlotWidget(pg.PlotWidget):
 
         legend = LegendItem(offset=offset)
         legend.setParentItem(self.getViewBox())
+
 
         style = pg.PlotDataItem(pen=(0,0,0,0))  # make transparent
         legend.addItem(style, 'coordi')
