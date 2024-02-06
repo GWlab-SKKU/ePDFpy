@@ -4,7 +4,7 @@ ePDFpy separated into two tabs; `Profile extraction` and `PDF analysis`. Users s
 Following contents are the instructions for each process.  
 
 # Profile extraction tab
-![Profile extraction](ePDFpy/docs/Profile extraction.png)
+<img width="1292" alt="Profile extraction" src="https://github.com/GWlab-SKKU/ePDFpy/assets/59153513/f83ac47d-f3ef-46c9-a89f-3f2e29cc7da9">
 ## Image loading and preparation
 1) In the `open` menu, click `open image file` to open single diffraction image or select a directory by clicking `open image stack` to open multiple diffraction images within selected directory.
    1) The data formats can be text files (`txt`, `csv`), image files (`tiff`, `jpg`), or standard TEM data files like `dm3`,`dm4` and `mrc`.
@@ -33,7 +33,7 @@ The extracted profile, I(q), can be saved with text file (`csv`,`txt`). Using `S
 
 # PDF analysis
 Users can do manual fitting by changing each parameters or use advanced fitting, which can set all 3 parameters with optimal conditions.
-![PDF analysis](./docs/PDF analysis.png)
+<img width="1292" alt="PDF analysis" src="https://github.com/GWlab-SKKU/ePDFpy/assets/59153513/bc4aff04-ef30-443c-aff2-dc38b3e1ae53">
 ## Loading the data
 Extracted I(q) is automatically used in the PDF analysis. If users want to load the pre-saved intensity profile or revisit previous result, simply load the data from `Open` in `Save and Load` menu. 
 - Open azavg: Loading intensity profile data only. Loading up all data in the sample folder can be done by choosing folder in the 'stack'  menu.
@@ -46,7 +46,7 @@ Extracted I(q) is automatically used in the PDF analysis. If users want to load 
 3) Click `Apply to all` if all loaded datasets are using same calibration factor and same atomic compositions.
 
 ## Autofit (advanced fit)
-![Advanced fitting](./docs/Advanced fitting.png)
+<img width="1312" alt="Advanced fitting" src="https://github.com/GWlab-SKKU/ePDFpy/assets/59153513/223d7ced-365f-4a8c-be45-bfa0d9d7f1e3">
 1) After setting up elements and calibration factor, confirm the minimum q value (or pixel number). ePDFpy atutomatically choose the first saddle point, which assumes that the effect of diffraction signal exceeds the trasmitted beam. Users can adjust the value by draging the highlighted area or change number.
 2) If the minimum q value is fixed, click `advanced fitting` button to open the GUI. Users should set 3 search range for the parameters in the GUI.
    1) `pixel range`: Pixel distance corredponding to maximum scattering vector `q`. For the convenience, it is set to input the pixel values. Users can convert pixel distance to q, using relation; $ calibration factor = (q/2\pi) * pixel $ (i.e. q = 22 is correponding to pixel = 1050, with 0.00334 calibration factor). It is expected that optimal q is around 20 ~ 22.
