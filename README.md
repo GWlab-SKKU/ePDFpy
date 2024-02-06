@@ -4,8 +4,6 @@ ePDFpy is a standalone tool for reduced electron pair distribution function (ePD
 This software is Python-based software with an interactive graphical user interface (GUI) environment built with PyQt5. Currently, built with the python3.8 version but confirmed that still compatible with python3.10.
 
 # Installation
-For the convenience, it is recommended to use Anaconda (www.anaconda.com/download) or Miniconda ( https://docs.conda.io/en/latest/miniconda.html) to set up a virtual environment. All dependencies can easily installed by using 'environment.yaml' file in the conda terminal:
-
 First, users must install pre-requiste libralies, which are listed in below:
 
 - numpy >= 1.22.4
@@ -18,12 +16,12 @@ First, users must install pre-requiste libralies, which are listed in below:
 - mrcfile >= 1.4.2
 - pyqtdarktheme == 2.1.0
 
-Users can install all dependencies manually using pip install or conda install. 
+Users can install all dependencies manually using pip install. 
 ```
 pip install -r requirements.txt
 pip install epdfpy
 ```
-or if using virtual environment using Anaconda,
+It is recommended to use Anaconda (www.anaconda.com/download) or Miniconda ( https://docs.conda.io/en/latest/miniconda.html) to set up a virtual environment. All dependencies can easily installed by using 'environment.yaml' file in the conda terminal:
 ```
 conda create -n epdfpy python=3.8
 conda activate epdfpy
