@@ -93,6 +93,8 @@ Separated by folders, each folders contains:
 # Example
 ![example](https://github.com/GWlab-SKKU/ePDFpy/assets/59153513/aa1f59c5-0daa-4276-81f4-d48a829b3b56)
 
+# User guide
+![userguide](examples/User Guide.md)
 
 # License
 
