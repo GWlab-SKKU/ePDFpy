@@ -4,7 +4,7 @@ ePDFpy separated into two tabs; `Profile extraction` and `PDF analysis`. Users s
 Following contents are the instructions for each process.  
 
 # Profile extraction tab
-![Profile extraction](./docs/Profile extraction.png)
+![Profile extraction](Profile extraction.png)
 ## Image loading and preparation
 1) In the `open` menu, click `open image file` to open single diffraction image or select a directory by clicking `open image stack` to open multiple diffraction images within selected directory.
    1) The data formats can be text files (`txt`, `csv`), image files (`tiff`, `jpg`), or standard TEM data files like `dm3`,`dm4` and `mrc`.
