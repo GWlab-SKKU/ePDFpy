@@ -1,0 +1,9 @@
+
+/*Visiblity Control*/
+#CheckVisible::indicator:checked {
+   /*background-color : lightgreen;*/
+   image: url(assets/css/icons/eye.png);
+   /*border: none;*/
+   border: 1px solid darkgray;
+   background-color: #3a3a3a;
+}

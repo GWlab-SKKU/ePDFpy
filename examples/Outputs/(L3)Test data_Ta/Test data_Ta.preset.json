@@ -1,0 +1,39 @@
+{
+  "center": [
+    1202,
+    1077
+  ],
+  "p_ellipse": [
+    1,
+    1,
+    0
+  ],
+  "pixel_start_n": 60,
+  "pixel_end_n": 945,
+  "ds": 0.00335,
+  "data_quality": "L3",
+  "data_quality_idx": 1,
+  "fit_at_q": 19.40687445828559,
+  "N": 195.0,
+  "damping": 0.15,
+  "rmax": 10.0,
+  "dr": 0.01,
+  "SS": 125730334.78620163,
+  "element_nums": [
+    73,
+    8,
+    0,
+    0,
+    0
+  ],
+  "element_ratio": [
+    2,
+    5,
+    0,
+    0,
+    0
+  ],
+  "scattering_factor": "Kirkland",
+  "electron_voltage": "0",
+  "blankpath": "/Users/gravitylab_mac/Documents/GitHub/ePDFpy/assets/test_blank.mrc"
+}

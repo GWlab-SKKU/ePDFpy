@@ -1,0 +1,178 @@
+{
+  "TiGe 27%": {
+    "element1": [
+      22,
+      27
+    ],
+    "element2": [
+      32,
+      73
+    ],
+    "element3": [
+      8,
+      200
+    ],
+    "element4": [
+      0,
+      0
+    ],
+    "element5": [
+      0,
+      0
+    ]
+  },
+  "TiGe 40%": {
+    "element1": [
+      22,
+      40
+    ],
+    "element2": [
+      32,
+      60
+    ],
+    "element3": [
+      8,
+      200
+    ],
+    "element4": [
+      0,
+      0
+    ],
+    "element5": [
+      0,
+      0
+    ]
+  },
+  "TiGe 48%": {
+    "element1": [
+      22,
+      48
+    ],
+    "element2": [
+      32,
+      52
+    ],
+    "element3": [
+      8,
+      200
+    ],
+    "element4": [
+      0,
+      0
+    ],
+    "element5": [
+      0,
+      0
+    ]
+  },
+  "TiGe 11%": {
+    "element1": [
+      22,
+      11
+    ],
+    "element2": [
+      32,
+      89
+    ],
+    "element3": [
+      8,
+      200
+    ],
+    "element4": [
+      0,
+      0
+    ],
+    "element5": [
+      0,
+      0
+    ]
+  },
+  "TiTa": {
+    "element1": [
+      73,
+      6
+    ],
+    "element2": [
+      8,
+      19
+    ],
+    "element3": [
+      22,
+      2
+    ],
+    "element4": [
+      0,
+      0
+    ],
+    "element5": [
+      0,
+      0
+    ]
+  },
+  "ZrTa": {
+    "element1": [
+      40,
+      2
+    ],
+    "element2": [
+      73,
+      2
+    ],
+    "element3": [
+      8,
+      9
+    ],
+    "element4": [
+      0,
+      0
+    ],
+    "element5": [
+      0,
+      0
+    ]
+  },
+  "Ta": {
+    "element1": [
+      73,
+      2
+    ],
+    "element2": [
+      8,
+      5
+    ],
+    "element3": [
+      0,
+      0
+    ],
+    "element4": [
+      0,
+      0
+    ],
+    "element5": [
+      0,
+      0
+    ]
+  },
+  "Ge": {
+    "element1": [
+      32,
+      1
+    ],
+    "element2": [
+      8,
+      2
+    ],
+    "element3": [
+      0,
+      0
+    ],
+    "element4": [
+      0,
+      0
+    ],
+    "element5": [
+      0,
+      0
+    ]
+  }
+}
